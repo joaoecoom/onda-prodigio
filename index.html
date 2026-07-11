@@ -267,8 +267,9 @@
             var overlay = document.getElementById('pause-overlay');
             if (!container || !overlay) return;
 
-            var clickedWhilePlaying = false;
             var hasStarted = false;
+            var lastPlaying = false;
+            var boundVideos = new WeakSet();
 
             function findPlayer() {
                 return container.querySelector('vturb-smartplayer');
@@ -277,21 +278,24 @@
             function findVideo() {
                 var player = findPlayer();
                 if (!player) return null;
+
+                var direct = player.querySelector('video');
+                if (direct) return direct;
+
                 if (player.shadowRoot) {
-                    var shadowVideo = player.shadowRoot.querySelector('video');
-                    if (shadowVideo) return shadowVideo;
+                    var rootVideo = player.shadowRoot.querySelector('video');
+                    if (rootVideo) return rootVideo;
+
+                    var nodes = player.shadowRoot.querySelectorAll('*');
+                    for (var i = 0; i < nodes.length; i++) {
+                        if (nodes[i].shadowRoot) {
+                            var nested = nodes[i].shadowRoot.querySelector('video');
+                            if (nested) return nested;
+                        }
+                    }
                 }
+
                 return container.querySelector('video');
-            }
-
-            function hasProgress(video) {
-                return video.currentTime > 0.3;
-            }
-
-            function shouldShowOverlay(video) {
-                if (!video || video.ended) return false;
-                if (!video.paused) return false;
-                return hasStarted || hasProgress(video);
             }
 
             function showOverlay() {
@@ -304,95 +308,85 @@
                 overlay.setAttribute('hidden', '');
             }
 
-            function updateOverlay(video) {
-                if (shouldShowOverlay(video)) {
-                    showOverlay();
-                } else {
-                    hideOverlay();
-                }
+            function onPausedWithProgress(video) {
+                if (!video || video.ended || !video.paused || video.currentTime <= 0) return;
+                if (!hasStarted && video.currentTime <= 0) return;
+                hasStarted = true;
+                showOverlay();
             }
 
-            function resumeVideo(video) {
+            function resumeVideo() {
+                var video = findVideo();
                 hideOverlay();
+                lastPlaying = false;
                 if (!video) return;
-                video.play().catch(function () {});
 
                 var player = findPlayer();
                 if (player && player.shadowRoot) {
-                    var playBtn = player.shadowRoot.querySelector('button, [role="button"], .big-play, .play-button');
-                    if (playBtn) playBtn.click();
+                    var playBtn = player.shadowRoot.querySelector('button, [role="button"], .big-play, .play-button, .vp-play, [class*="play"]');
+                    if (playBtn) {
+                        playBtn.click();
+                        return;
+                    }
                 }
+
+                video.play().catch(function () {});
             }
 
-            function setup(video) {
-                if (video.dataset.pauseOverlayReady) return;
-                video.dataset.pauseOverlayReady = 'true';
-
-                container.addEventListener('pointerdown', function () {
-                    if (!video.paused && hasProgress(video) && !video.ended) {
-                        clickedWhilePlaying = true;
-                    }
-                }, true);
+            function bindVideo(video) {
+                if (boundVideos.has(video)) return;
+                boundVideos.add(video);
 
                 video.addEventListener('playing', function () {
                     hasStarted = true;
+                    lastPlaying = true;
                     hideOverlay();
                 });
 
-                video.addEventListener('play', hideOverlay);
-                video.addEventListener('ended', hideOverlay);
-
                 video.addEventListener('pause', function () {
-                    if (video.ended) return;
+                    onPausedWithProgress(video);
+                    lastPlaying = false;
+                });
 
-                    if (clickedWhilePlaying) {
-                        hasStarted = true;
-                        showOverlay();
-                    }
-
-                    clickedWhilePlaying = false;
+                video.addEventListener('ended', function () {
+                    lastPlaying = false;
+                    hideOverlay();
                 });
 
                 video.addEventListener('loadedmetadata', function () {
-                    if (hasProgress(video) && video.paused) {
-                        hasStarted = true;
-                        showOverlay();
+                    if (video.paused && video.currentTime > 0) {
+                        onPausedWithProgress(video);
                     }
                 });
-
-                video.addEventListener('loadeddata', function () {
-                    updateOverlay(video);
-                });
-
-                video.addEventListener('timeupdate', function () {
-                    if (hasProgress(video)) {
-                        hasStarted = true;
-                    }
-                });
-
-                overlay.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    resumeVideo(video);
-                });
-
-                setTimeout(function () { updateOverlay(video); }, 300);
-                setTimeout(function () { updateOverlay(video); }, 1000);
-                setTimeout(function () { updateOverlay(video); }, 2500);
             }
 
-            var attempts = 0;
-            var timer = setInterval(function () {
+            overlay.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                resumeVideo();
+            });
+
+            function tick() {
                 var video = findVideo();
-                attempts += 1;
-                if (video) {
-                    setup(video);
-                    updateOverlay(video);
+                if (!video) return;
+
+                bindVideo(video);
+
+                var playing = !video.paused && !video.ended;
+
+                if (playing) {
+                    hasStarted = true;
+                    hideOverlay();
+                } else if (video.paused && !video.ended && video.currentTime > 0) {
+                    hasStarted = true;
+                    showOverlay();
                 }
-                if (attempts >= 80) {
-                    clearInterval(timer);
-                }
-            }, 400);
+
+                lastPlaying = playing;
+            }
+
+            setInterval(tick, 150);
+            tick();
         })();
     </script>
 
