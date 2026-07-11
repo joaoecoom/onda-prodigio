@@ -110,6 +110,29 @@ body {
     margin: 0 auto;
 }
 
+.pause-like-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding: 0.75rem;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.pause-like-overlay.is-visible {
+    opacity: 1;
+}
+
+.pause-like-overlay img {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
 /* ── Responsive ── */
 
 @media (max-width: 480px) {
@@ -237,10 +260,11 @@ body {
 }
 
 .like-icon {
-    display: block;
+    display: inline-block;
     width: 18px;
     height: 18px;
     flex-shrink: 0;
+    background: url('assets/like-icon.png') center / contain no-repeat;
 }
 
 .like-count {
