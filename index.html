@@ -175,11 +175,45 @@
         </div>
     </section>
 
+    <section class="references-section" aria-label="Referências científicas">
+        <div class="references-container">
+            <h2 class="references-title">Referências Científicas</h2>
+            <hr class="references-divider">
+
+            <ol class="references-list" id="references-list">
+                <li><strong>Gibson, E. M., et al. (2014).</strong> <em>Emergence of a novel myelinating oligodendrocyte from a restricted glial progenitor in adult brain.</em> Science, 344(6183), 1252304. https://doi.org/10.1126/science.1252304</li>
+                <li><strong>Fields, R. D. (2008).</strong> <em>White matter in learning, cognition and psychiatric disorders.</em> Trends in Neurosciences, 31(7), 361-370. https://doi.org/10.1016/j.tins.2008.04.001</li>
+                <li><strong>Grandjean, P., &amp; Landrigan, P. J. (2014).</strong> <em>Neurobehavioural effects of developmental toxicity.</em> The Lancet Neurology, 13(3), 330-338. https://doi.org/10.1016/S1474-4422(13)70278-3</li>
+                <li class="references-extra"><strong>National Scientific Council on the Developing Child. (2007).</strong> <em>The Timing and Quality of Early Experiences Combine to Shape Brain Architecture: Working Paper No. 5.</em> Center on the Developing Child at Harvard University.</li>
+                <li class="references-extra"><strong>Cazzaniga, M., Jaumotte, F., Macdonald, M., Melina, G., &amp; Tavares, M. M. (2024).</strong> <em>Gen-AI: Artificial Intelligence and the Future of Work.</em> International Monetary Fund (IMF).</li>
+                <li class="references-extra"><strong>Martorell, A. J., et al. (2019).</strong> <em>Multi-sensory Gamma Stimulation Ameliorates Alzheimer's-Associated Pathology and Improves Cognition.</em> Cell, 177(2), 256-271. https://doi.org/10.1016/j.cell.2019.02.014</li>
+                <li class="references-extra"><strong>Mensch, S., et al. (2015).</strong> <em>Synaptic vesicle release regulates myelin sheath number of individual oligodendrocytes in vivo.</em> Nature Neuroscience, 18(4), 628-630. https://doi.org/10.1038/nn.3991</li>
+                <li class="references-extra"><strong>Chaieb, L., Wilches, E. P., Burgess, A. P., &amp; Fell, J. (2015).</strong> <em>Auditory Beat Stimulation and its Effects on Cognition and Mood States.</em> Frontiers in Psychiatry, 6, 70. https://doi.org/10.3389/fpsyt.2015.000070</li>
+            </ol>
+
+            <button type="button" class="references-toggle" id="references-toggle" aria-expanded="true">Ler menos</button>
+        </div>
+    </section>
+
     <script type="text/javascript">
         var s = document.createElement("script");
         s.src = "https://scripts.converteai.net/ebaa6fc3-b026-4d3b-a0d5-6fab9b38c8e0/players/6a526964f8c29f2a6c60d24c/v4/player.js";
         s.async = true;
         document.head.appendChild(s);
+    </script>
+
+    <script>
+        (function () {
+            var list = document.getElementById('references-list');
+            var toggle = document.getElementById('references-toggle');
+            if (!list || !toggle) return;
+
+            toggle.addEventListener('click', function () {
+                var collapsed = list.classList.toggle('is-collapsed');
+                toggle.textContent = collapsed ? 'Ler mais' : 'Ler menos';
+                toggle.setAttribute('aria-expanded', String(!collapsed));
+            });
+        })();
     </script>
 </body>
 </html>
