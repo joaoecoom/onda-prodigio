@@ -263,40 +263,11 @@
 
     <script>
         (function () {
-            var container = document.getElementById('vturb-player');
             var overlay = document.getElementById('pause-overlay');
-            if (!container || !overlay) return;
+            if (!overlay) return;
 
             var hasStarted = false;
-            var lastPlaying = false;
-            var boundVideos = new WeakSet();
-
-            function findPlayer() {
-                return container.querySelector('vturb-smartplayer');
-            }
-
-            function findVideo() {
-                var player = findPlayer();
-                if (!player) return null;
-
-                var direct = player.querySelector('video');
-                if (direct) return direct;
-
-                if (player.shadowRoot) {
-                    var rootVideo = player.shadowRoot.querySelector('video');
-                    if (rootVideo) return rootVideo;
-
-                    var nodes = player.shadowRoot.querySelectorAll('*');
-                    for (var i = 0; i < nodes.length; i++) {
-                        if (nodes[i].shadowRoot) {
-                            var nested = nodes[i].shadowRoot.querySelector('video');
-                            if (nested) return nested;
-                        }
-                    }
-                }
-
-                return container.querySelector('video');
-            }
+            var playerBound = false;
 
             function showOverlay() {
                 overlay.classList.add('is-visible');
@@ -308,55 +279,64 @@
                 overlay.setAttribute('hidden', '');
             }
 
-            function onPausedWithProgress(video) {
-                if (!video || video.ended || !video.paused || video.currentTime <= 0) return;
-                if (!hasStarted && video.currentTime <= 0) return;
-                hasStarted = true;
-                showOverlay();
+            function getInstance() {
+                if (window.smartplayer && smartplayer.instances && smartplayer.instances.length) {
+                    return smartplayer.instances[0];
+                }
+                return null;
+            }
+
+            function getVideo() {
+                var instance = getInstance();
+                if (instance && instance.video) return instance.video;
+
+                var player = document.querySelector('vturb-smartplayer');
+                if (!player) return null;
+                if (player.shadowRoot) {
+                    return player.shadowRoot.querySelector('video');
+                }
+                return document.querySelector('#vturb-player video');
+            }
+
+            function shouldShow(video) {
+                return video && video.paused && !video.ended && video.currentTime > 0;
             }
 
             function resumeVideo() {
-                var video = findVideo();
                 hideOverlay();
-                lastPlaying = false;
-                if (!video) return;
-
-                var player = findPlayer();
-                if (player && player.shadowRoot) {
-                    var playBtn = player.shadowRoot.querySelector('button, [role="button"], .big-play, .play-button, .vp-play, [class*="play"]');
-                    if (playBtn) {
-                        playBtn.click();
-                        return;
-                    }
+                var instance = getInstance();
+                if (instance && typeof instance.play === 'function') {
+                    instance.play();
+                    return;
                 }
-
-                video.play().catch(function () {});
+                var video = getVideo();
+                if (video) video.play().catch(function () {});
             }
 
-            function bindVideo(video) {
-                if (boundVideos.has(video)) return;
-                boundVideos.add(video);
+            function bindPlayerEvents(player) {
+                if (!player || playerBound) return;
+                playerBound = true;
 
-                video.addEventListener('playing', function () {
+                player.addEventListener('video:play', function () {
                     hasStarted = true;
-                    lastPlaying = true;
                     hideOverlay();
                 });
 
-                video.addEventListener('pause', function () {
-                    onPausedWithProgress(video);
-                    lastPlaying = false;
-                });
-
-                video.addEventListener('ended', function () {
-                    lastPlaying = false;
-                    hideOverlay();
-                });
-
-                video.addEventListener('loadedmetadata', function () {
-                    if (video.paused && video.currentTime > 0) {
-                        onPausedWithProgress(video);
+                player.addEventListener('video:pause', function () {
+                    var video = getVideo();
+                    if (shouldShow(video) && hasStarted) {
+                        showOverlay();
                     }
+                });
+
+                player.addEventListener('player:ready', function () {
+                    setTimeout(function () {
+                        var video = getVideo();
+                        if (shouldShow(video)) {
+                            hasStarted = true;
+                            showOverlay();
+                        }
+                    }, 400);
                 });
             }
 
@@ -366,27 +346,32 @@
                 resumeVideo();
             });
 
-            function tick() {
-                var video = findVideo();
-                if (!video) return;
+            function init() {
+                var player = document.querySelector('vturb-smartplayer');
+                if (player) bindPlayerEvents(player);
 
-                bindVideo(video);
+                setInterval(function () {
+                    var video = getVideo();
+                    if (!video) return;
 
-                var playing = !video.paused && !video.ended;
+                    if (!video.paused && !video.ended) {
+                        hasStarted = true;
+                        hideOverlay();
+                        return;
+                    }
 
-                if (playing) {
-                    hasStarted = true;
-                    hideOverlay();
-                } else if (video.paused && !video.ended && video.currentTime > 0) {
-                    hasStarted = true;
-                    showOverlay();
-                }
-
-                lastPlaying = playing;
+                    if (shouldShow(video) && (hasStarted || video.currentTime > 0.5)) {
+                        hasStarted = true;
+                        showOverlay();
+                    }
+                }, 150);
             }
 
-            setInterval(tick, 150);
-            tick();
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', init);
+            } else {
+                init();
+            }
         })();
     </script>
 
