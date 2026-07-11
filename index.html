@@ -42,8 +42,8 @@
                 <vturb-smartplayer id="vid-6a526964f8c29f2a6c60d24c" style="display: block; margin: 0 auto; width: 100%; max-width: 400px;">
                     <div class="vturb-player-placeholder" style="position: relative; width: 100%; padding: 133.33333333333331% 0 0; z-index: 0; background-color: black;"></div>
                 </vturb-smartplayer>
-                <div id="pause-like-overlay" class="pause-like-overlay" hidden>
-                    <img src="assets/like-icon.png" alt="" width="48" height="48">
+                <div id="pause-overlay" class="pause-overlay" hidden>
+                    <img src="assets/pause-overlay.png" alt="Desbloqueia o potencial do teu filho — clique para continuar">
                 </div>
             </div>
         </section>
@@ -262,10 +262,11 @@
     <script>
         (function () {
             var container = document.getElementById('vturb-player');
-            var overlay = document.getElementById('pause-like-overlay');
+            var overlay = document.getElementById('pause-overlay');
             if (!container || !overlay) return;
 
             var clickedWhilePlaying = false;
+            var hasPlayed = false;
 
             function findVideo() {
                 var player = container.querySelector('vturb-smartplayer');
@@ -298,15 +299,25 @@
                 }, true);
 
                 video.addEventListener('pause', function () {
-                    if (clickedWhilePlaying && video.currentTime > 0 && !video.ended) {
+                    if (clickedWhilePlaying && hasPlayed && video.currentTime > 0 && !video.ended) {
                         showOverlay();
                     }
                     clickedWhilePlaying = false;
                 });
 
+                video.addEventListener('playing', function () {
+                    hasPlayed = true;
+                    hideOverlay();
+                });
+
                 video.addEventListener('play', hideOverlay);
-                video.addEventListener('playing', hideOverlay);
                 video.addEventListener('ended', hideOverlay);
+
+                overlay.addEventListener('click', function () {
+                    if (video.paused && !video.ended) {
+                        video.play();
+                    }
+                });
             }
 
             var attempts = 0;
