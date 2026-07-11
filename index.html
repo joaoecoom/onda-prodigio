@@ -39,11 +39,13 @@
 
         <section class="video-section" aria-label="Vídeo de apresentação">
             <div id="vturb-player" class="video-container">
-                <vturb-smartplayer id="vid-6a526964f8c29f2a6c60d24c" style="display: block; margin: 0 auto; width: 100%; max-width: 400px;">
-                    <div class="vturb-player-placeholder" style="position: relative; width: 100%; padding: 133.33333333333331% 0 0; z-index: 0; background-color: black;"></div>
-                </vturb-smartplayer>
-                <div id="pause-overlay" class="pause-overlay" hidden>
-                    <img src="assets/pause-overlay.png" alt="Desbloqueia o potencial do teu filho — clique para continuar">
+                <div class="video-player-wrap">
+                    <vturb-smartplayer id="vid-6a526964f8c29f2a6c60d24c" style="display: block; margin: 0 auto; width: 100%; max-width: 400px;">
+                        <div class="vturb-player-placeholder" style="position: relative; width: 100%; padding: 133.33333333333331% 0 0; z-index: 0; background-color: black;"></div>
+                    </vturb-smartplayer>
+                    <div id="pause-overlay" class="pause-overlay" hidden>
+                        <img src="assets/pause-overlay.png" alt="Desbloqueia o potencial do teu filho — clique para continuar">
+                    </div>
                 </div>
             </div>
         </section>
@@ -266,16 +268,30 @@
             if (!container || !overlay) return;
 
             var clickedWhilePlaying = false;
-            var hasPlayed = false;
+            var hasStarted = false;
+
+            function findPlayer() {
+                return container.querySelector('vturb-smartplayer');
+            }
 
             function findVideo() {
-                var player = container.querySelector('vturb-smartplayer');
+                var player = findPlayer();
                 if (!player) return null;
                 if (player.shadowRoot) {
                     var shadowVideo = player.shadowRoot.querySelector('video');
                     if (shadowVideo) return shadowVideo;
                 }
                 return container.querySelector('video');
+            }
+
+            function hasProgress(video) {
+                return video.currentTime > 0.3;
+            }
+
+            function shouldShowOverlay(video) {
+                if (!video || video.ended) return false;
+                if (!video.paused) return false;
+                return hasStarted || hasProgress(video);
             }
 
             function showOverlay() {
@@ -288,36 +304,81 @@
                 overlay.setAttribute('hidden', '');
             }
 
+            function updateOverlay(video) {
+                if (shouldShowOverlay(video)) {
+                    showOverlay();
+                } else {
+                    hideOverlay();
+                }
+            }
+
+            function resumeVideo(video) {
+                hideOverlay();
+                if (!video) return;
+                video.play().catch(function () {});
+
+                var player = findPlayer();
+                if (player && player.shadowRoot) {
+                    var playBtn = player.shadowRoot.querySelector('button, [role="button"], .big-play, .play-button');
+                    if (playBtn) playBtn.click();
+                }
+            }
+
             function setup(video) {
-                if (video.dataset.pauseLikeReady) return;
-                video.dataset.pauseLikeReady = 'true';
+                if (video.dataset.pauseOverlayReady) return;
+                video.dataset.pauseOverlayReady = 'true';
 
                 container.addEventListener('pointerdown', function () {
-                    if (!video.paused && video.currentTime > 0 && !video.ended) {
+                    if (!video.paused && hasProgress(video) && !video.ended) {
                         clickedWhilePlaying = true;
                     }
                 }, true);
 
-                video.addEventListener('pause', function () {
-                    if (clickedWhilePlaying && hasPlayed && video.currentTime > 0 && !video.ended) {
-                        showOverlay();
-                    }
-                    clickedWhilePlaying = false;
-                });
-
                 video.addEventListener('playing', function () {
-                    hasPlayed = true;
+                    hasStarted = true;
                     hideOverlay();
                 });
 
                 video.addEventListener('play', hideOverlay);
                 video.addEventListener('ended', hideOverlay);
 
-                overlay.addEventListener('click', function () {
-                    if (video.paused && !video.ended) {
-                        video.play();
+                video.addEventListener('pause', function () {
+                    if (video.ended) return;
+
+                    if (clickedWhilePlaying) {
+                        hasStarted = true;
+                        showOverlay();
+                    }
+
+                    clickedWhilePlaying = false;
+                });
+
+                video.addEventListener('loadedmetadata', function () {
+                    if (hasProgress(video) && video.paused) {
+                        hasStarted = true;
+                        showOverlay();
                     }
                 });
+
+                video.addEventListener('loadeddata', function () {
+                    updateOverlay(video);
+                });
+
+                video.addEventListener('timeupdate', function () {
+                    if (hasProgress(video)) {
+                        hasStarted = true;
+                    }
+                });
+
+                overlay.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    resumeVideo(video);
+                });
+
+                setTimeout(function () { updateOverlay(video); }, 300);
+                setTimeout(function () { updateOverlay(video); }, 1000);
+                setTimeout(function () { updateOverlay(video); }, 2500);
             }
 
             var attempts = 0;
@@ -325,12 +386,13 @@
                 var video = findVideo();
                 attempts += 1;
                 if (video) {
-                    clearInterval(timer);
                     setup(video);
-                } else if (attempts >= 60) {
+                    updateOverlay(video);
+                }
+                if (attempts >= 80) {
                     clearInterval(timer);
                 }
-            }, 500);
+            }, 400);
         })();
     </script>
 
