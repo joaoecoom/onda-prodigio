@@ -267,7 +267,6 @@
             if (!overlay) return;
 
             var hasStarted = false;
-            var playerBound = false;
 
             function showOverlay() {
                 overlay.classList.add('is-visible');
@@ -314,22 +313,25 @@
             }
 
             function bindPlayerEvents(player) {
-                if (!player || playerBound) return;
-                playerBound = true;
+                if (!player) return;
 
-                player.addEventListener('video:play', function () {
-                    hasStarted = true;
-                    hideOverlay();
-                });
+                function attach() {
+                    if (player.dataset.pauseOverlayBound) return;
+                    player.dataset.pauseOverlayBound = 'true';
 
-                player.addEventListener('video:pause', function () {
-                    var video = getVideo();
-                    if (shouldShow(video) && hasStarted) {
-                        showOverlay();
-                    }
-                });
+                    player.addEventListener('video:play', function () {
+                        hasStarted = true;
+                        hideOverlay();
+                    });
 
-                player.addEventListener('player:ready', function () {
+                    player.addEventListener('video:pause', function () {
+                        var video = getVideo();
+                        if (shouldShow(video)) {
+                            hasStarted = true;
+                            showOverlay();
+                        }
+                    });
+
                     setTimeout(function () {
                         var video = getVideo();
                         if (shouldShow(video)) {
@@ -337,7 +339,10 @@
                             showOverlay();
                         }
                     }, 400);
-                });
+                }
+
+                player.addEventListener('player:ready', attach);
+                attach();
             }
 
             overlay.addEventListener('click', function (e) {
