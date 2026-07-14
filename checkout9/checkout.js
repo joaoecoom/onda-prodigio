@@ -20,6 +20,9 @@
     var isSubmitting = false;
     var isReady = false;
     var lastLinkedEmail = '';
+    var ENABLE_EXPRESS_CHECKOUT = false;
+    var MB_WAY_POLL_MS = 3000;
+    var MB_WAY_POLL_ATTEMPTS = 40;
 
     function isValidEmail(value) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
@@ -189,6 +192,39 @@
         }
 
         return params;
+    }
+
+    function sleep(ms) {
+        return new Promise(function (resolve) {
+            setTimeout(resolve, ms);
+        });
+    }
+
+    function redirectToSuccess() {
+        window.location.href = getReturnUrl();
+    }
+
+    async function waitForMbWayConfirmation() {
+        showMessage('Confirma o pagamento na app MB WAY no teu telemóvel.', 'info');
+
+        for (var attempt = 0; attempt < MB_WAY_POLL_ATTEMPTS; attempt += 1) {
+            await sleep(MB_WAY_POLL_MS);
+
+            var retrieved = await stripe.retrievePaymentIntent(clientSecret);
+            var status = retrieved.paymentIntent ? retrieved.paymentIntent.status : '';
+
+            if (status === 'succeeded') {
+                redirectToSuccess();
+                return;
+            }
+
+            if (status === 'requires_payment_method' || status === 'canceled') {
+                showMessage('O pagamento MB WAY expirou ou foi recusado. Tenta novamente.', 'error');
+                return;
+            }
+        }
+
+        showMessage('Pagamento pendente. Abre a app MB WAY e confirma, ou tenta outra vez.', 'info');
     }
 
     function scrollToFirstFormIssue() {
@@ -388,7 +424,13 @@
             }
         });
 
-        await mountExpressCheckoutElement();
+        if (ENABLE_EXPRESS_CHECKOUT) {
+            await mountExpressCheckoutElement();
+        } else if (expressCheckoutHost && expressCheckoutDivider) {
+            expressCheckoutHost.hidden = true;
+            expressCheckoutDivider.hidden = true;
+        }
+
         await paymentElement.mount('#payment-element');
         syncBillingDefaults();
         isReady = true;
@@ -437,31 +479,52 @@
 
         setSubmitLoading(true);
         showMessage('');
-        syncBillingDefaults();
-        await syncPaymentIntent(payload);
 
-        var submitResult = await elements.submit();
+        try {
+            syncBillingDefaults();
 
-        if (submitResult.error) {
-            showMessage(submitResult.error.message || 'Verifica os dados de pagamento.', 'error');
-            setSubmitLoading(false);
-            return;
-        }
+            try {
+                await syncPaymentIntent(payload);
+            } catch (syncError) {
+                // Não bloquear o pagamento se a sincronização falhar.
+            }
 
-        var result = await stripe.confirmPayment({
-            elements: elements,
-            confirmParams: getConfirmParams(payload, true),
-            redirect: 'if_required',
-        });
+            var submitResult = await elements.submit();
 
-        if (result.error) {
-            showMessage(result.error.message || 'O pagamento não foi concluído.', 'error');
-            setSubmitLoading(false);
-            return;
-        }
+            if (submitResult.error) {
+                showMessage(submitResult.error.message || 'Verifica os dados de pagamento.', 'error');
+                return;
+            }
 
-        if (result.paymentIntent && result.paymentIntent.status === 'requires_action') {
-            showMessage('Confirma o pagamento na app MB WAY no teu telemóvel.', 'info');
+            var result = await stripe.confirmPayment({
+                elements: elements,
+                clientSecret: clientSecret,
+                confirmParams: getConfirmParams(payload, false),
+                redirect: 'if_required',
+            });
+
+            if (result.error) {
+                showMessage(result.error.message || 'O pagamento não foi concluído.', 'error');
+                return;
+            }
+
+            var status = result.paymentIntent ? result.paymentIntent.status : '';
+
+            if (status === 'succeeded') {
+                redirectToSuccess();
+                return;
+            }
+
+            if (status === 'requires_action' || status === 'processing') {
+                setSubmitLoading(false);
+                await waitForMbWayConfirmation();
+                return;
+            }
+
+            showMessage('Não foi possível concluir o pagamento. Tenta novamente.', 'error');
+        } catch (error) {
+            showMessage(error.message || 'Erro ao processar o pagamento.', 'error');
+        } finally {
             setSubmitLoading(false);
         }
     }
