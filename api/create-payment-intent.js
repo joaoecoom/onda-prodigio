@@ -18,10 +18,6 @@ module.exports = async function handler(req, res) {
     var phone = typeof body.phone === 'string' ? body.phone.trim() : '';
     var region = typeof body.region === 'string' ? body.region.trim() : '';
 
-    if (!email || !fullName || !phone || !region) {
-        return res.status(400).json({ error: 'Preenche todos os dados pessoais antes de pagar.' });
-    }
-
     var amount = parseInt(process.env.STRIPE_AMOUNT_CENTS || '900', 10);
 
     if (!Number.isFinite(amount) || amount < 50) {
@@ -37,14 +33,14 @@ module.exports = async function handler(req, res) {
             automatic_payment_methods: {
                 enabled: true,
             },
-            receipt_email: email,
+            receipt_email: email || undefined,
             description: 'Onda Prodígio — acesso digital',
             metadata: {
                 product: 'Onda Prodígio',
                 price_id: process.env.STRIPE_PRICE_ID || '',
-                full_name: fullName,
-                phone: phone,
-                region: region,
+                full_name: fullName || '',
+                phone: phone || '',
+                region: region || '',
                 checkout: 'checkout9',
             },
         });

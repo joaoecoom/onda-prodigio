@@ -178,10 +178,23 @@
                             </div>
                         </div>
 
-                        <div class="checkout-form__actions">
-                            <button class="checkout-btn checkout-btn--primary" type="button" id="continue-to-payment">
-                                Continuar para pagamento
-                            </button>
+                        <div class="checkout-form__divider" aria-hidden="true"></div>
+
+                        <div class="checkout-payment-block" id="checkout-payment-block">
+                            <h2 class="checkout-form__title">Selecionar método de pagamento</h2>
+
+                            <div id="payment-element" class="payment-element" aria-live="polite"></div>
+                            <p id="payment-message" class="payment-message" role="alert"></p>
+
+                            <div class="checkout-form__actions">
+                                <button class="checkout-btn checkout-btn--primary" type="button" id="submit-payment" disabled>
+                                    Pagar 9,00 €
+                                </button>
+                            </div>
+
+                            <p class="payment-secure">
+                                Pagamento processado de forma segura pela Stripe. Os teus dados bancários nunca passam pelos nossos servidores.
+                            </p>
                         </div>
                     </form>
                 </div>
@@ -203,47 +216,6 @@
                         <p>Não me deixava dormir pensar no que seria dele quando crescesse. Se hoje sofre para entender um parágrafo, como se ia defender num mundo com tanta competição? Aterrava-me que o deixassem para trás.</p>
                         <p>Mas depois de experimentar a Onda Prodígio, essa preocupação desapareceu — vê-lo hoje a analisar tudo e a resolver problemas que antes o bloqueavam... é outra criança. Passou de ser o miúdo invisível que não conseguia nada, a ser aquele que tem as respostas mais rápidas. Agora sei que tem futuro.</p>
                     </blockquote>
-                </aside>
-            </div>
-        </section>
-
-        <section class="checkout-payment-section" id="checkout-payment-section" aria-label="Pagamento" hidden>
-            <div class="checkout-hero__grid">
-                <div class="checkout-form-panel">
-                    <h2 class="checkout-form__title">Pagamento</h2>
-                    <p class="payment-total">Total a pagar: <strong>9,00 €</strong> · IVA incluído</p>
-                    <p class="payment-methods-note">
-                        Escolhe o método de pagamento: cartão, MB Way, Klarna, Multibanco, Link, SEPA e outros métodos ativos na tua conta Stripe para Portugal.
-                    </p>
-
-                    <div id="payment-element" class="payment-element" aria-live="polite"></div>
-                    <p id="payment-message" class="payment-message" role="alert"></p>
-
-                    <div class="checkout-form__actions" id="payment-actions" hidden>
-                        <button class="checkout-btn checkout-btn--primary" type="button" id="submit-payment" disabled>
-                            Pagar 9,00 €
-                        </button>
-                    </div>
-
-                    <p class="payment-secure">
-                        Pagamento processado de forma segura pela Stripe. Os teus dados bancários nunca passam pelos nossos servidores.
-                    </p>
-                </div>
-
-                <aside class="trust-card" aria-label="Garantias de compra">
-                    <div class="trust-card__badge" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 3l7 4v5c0 4.2-2.8 7.9-7 9-4.2-1.1-7-4.8-7-9V7l7-4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-                            <path d="M9.5 12.2l1.8 1.8 3.5-3.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </div>
-                    <h3 class="trust-card__title">Compra 100% segura</h3>
-                    <ul class="trust-card__list">
-                        <li>Acesso imediato após confirmação do pagamento</li>
-                        <li>30 dias de garantia de reembolso</li>
-                        <li>Suporte por e-mail em português</li>
-                        <li>Faturação com IVA incluído</li>
-                    </ul>
                 </aside>
             </div>
         </section>

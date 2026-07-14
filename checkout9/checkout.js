@@ -1,13 +1,11 @@
 (function () {
     var form = document.getElementById('checkout-form');
-    var paymentSection = document.getElementById('checkout-payment-section');
     var paymentElementHost = document.getElementById('payment-element');
     var paymentMessage = document.getElementById('payment-message');
-    var continueBtn = document.getElementById('continue-to-payment');
     var submitBtn = document.getElementById('submit-payment');
-    var paymentActions = document.getElementById('payment-actions');
+    var paymentBlock = document.getElementById('checkout-payment-block');
 
-    if (!form || !paymentSection || !paymentElementHost) {
+    if (!form || !paymentElementHost || !submitBtn) {
         return;
     }
 
@@ -15,8 +13,8 @@
     var elements = null;
     var paymentElement = null;
     var clientSecret = null;
-    var isInitializing = false;
     var isSubmitting = false;
+    var isReady = false;
 
     function getApiBase() {
         return window.location.origin;
@@ -67,23 +65,18 @@
         };
     }
 
-    function setContinueLoading(loading) {
-        if (!continueBtn) {
-            return;
-        }
-
-        continueBtn.disabled = loading;
-        continueBtn.textContent = loading ? 'A preparar pagamento…' : 'Continuar para pagamento';
+    function setSubmitLoading(loading) {
+        isSubmitting = loading;
+        submitBtn.disabled = loading || !isReady;
+        submitBtn.textContent = loading ? 'A processar…' : 'Pagar 9,00 €';
     }
 
-    function setSubmitLoading(loading) {
-        if (!submitBtn) {
-            return;
+    function setPaymentLoading(loading) {
+        if (paymentBlock) {
+            paymentBlock.classList.toggle('is-loading', loading);
         }
 
-        isSubmitting = loading;
-        submitBtn.disabled = loading || !clientSecret;
-        submitBtn.textContent = loading ? 'A processar…' : 'Pagar 9,00 €';
+        submitBtn.disabled = loading || !isReady;
     }
 
     async function loadStripe() {
@@ -109,7 +102,7 @@
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify(payload || {}),
         });
 
         var data = await response.json();
@@ -129,70 +122,77 @@
             appearance: {
                 theme: 'stripe',
                 variables: {
-                    colorPrimary: '#f04b4b',
+                    colorPrimary: '#0077c8',
+                    colorBackground: '#ffffff',
+                    colorText: '#111111',
+                    colorDanger: '#b42318',
                     borderRadius: '4px',
                     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
+                    spacingUnit: '4px',
+                },
+                rules: {
+                    '.AccordionItem': {
+                        border: '1px solid #cfd8e3',
+                        boxShadow: 'none',
+                        marginBottom: '0.65rem',
+                    },
+                    '.AccordionItem--selected': {
+                        border: '1px solid #0077c8',
+                    },
+                    '.Label': {
+                        fontWeight: '700',
+                        fontSize: '0.82rem',
+                    },
                 },
             },
         });
 
         paymentElementHost.innerHTML = '';
-        paymentElement = elements.create('payment');
+        paymentElement = elements.create('payment', {
+            layout: {
+                type: 'accordion',
+                defaultCollapsed: false,
+                radios: true,
+                spacedAccordionItems: true,
+            },
+        });
+
         await paymentElement.mount('#payment-element');
-
-        if (paymentActions) {
-            paymentActions.hidden = false;
-        }
-
-        if (submitBtn) {
-            submitBtn.disabled = false;
-        }
+        isReady = true;
+        submitBtn.disabled = false;
     }
 
-    async function initializePayment() {
-        if (isInitializing || clientSecret) {
-            paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            return;
-        }
-
-        var payload = validateForm();
-
-        if (!payload) {
-            form.reportValidity();
-            return;
-        }
-
-        isInitializing = true;
-        setContinueLoading(true);
+    async function initializeCheckout() {
+        setPaymentLoading(true);
         showMessage('');
 
         try {
-            if (!stripe) {
-                await loadStripe();
-            }
-
-            var secret = await createPaymentIntent(payload);
-            paymentSection.hidden = false;
-            paymentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            await loadStripe();
+            var secret = await createPaymentIntent({});
             await mountPaymentElement(secret);
         } catch (error) {
-            showMessage(error.message || 'Erro ao preparar o pagamento.', 'error');
+            showMessage(error.message || 'Erro ao carregar os métodos de pagamento.', 'error');
         } finally {
-            isInitializing = false;
-            setContinueLoading(false);
+            setPaymentLoading(false);
         }
     }
 
     async function submitPayment(event) {
         event.preventDefault();
 
-        if (isSubmitting || !stripe || !elements || !clientSecret) {
+        if (isSubmitting || !stripe || !elements || !clientSecret || !isReady) {
             return;
         }
 
         var payload = validateForm();
 
         if (!payload) {
+            var firstInvalid = form.querySelector(':invalid');
+
+            if (firstInvalid && typeof firstInvalid.focus === 'function') {
+                firstInvalid.focus();
+            }
+
             return;
         }
 
@@ -222,11 +222,6 @@
         }
     }
 
-    if (continueBtn) {
-        continueBtn.addEventListener('click', initializePayment);
-    }
-
-    if (submitBtn) {
-        submitBtn.addEventListener('click', submitPayment);
-    }
+    submitBtn.addEventListener('click', submitPayment);
+    initializeCheckout();
 })();
