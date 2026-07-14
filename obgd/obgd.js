@@ -7,6 +7,12 @@
     var loading = document.getElementById('obgd-loading');
     var loadingText = document.getElementById('obgd-loading-text');
     var successBar = document.getElementById('obgd-success-bar');
+    var previewBanner = document.getElementById('obgd-preview-banner');
+
+    function isPreviewMode() {
+        var params = new URLSearchParams(window.location.search);
+        return params.get('preview') === '1';
+    }
 
     function getPaymentIntentId() {
         var params = new URLSearchParams(window.location.search);
@@ -30,9 +36,13 @@
         window.location.replace(CHECKOUT_URL);
     }
 
-    function showThankYouPage() {
+    function showThankYouPage(keepPreviewParam) {
         if (loading) {
             loading.hidden = true;
+        }
+
+        if (previewBanner) {
+            previewBanner.hidden = !isPreviewMode();
         }
 
         if (successBar) {
@@ -44,8 +54,22 @@
         }
 
         if (window.history && typeof window.history.replaceState === 'function') {
-            window.history.replaceState({}, document.title, window.location.pathname);
+            var nextUrl = window.location.pathname;
+
+            if (keepPreviewParam) {
+                nextUrl += '?preview=1';
+            }
+
+            window.history.replaceState({}, document.title, nextUrl);
         }
+    }
+
+    function showPreviewPage() {
+        if (successBar) {
+            successBar.hidden = false;
+        }
+
+        showThankYouPage(true);
     }
 
     async function verifyPurchaseOnce(paymentIntentId) {
@@ -62,6 +86,11 @@
     }
 
     async function verifyPurchase() {
+        if (isPreviewMode()) {
+            showPreviewPage();
+            return;
+        }
+
         var paymentIntentId = getPaymentIntentId();
         var redirectStatus = new URLSearchParams(window.location.search).get('redirect_status') || '';
 
