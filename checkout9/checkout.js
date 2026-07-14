@@ -44,6 +44,9 @@
         return 'Pagar 9,00 €';
     }
 
+    function getApiBase() {
+        return window.location.origin;
+    }
 
     function showMessage(text, type) {
         if (!paymentMessage) {
