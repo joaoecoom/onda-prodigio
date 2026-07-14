@@ -19,7 +19,6 @@
     var clientSecret = null;
     var isSubmitting = false;
     var isReady = false;
-    var isRefreshing = false;
     var lastLinkedEmail = '';
 
     function isValidEmail(value) {
@@ -149,6 +148,26 @@
         return data.clientSecret;
     }
 
+    async function syncPaymentIntent(payload) {
+        if (!clientSecret || !payload) {
+            return;
+        }
+
+        await fetch(getApiBase() + '/api/update-payment-intent', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                client_secret: clientSecret,
+                email: payload.email,
+                full_name: payload.full_name,
+                phone: payload.phone,
+                region: payload.region,
+            }),
+        });
+    }
+
     function getReturnUrl() {
         return getApiBase() + '/checkout9/success.html';
     }
@@ -157,14 +176,16 @@
         return {
             return_url: getReturnUrl(),
             receipt_email: payload.email,
-            payment_method_data: {
-                billing_details: {
-                    name: payload.full_name,
-                    email: payload.email,
-                    phone: '+351' + payload.phone,
-                },
-            },
         };
+    }
+
+    function scrollToFirstFormIssue() {
+        var firstInvalid = form.querySelector(':invalid');
+
+        if (firstInvalid && typeof firstInvalid.focus === 'function') {
+            firstInvalid.focus();
+            firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
     }
 
     function updateExpressCheckoutVisibility(hasMethods) {
@@ -222,21 +243,42 @@
             var payload = validateForm();
 
             if (!payload) {
-                event.preventDefault();
-                showMessage('Preenche todos os campos dos dados pessoais antes de pagar.', 'error');
+                scrollToFirstFormIssue();
+                if (typeof event.reject === 'function') {
+                    event.reject();
+                }
+                return;
+            }
+
+            syncBillingDefaults();
+
+            if (typeof event.resolve === 'function') {
+                event.resolve({
+                    emailRequired: true,
+                });
             }
         });
 
-        expressCheckoutElement.on('confirm', async function () {
+        expressCheckoutElement.on('confirm', async function (event) {
             var payload = validateForm();
 
             if (!payload) {
                 showMessage('Preenche todos os campos dos dados pessoais antes de pagar.', 'error');
+                scrollToFirstFormIssue();
+
+                if (event && typeof event.paymentFailed === 'function') {
+                    event.paymentFailed({
+                        reason: 'fail',
+                        message: 'Preenche todos os campos dos dados pessoais antes de pagar.',
+                    });
+                }
+
                 return;
             }
 
             setSubmitLoading(true);
             showMessage('');
+            syncBillingDefaults();
 
             var result = await stripe.confirmPayment({
                 elements: elements,
@@ -247,6 +289,13 @@
             if (result.error) {
                 showMessage(result.error.message || 'O pagamento não foi concluído.', 'error');
                 setSubmitLoading(false);
+
+                if (event && typeof event.paymentFailed === 'function') {
+                    event.paymentFailed({
+                        reason: 'fail',
+                        message: result.error.message || 'O pagamento não foi concluído.',
+                    });
+                }
             }
         });
 
@@ -330,27 +379,12 @@
     async function refreshPaymentIntentFromEmail() {
         var email = form.email ? form.email.value.trim() : '';
 
-        if (!isValidEmail(email) || email === lastLinkedEmail || isRefreshing || !stripe) {
+        if (!isValidEmail(email) || email === lastLinkedEmail || isRefreshing) {
             return;
         }
 
-        isRefreshing = true;
-
-        try {
-            var secret = await createPaymentIntent({
-                email: email,
-                full_name: form.full_name ? form.full_name.value.trim() : '',
-                phone: normalizePhone(form.phone ? form.phone.value : ''),
-                region: form.region ? form.region.value : '',
-            });
-
-            lastLinkedEmail = email;
-            await mountPaymentElement(secret);
-        } catch (error) {
-            // Mantém a sessão anterior se o refresh falhar.
-        } finally {
-            isRefreshing = false;
-        }
+        lastLinkedEmail = email;
+        syncBillingDefaults();
     }
 
     async function initializeCheckout() {
@@ -378,19 +412,21 @@
         var payload = validateForm();
 
         if (!payload) {
-            var firstInvalid = form.querySelector(':invalid');
-
-            if (firstInvalid && typeof firstInvalid.focus === 'function') {
-                firstInvalid.focus();
-            }
-
+            scrollToFirstFormIssue();
             return;
         }
 
         setSubmitLoading(true);
         showMessage('');
+        syncBillingDefaults();
 
-        var returnUrl = getReturnUrl();
+        var submitResult = await elements.submit();
+
+        if (submitResult.error) {
+            showMessage(submitResult.error.message || 'Verifica os dados de pagamento.', 'error');
+            setSubmitLoading(false);
+            return;
+        }
 
         var result = await stripe.confirmPayment({
             elements: elements,
