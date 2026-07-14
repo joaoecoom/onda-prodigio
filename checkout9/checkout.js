@@ -1,6 +1,9 @@
 (function () {
     var form = document.getElementById('checkout-form');
     var paymentElementHost = document.getElementById('payment-element');
+    var expressCheckoutHost = document.getElementById('express-checkout-element');
+    var expressCheckoutEmpty = document.getElementById('express-checkout-empty');
+    var expressCheckoutDivider = document.getElementById('express-checkout-divider');
     var paymentMessage = document.getElementById('payment-message');
     var submitBtn = document.getElementById('submit-payment');
     var paymentBlock = document.getElementById('checkout-payment-block');
@@ -12,6 +15,7 @@
     var stripe = null;
     var elements = null;
     var paymentElement = null;
+    var expressCheckoutElement = null;
     var clientSecret = null;
     var isSubmitting = false;
     var isReady = false;
@@ -246,6 +250,144 @@
     }
 
 
+    function updateExpressCheckoutVisibility(hasMethods) {
+        if (expressCheckoutEmpty) {
+            expressCheckoutEmpty.hidden = hasMethods;
+        }
+
+        if (expressCheckoutHost) {
+            expressCheckoutHost.hidden = !hasMethods;
+        }
+
+        if (expressCheckoutDivider) {
+            expressCheckoutDivider.hidden = !hasMethods;
+        }
+    }
+
+    async function mountExpressCheckoutElement() {
+        if (!expressCheckoutHost || !elements) {
+            return;
+        }
+
+        if (expressCheckoutElement) {
+            try {
+                await expressCheckoutElement.unmount();
+            } catch (error) {
+                // ignore
+            }
+
+            expressCheckoutElement = null;
+        }
+
+        expressCheckoutHost.innerHTML = '';
+        expressCheckoutElement = elements.create('expressCheckout', {
+            buttonHeight: 48,
+            emailRequired: true,
+            paymentMethodOrder: ['applePay', 'googlePay'],
+            paymentMethods: {
+                applePay: 'always',
+                googlePay: 'always',
+                link: 'never',
+                amazonPay: 'never',
+                paypal: 'never',
+                klarna: 'never',
+            },
+        });
+
+        expressCheckoutElement.on('availablePaymentMethodsChange', function (event) {
+            var methods = event.availablePaymentMethods || {};
+            var hasMethods = Boolean(methods.applePay || methods.googlePay);
+
+            updateExpressCheckoutVisibility(hasMethods);
+        });
+
+        expressCheckoutElement.on('click', function (event) {
+            var payload = validateForm();
+
+            if (!payload) {
+                scrollToFirstFormIssue();
+
+                if (typeof event.reject === 'function') {
+                    event.reject();
+                }
+
+                return;
+            }
+
+            syncBillingDefaults();
+
+            if (typeof event.resolve === 'function') {
+                event.resolve({
+                    emailRequired: true,
+                });
+            }
+        });
+
+        expressCheckoutElement.on('confirm', async function (event) {
+            var payload = validateForm();
+
+            if (!payload) {
+                showMessage('Preenche todos os campos dos dados pessoais antes de pagar.', 'error');
+                scrollToFirstFormIssue();
+
+                if (event && typeof event.paymentFailed === 'function') {
+                    event.paymentFailed({
+                        reason: 'fail',
+                        message: 'Preenche todos os campos dos dados pessoais antes de pagar.',
+                    });
+                }
+
+                return;
+            }
+
+            setSubmitLoading(true);
+            showMessage('');
+
+            try {
+                syncBillingDefaults();
+                await syncPaymentIntent(payload);
+
+                var submitResult = await elements.submit();
+
+                if (submitResult.error) {
+                    throw new Error(submitResult.error.message || 'Verifica os dados de pagamento.');
+                }
+
+                var result = await stripe.confirmPayment({
+                    elements: elements,
+                    confirmParams: getConfirmParams(payload),
+                    redirect: 'if_required',
+                });
+
+                if (result.error) {
+                    throw new Error(result.error.message || 'O pagamento não foi concluído.');
+                }
+
+                var status = result.paymentIntent ? result.paymentIntent.status : '';
+
+                if (status === 'succeeded') {
+                    redirectToSuccess();
+                    return;
+                }
+
+                showMessage('Não foi possível concluir o pagamento. Tenta novamente.', 'error');
+            } catch (error) {
+                showMessage(error.message || 'Erro ao processar o pagamento.', 'error');
+
+                if (event && typeof event.paymentFailed === 'function') {
+                    event.paymentFailed({
+                        reason: 'fail',
+                        message: error.message || 'Erro ao processar o pagamento.',
+                    });
+                }
+            } finally {
+                setSubmitLoading(false);
+            }
+        });
+
+        await expressCheckoutElement.mount('#express-checkout-element');
+    }
+
     function getElementsAppearance() {
         return {
             theme: 'stripe',
@@ -318,6 +460,7 @@
             defaultValues: getBillingDefaults(),
         });
 
+        await mountExpressCheckoutElement();
         await paymentElement.mount('#payment-element');
         syncBillingDefaults();
         isReady = true;
