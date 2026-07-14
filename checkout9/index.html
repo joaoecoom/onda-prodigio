@@ -180,6 +180,25 @@
 
                         <div class="checkout-form__divider" aria-hidden="true"></div>
 
+                        <section class="order-bumps" id="order-bumps" aria-label="Comprar junto">
+                            <h2 class="checkout-form__title">Comprar junto</h2>
+                            <div class="order-bump-list" id="order-bump-list"></div>
+                        </section>
+
+                        <section class="order-summary" id="order-summary" aria-label="Detalhes da compra">
+                            <h2 class="checkout-form__title">Detalhes da compra</h2>
+                            <div class="order-summary__table">
+                                <div class="order-summary__lines" id="order-summary-lines"></div>
+                                <div class="order-summary__row order-summary__row--total">
+                                    <span class="order-summary__label">Total a pagar</span>
+                                    <span class="order-summary__value" id="order-summary-total">9,00 €</span>
+                                </div>
+                                <p class="order-summary__note">IVA incluído nos valores apresentados.</p>
+                            </div>
+                        </section>
+
+                        <div class="checkout-form__divider" aria-hidden="true"></div>
+
                         <div class="checkout-payment-block" id="checkout-payment-block">
                             <h2 class="checkout-form__title">Selecionar método de pagamento</h2>
 
@@ -232,6 +251,7 @@
     </div>
 
     <script src="https://js.stripe.com/v3/"></script>
+    <script src="order-bumps.js" defer></script>
     <script src="checkout.js" defer></script>
     <script>
         (function () {

@@ -18,6 +18,10 @@ module.exports = async function handler(req, res) {
     var fullName = typeof body.full_name === 'string' ? body.full_name.trim() : '';
     var phone = typeof body.phone === 'string' ? body.phone.trim() : '';
     var region = typeof body.region === 'string' ? body.region.trim() : '';
+    var amountCents = parseInt(body.amount_cents, 10);
+    var orderBumps = Array.isArray(body.order_bumps) ? body.order_bumps.filter(function (item) {
+        return typeof item === 'string' && item.trim();
+    }) : [];
 
     if (!clientSecret) {
         return res.status(400).json({ error: 'Sessão de pagamento inválida.' });
@@ -30,9 +34,13 @@ module.exports = async function handler(req, res) {
     }
 
     var stripe = new Stripe(secretKey);
+    var baseAmount = parseInt(process.env.STRIPE_AMOUNT_CENTS || '900', 10);
+    var bumpAmount = parseInt(process.env.STRIPE_BUMP_AMOUNT_CENTS || '500', 10);
+    var maxBumps = 3;
+    var maxAmount = baseAmount + (bumpAmount * maxBumps);
 
     try {
-        await stripe.paymentIntents.update(paymentIntentId, {
+        var updatePayload = {
             receipt_email: email || undefined,
             metadata: {
                 product: 'Onda Prodígio',
@@ -41,8 +49,15 @@ module.exports = async function handler(req, res) {
                 phone: phone || '',
                 region: region || '',
                 checkout: 'checkout9',
+                order_bumps: orderBumps.join(', '),
             },
-        });
+        };
+
+        if (Number.isFinite(amountCents) && amountCents >= baseAmount && amountCents <= maxAmount) {
+            updatePayload.amount = amountCents;
+        }
+
+        await stripe.paymentIntents.update(paymentIntentId, updatePayload);
 
         return res.status(200).json({ ok: true });
     } catch (error) {

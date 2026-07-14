@@ -20,9 +20,30 @@
     var isSubmitting = false;
     var isReady = false;
 
-    function getApiBase() {
-        return window.location.origin;
+    function getCheckoutAmountCents() {
+        if (window.CheckoutOrderBumps) {
+            return window.CheckoutOrderBumps.getTotalCents();
+        }
+
+        return 900;
     }
+
+    function getOrderBumpIds() {
+        if (window.CheckoutOrderBumps) {
+            return window.CheckoutOrderBumps.getSelectedBumpIds();
+        }
+
+        return [];
+    }
+
+    function getPayButtonLabel() {
+        if (window.CheckoutOrderBumps) {
+            return 'Pagar ' + window.CheckoutOrderBumps.formatEuro(getCheckoutAmountCents());
+        }
+
+        return 'Pagar 9,00 €';
+    }
+
 
     function showMessage(text, type) {
         if (!paymentMessage) {
@@ -128,7 +149,7 @@
     function setSubmitLoading(loading) {
         isSubmitting = loading;
         submitBtn.disabled = loading || !isReady;
-        submitBtn.textContent = loading ? 'A processar…' : 'Pagar 9,00 €';
+        submitBtn.textContent = loading ? 'A processar…' : getPayButtonLabel();
     }
 
     function setPaymentLoading(loading) {
@@ -234,11 +255,13 @@
             },
             body: JSON.stringify({
                 client_secret: clientSecret,
-                email: payload.email,
-                email_confirm: payload.email_confirm,
-                full_name: payload.full_name,
-                phone: payload.phone,
-                region: payload.region,
+                amount_cents: getCheckoutAmountCents(),
+                order_bumps: getOrderBumpIds(),
+                email: payload ? payload.email : '',
+                email_confirm: payload ? payload.email_confirm : '',
+                full_name: payload ? payload.full_name : '',
+                phone: payload ? payload.phone : '',
+                region: payload ? payload.region : '',
             }),
         });
 
@@ -246,6 +269,18 @@
 
         if (!response.ok) {
             throw new Error(data.error || 'Não foi possível actualizar o pagamento.');
+        }
+    }
+
+    async function syncOrderTotal() {
+        if (!clientSecret) {
+            return;
+        }
+
+        await syncPaymentIntent(null);
+
+        if (elements && typeof elements.fetchUpdates === 'function') {
+            await elements.fetchUpdates();
         }
     }
 
@@ -465,6 +500,7 @@
         syncBillingDefaults();
         isReady = true;
         submitBtn.disabled = false;
+        submitBtn.textContent = getPayButtonLabel();
     }
 
     async function initializeCheckout() {
@@ -554,5 +590,16 @@
     });
 
     submitBtn.addEventListener('click', submitPayment);
+
+    document.addEventListener('checkout:total-change', function () {
+        if (submitBtn && !isSubmitting) {
+            submitBtn.textContent = getPayButtonLabel();
+        }
+
+        syncOrderTotal().catch(function (error) {
+            showMessage(error.message || 'Não foi possível actualizar o total.', 'error');
+        });
+    });
+
     initializeCheckout();
 })();
