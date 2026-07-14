@@ -460,6 +460,10 @@ body {
     color: #b42318;
 }
 
+.payment-message--info {
+    color: #0077c8;
+}
+
 .payment-secure {
     margin-top: 0.85rem;
     font-size: 0.72rem;

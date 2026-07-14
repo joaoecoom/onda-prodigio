@@ -172,11 +172,23 @@
         return getApiBase() + '/checkout9/success.html';
     }
 
-    function getConfirmParams(payload) {
-        return {
+    function getConfirmParams(payload, includeBillingDetails) {
+        var params = {
             return_url: getReturnUrl(),
             receipt_email: payload.email,
         };
+
+        if (includeBillingDetails) {
+            params.payment_method_data = {
+                billing_details: {
+                    name: payload.full_name,
+                    email: payload.email,
+                    phone: '+351' + payload.phone,
+                },
+            };
+        }
+
+        return params;
     }
 
     function scrollToFirstFormIssue() {
@@ -279,11 +291,12 @@
             setSubmitLoading(true);
             showMessage('');
             syncBillingDefaults();
+            await syncPaymentIntent(payload);
 
             var result = await stripe.confirmPayment({
                 elements: elements,
                 clientSecret: clientSecret,
-                confirmParams: getConfirmParams(payload),
+                confirmParams: getConfirmParams(payload, false),
             });
 
             if (result.error) {
@@ -360,13 +373,19 @@
                 billingDetails: {
                     email: 'never',
                     name: 'never',
-                    phone: 'never',
+                    phone: 'auto',
                     address: {
                         country: 'never',
                     },
                 },
             },
             defaultValues: getBillingDefaults(),
+        });
+
+        paymentElement.on('change', function (event) {
+            if (event.value && event.value.type === 'mb_way') {
+                syncBillingDefaults();
+            }
         });
 
         await mountExpressCheckoutElement();
@@ -379,7 +398,7 @@
     async function refreshPaymentIntentFromEmail() {
         var email = form.email ? form.email.value.trim() : '';
 
-        if (!isValidEmail(email) || email === lastLinkedEmail || isRefreshing) {
+        if (!isValidEmail(email) || email === lastLinkedEmail) {
             return;
         }
 
@@ -419,6 +438,7 @@
         setSubmitLoading(true);
         showMessage('');
         syncBillingDefaults();
+        await syncPaymentIntent(payload);
 
         var submitResult = await elements.submit();
 
@@ -430,11 +450,18 @@
 
         var result = await stripe.confirmPayment({
             elements: elements,
-            confirmParams: getConfirmParams(payload),
+            confirmParams: getConfirmParams(payload, true),
+            redirect: 'if_required',
         });
 
         if (result.error) {
             showMessage(result.error.message || 'O pagamento não foi concluído.', 'error');
+            setSubmitLoading(false);
+            return;
+        }
+
+        if (result.paymentIntent && result.paymentIntent.status === 'requires_action') {
+            showMessage('Confirma o pagamento na app MB WAY no teu telemóvel.', 'info');
             setSubmitLoading(false);
         }
     }
