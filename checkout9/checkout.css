@@ -460,6 +460,10 @@ body {
     color: #b42318;
 }
 
+.checkout-form__hint--payment {
+    margin: -0.35rem 0 1rem;
+}
+
 .payment-message--info {
     color: #0077c8;
 }
