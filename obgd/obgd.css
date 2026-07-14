@@ -1,0 +1,123 @@
+.obgd-success-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+    background: linear-gradient(180deg, #15803d 0%, #166534 100%);
+    padding: 0.75rem 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.obgd-success-bar__inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    max-width: 720px;
+    margin: 0 auto;
+    color: #fff;
+    font-size: clamp(0.88rem, 2.8vw, 1rem);
+    font-weight: 700;
+    text-align: center;
+}
+
+.obgd-success-bar__icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    display: grid;
+    place-items: center;
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.obgd-section {
+    padding: 1.25rem 1rem 2rem;
+}
+
+.obgd-panel {
+    background: #fff;
+    border: 1px solid #d8dee6;
+    border-radius: 4px;
+    padding: 1.5rem 1.25rem 1.35rem;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
+}
+
+.obgd-panel__icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-bottom: 1rem;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #15803d;
+    display: grid;
+    place-items: center;
+    font-size: 1.6rem;
+    font-weight: 800;
+}
+
+.obgd-panel__title {
+    font-size: clamp(1.35rem, 4vw, 1.65rem);
+    font-weight: 800;
+    color: #111;
+    line-height: 1.25;
+    margin-bottom: 1rem;
+}
+
+.obgd-panel__text {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: #333;
+    margin-bottom: 0.85rem;
+}
+
+.obgd-panel__text--highlight {
+    padding: 0.85rem 0.95rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    margin: 1rem 0;
+}
+
+.obgd-panel__whatsapp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    min-height: 3rem;
+    margin: 0.35rem 0 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 4px;
+    background: #25d366;
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 800;
+    transition: background-color 0.15s ease;
+}
+
+.obgd-panel__whatsapp:hover {
+    background: #1ebe57;
+}
+
+.obgd-panel__signoff {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #111;
+    margin-top: 0.25rem;
+}
+
+.obgd-loading {
+    min-height: 50vh;
+    display: grid;
+    place-items: center;
+    padding: 2rem 1rem;
+    text-align: center;
+}
+
+.obgd-loading__text {
+    font-size: 0.92rem;
+    color: #6b7280;
+}

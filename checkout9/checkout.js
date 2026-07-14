@@ -173,11 +173,18 @@
     }
 
     function getReturnUrl() {
-        return getApiBase() + '/checkout9/success.html';
+        return getApiBase() + '/obgd/';
     }
 
     function redirectToSuccess() {
-        window.location.href = getReturnUrl();
+        var paymentIntentId = clientSecret ? clientSecret.split('_secret')[0] : '';
+        var url = getReturnUrl();
+
+        if (paymentIntentId) {
+            url += '?payment_intent=' + encodeURIComponent(paymentIntentId);
+        }
+
+        window.location.href = url;
     }
 
     async function waitForMbWayConfirmation() {
