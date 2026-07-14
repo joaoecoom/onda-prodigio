@@ -1,5 +1,4 @@
-var Stripe = require('stripe');
-var serverEvents = require('../lib/tracking/server-events');
+var stripeEnv = require('../lib/stripe-env');
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -7,13 +6,15 @@ module.exports = async function handler(req, res) {
         return res.status(405).json({ error: 'Método não permitido.' });
     }
 
-    var secretKey = process.env.STRIPE_SECRET_KEY;
+    var body = req.body || {};
+    var mode = stripeEnv.resolveStripeMode(req, body);
+    var stripeClient = stripeEnv.getStripeClient(mode);
 
-    if (!secretKey) {
-        return res.status(500).json({ error: 'Stripe não configurado.' });
+    if (stripeClient.error || !stripeClient.stripe) {
+        return res.status(500).json({ error: stripeClient.error || 'Stripe não configurado.' });
     }
 
-    var body = req.body || {};
+    var serverEvents = require('../lib/tracking/server-events');
     var clientSecret = typeof body.client_secret === 'string' ? body.client_secret.trim() : '';
     var email = typeof body.email === 'string' ? body.email.trim() : '';
     var fullName = typeof body.full_name === 'string' ? body.full_name.trim() : '';
@@ -36,8 +37,7 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Sessão de pagamento inválida.' });
     }
 
-    var stripe = new Stripe(secretKey);
-    var baseAmount = parseInt(process.env.STRIPE_AMOUNT_CENTS || '900', 10);
+    var baseAmount = stripeClient.settings.amountCents;
     var bumpAmount = parseInt(process.env.STRIPE_BUMP_AMOUNT_CENTS || '500', 10);
     var maxBumps = 3;
     var maxAmount = baseAmount + (bumpAmount * maxBumps);
@@ -52,7 +52,8 @@ module.exports = async function handler(req, res) {
                 phone: phone || '',
                 region: region || '',
                 email: email || '',
-                checkout: 'checkout9',
+                checkout: stripeClient.settings.checkoutId,
+                stripe_mode: mode,
                 order_bumps: orderBumps.join(', '),
             }, serverEvents.buildStripeTrackingMetadata(tracking, userAgent)),
         };
@@ -61,9 +62,9 @@ module.exports = async function handler(req, res) {
             updatePayload.amount = amountCents;
         }
 
-        await stripe.paymentIntents.update(paymentIntentId, updatePayload);
+        await stripeClient.stripe.paymentIntents.update(paymentIntentId, updatePayload);
 
-        return res.status(200).json({ ok: true });
+        return res.status(200).json({ ok: true, mode: mode });
     } catch (error) {
         console.error('Erro ao atualizar PaymentIntent:', error);
         return res.status(500).json({ error: 'Não foi possível atualizar o pagamento.' });

@@ -1,4 +1,4 @@
-var Stripe = require('stripe');
+var stripeEnv = require('../lib/stripe-env');
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -6,10 +6,11 @@ module.exports = async function handler(req, res) {
         return res.status(405).json({ verified: false, error: 'Método não permitido.' });
     }
 
-    var secretKey = process.env.STRIPE_SECRET_KEY;
+    var mode = stripeEnv.resolveStripeMode(req, null);
+    var stripeClient = stripeEnv.getStripeClient(mode);
 
-    if (!secretKey) {
-        return res.status(500).json({ verified: false, error: 'Stripe não configurado.' });
+    if (stripeClient.error || !stripeClient.stripe) {
+        return res.status(500).json({ verified: false, error: stripeClient.error || 'Stripe não configurado.' });
     }
 
     var paymentIntentId = typeof req.query.payment_intent === 'string' ? req.query.payment_intent.trim() : '';
@@ -18,10 +19,8 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ verified: false, error: 'Pagamento inválido.' });
     }
 
-    var stripe = new Stripe(secretKey);
-
     try {
-        var paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+        var paymentIntent = await stripeClient.stripe.paymentIntents.retrieve(paymentIntentId);
 
         if (!paymentIntent || paymentIntent.status !== 'succeeded') {
             return res.status(403).json({
@@ -33,6 +32,7 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({
             verified: true,
             status: paymentIntent.status,
+            mode: mode,
             transaction_id: paymentIntent.id,
             amount_cents: paymentIntent.amount,
             currency: paymentIntent.currency,

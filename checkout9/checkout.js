@@ -44,6 +44,32 @@
         return 'Pagar 9,00 €';
     }
 
+    function getStripeMode() {
+        return document.documentElement.getAttribute('data-stripe-mode') === 'test' ? 'test' : 'live';
+    }
+
+    function isTestMode() {
+        return getStripeMode() === 'test';
+    }
+
+    function withModeQuery(url) {
+        if (!isTestMode()) {
+            return url;
+        }
+
+        return url + (url.indexOf('?') >= 0 ? '&' : '?') + 'mode=test';
+    }
+
+    function withModePayload(payload) {
+        var body = Object.assign({}, payload || {});
+
+        if (isTestMode()) {
+            body.mode = 'test';
+        }
+
+        return body;
+    }
+
     function getApiBase() {
         return window.location.origin;
     }
@@ -213,7 +239,7 @@
     }
 
     function getReturnUrl() {
-        return getApiBase() + '/obgd/';
+        return getApiBase() + (isTestMode() ? '/obgd-test/' : '/obgd/');
     }
 
     function redirectToSuccess() {
@@ -265,7 +291,7 @@
 
 
     async function loadStripe() {
-        var response = await fetch(getApiBase() + '/api/config');
+        var response = await fetch(withModeQuery(getApiBase() + '/api/config'));
 
         if (!response.ok) {
             throw new Error('Não foi possível carregar a configuração de pagamento.');
@@ -287,9 +313,9 @@
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(Object.assign({}, payload || {}, {
+            body: JSON.stringify(withModePayload(Object.assign({}, payload || {}, {
                 tracking: getTrackingPayload(),
-            })),
+            }))),
         });
 
         var data = await response.json();
@@ -307,7 +333,7 @@
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
+            body: JSON.stringify(withModePayload({
                 client_secret: clientSecret,
                 amount_cents: getCheckoutAmountCents(),
                 order_bumps: getOrderBumpIds(),
@@ -317,7 +343,7 @@
                 phone: payload ? payload.phone : '',
                 region: payload ? payload.region : '',
                 tracking: getTrackingPayload(),
-            }),
+            })),
         });
 
         var data = await response.json();

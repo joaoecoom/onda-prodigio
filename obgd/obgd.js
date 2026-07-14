@@ -1,5 +1,7 @@
 (function () {
-    var CHECKOUT_URL = '/checkout9/';
+    var CHECKOUT_URL = document.documentElement.getAttribute('data-stripe-mode') === 'test'
+        ? '/checkout9-test/'
+        : '/checkout9/';
     var POLL_MS = 2000;
     var MAX_ATTEMPTS = 30;
 
@@ -73,8 +75,9 @@
     }
 
     async function verifyPurchaseOnce(paymentIntentId) {
+        var modeQuery = document.documentElement.getAttribute('data-stripe-mode') === 'test' ? '&mode=test' : '';
         var response = await fetch(
-            window.location.origin + '/api/verify-payment?payment_intent=' + encodeURIComponent(paymentIntentId)
+            window.location.origin + '/api/verify-payment?payment_intent=' + encodeURIComponent(paymentIntentId) + modeQuery
         );
         var data = await response.json();
 

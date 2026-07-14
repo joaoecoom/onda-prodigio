@@ -7,6 +7,10 @@
     {
       "source": "/obgd",
       "destination": "/obgd/index.html"
+    },
+    {
+      "source": "/obgd-test",
+      "destination": "/obgd-test/index.html"
     }
   ],
   "headers": [

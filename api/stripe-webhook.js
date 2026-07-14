@@ -44,11 +44,19 @@ module.exports = async function handler(req, res) {
 
     try {
         if (event.type === 'payment_intent.succeeded') {
-            await serverEvents.sendPurchaseFromPaymentIntent(event.data.object, req);
+            var metadata = event.data.object.metadata || {};
+
+            if (metadata.stripe_mode !== 'test' && metadata.checkout !== 'checkout9-test') {
+                await serverEvents.sendPurchaseFromPaymentIntent(event.data.object, req);
+            }
         }
 
         if (event.type === 'payment_intent.payment_failed') {
-            await serverEvents.sendPaymentFailedFromPaymentIntent(event.data.object, req);
+            var failedMetadata = event.data.object.metadata || {};
+
+            if (failedMetadata.stripe_mode !== 'test' && failedMetadata.checkout !== 'checkout9-test') {
+                await serverEvents.sendPaymentFailedFromPaymentIntent(event.data.object, req);
+            }
         }
 
         return res.status(200).json({ received: true });
