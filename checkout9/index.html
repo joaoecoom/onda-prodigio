@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout — Onda Prodígio</title>
+    <meta name="description" content="Garante o teu acesso ao Onda Prodígio.">
+    <meta name="robots" content="noindex, nofollow">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="checkout.css">
+</head>
+<body>
+    <div class="checkout-page">
+        <aside class="scarcity-bar" id="scarcity-bar" aria-live="polite" aria-label="Tempo restante da oferta">
+            <div class="scarcity-bar__inner">
+                <div class="scarcity-bar__timer" id="countdown-timer">
+                    <span class="scarcity-bar__segment" id="countdown-min">10</span>
+                    <span class="scarcity-bar__sep" aria-hidden="true">:</span>
+                    <span class="scarcity-bar__segment" id="countdown-sec">00</span>
+                    <span class="scarcity-bar__sep" aria-hidden="true">:</span>
+                    <span class="scarcity-bar__segment" id="countdown-cs">00</span>
+                </div>
+
+                <div class="scarcity-bar__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 13c0-4.4 3.6-8 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <path d="M4 10V13H7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="13" r="7.5" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M12 9v4.5l2.5 1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+
+                <p class="scarcity-bar__text">Oferta por tempo limitado — garante a tua vaga agora</p>
+            </div>
+        </aside>
+
+        <main class="checkout-hero">
+            <div class="checkout-hero__grid">
+                <section class="offer-banner" aria-label="Resumo da oferta">
+                    <img
+                        class="offer-banner__img"
+                        src="assets/banner.png"
+                        alt="Compra 100% segura — Onda Prodígio, 9€ pagamento único"
+                        width="680"
+                        height="420"
+                        loading="eager"
+                    >
+                </section>
+
+                <aside class="testimonial-card" aria-label="Testemunho de cliente">
+                    <img
+                        class="testimonial-card__avatar"
+                        src="assets/julia-avatar.jpg"
+                        alt="Julia M."
+                        width="100"
+                        height="100"
+                        loading="lazy"
+                    >
+                    <p class="testimonial-card__name">Julia M. — Portugal</p>
+                    <div class="testimonial-card__stars" aria-label="5 em 5 estrelas">
+                        <span aria-hidden="true">★★★★★</span>
+                    </div>
+                    <blockquote class="testimonial-card__quote">
+                        <p>Na escola já o tinham marcado como o «miúdo lento» da turma. Aquele que fica sempre em último, o que nunca percebe a primeira instrução. Dava-me uma impotência vê-lo assim, como um zombie, com o olhar perdido.</p>
+                        <p>Começámos o método e hoje, pela primeira vez, levantou a mão para participar. Vê-lo entrar na sala de cabeça erguida, seguro de que a sua mente o vai apoiar, não tem preço.</p>
+                    </blockquote>
+                </aside>
+            </div>
+        </main>
+
+        <section class="checkout-form-section" aria-label="Dados de faturação">
+            <div class="checkout-hero__grid">
+                <div class="checkout-form-panel">
+                    <div class="product-summary">
+                        <img
+                            class="product-summary__thumb"
+                            src="assets/banner.png"
+                            alt=""
+                            width="72"
+                            height="72"
+                            loading="lazy"
+                        >
+                        <div class="product-summary__info">
+                            <p class="product-summary__title">Onda Prodígio</p>
+                            <p class="product-summary__author">Autor: TerraCommerce LLC</p>
+                            <p class="product-summary__price">9,00 €</p>
+                            <p class="product-summary__vat">IVA incluído</p>
+                        </div>
+                    </div>
+
+                    <form class="checkout-form" id="checkout-form" novalidate>
+                        <h2 class="checkout-form__title">Dados pessoais</h2>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="email">O seu e-mail</label>
+                            <input
+                                class="form-field__input"
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="Insira o seu e-mail para receber a compra"
+                                autocomplete="email"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="email-confirm">Confirme o seu e-mail</label>
+                            <input
+                                class="form-field__input"
+                                type="email"
+                                id="email-confirm"
+                                name="email_confirm"
+                                placeholder="Insira novamente o seu e-mail"
+                                autocomplete="email"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="region">Região</label>
+                            <select class="form-field__input form-field__select" id="region" name="region" required>
+                                <option value="" selected disabled>Selecione a sua região</option>
+                                <option value="aveiro">Aveiro</option>
+                                <option value="beja">Beja</option>
+                                <option value="braga">Braga</option>
+                                <option value="braganca">Bragança</option>
+                                <option value="castelo-branco">Castelo Branco</option>
+                                <option value="coimbra">Coimbra</option>
+                                <option value="evora">Évora</option>
+                                <option value="faro">Faro</option>
+                                <option value="guarda">Guarda</option>
+                                <option value="leiria">Leiria</option>
+                                <option value="lisboa">Lisboa</option>
+                                <option value="portalegre">Portalegre</option>
+                                <option value="porto">Porto</option>
+                                <option value="santarem">Santarém</option>
+                                <option value="setubal">Setúbal</option>
+                                <option value="viana-castelo">Viana do Castelo</option>
+                                <option value="vila-real">Vila Real</option>
+                                <option value="viseu">Viseu</option>
+                                <option value="acores">Açores</option>
+                                <option value="madeira">Madeira</option>
+                            </select>
+                            <p class="form-field__hint">Usamos esta informação para recolher os impostos certos de acordo com a sua localização.</p>
+                        </div>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="full-name">O seu nome completo</label>
+                            <input
+                                class="form-field__input"
+                                type="text"
+                                id="full-name"
+                                name="full_name"
+                                placeholder="Insira o seu nome completo"
+                                autocomplete="name"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="phone">Telemóvel</label>
+                            <div class="form-field__phone">
+                                <span class="form-field__phone-prefix" aria-hidden="true">🇵🇹 +351</span>
+                                <input
+                                    class="form-field__input form-field__input--phone"
+                                    type="tel"
+                                    id="phone"
+                                    name="phone"
+                                    placeholder=""
+                                    autocomplete="tel-national"
+                                    inputmode="tel"
+                                    required
+                                >
+                            </div>
+                        </div>
+
+                        <div class="checkout-form__actions">
+                            <button class="checkout-btn checkout-btn--primary" type="button" id="continue-to-payment">
+                                Continuar para pagamento
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <aside class="testimonial-card" aria-label="Testemunho de cliente">
+                    <img
+                        class="testimonial-card__avatar"
+                        src="assets/marcos-avatar.jpg"
+                        alt="Marcos Q."
+                        width="100"
+                        height="100"
+                        loading="lazy"
+                    >
+                    <p class="testimonial-card__name">Marcos Q. — Portugal</p>
+                    <div class="testimonial-card__stars" aria-label="5 em 5 estrelas">
+                        <span aria-hidden="true">★★★★★</span>
+                    </div>
+                    <blockquote class="testimonial-card__quote">
+                        <p>Não me deixava dormir pensar no que seria dele quando crescesse. Se hoje sofre para entender um parágrafo, como se ia defender num mundo com tanta competição? Aterrava-me que o deixassem para trás.</p>
+                        <p>Mas depois de experimentar a Onda Prodígio, essa preocupação desapareceu — vê-lo hoje a analisar tudo e a resolver problemas que antes o bloqueavam... é outra criança. Passou de ser o miúdo invisível que não conseguia nada, a ser aquele que tem as respostas mais rápidas. Agora sei que tem futuro.</p>
+                    </blockquote>
+                </aside>
+            </div>
+        </section>
+
+        <section class="checkout-payment-section" id="checkout-payment-section" aria-label="Pagamento" hidden>
+            <div class="checkout-hero__grid">
+                <div class="checkout-form-panel">
+                    <h2 class="checkout-form__title">Pagamento</h2>
+                    <p class="payment-total">Total a pagar: <strong>9,00 €</strong> · IVA incluído</p>
+                    <p class="payment-methods-note">
+                        Escolhe o método de pagamento: cartão, MB Way, Klarna, Multibanco, Link, SEPA e outros métodos ativos na tua conta Stripe para Portugal.
+                    </p>
+
+                    <div id="payment-element" class="payment-element" aria-live="polite"></div>
+                    <p id="payment-message" class="payment-message" role="alert"></p>
+
+                    <div class="checkout-form__actions" id="payment-actions" hidden>
+                        <button class="checkout-btn checkout-btn--primary" type="button" id="submit-payment" disabled>
+                            Pagar 9,00 €
+                        </button>
+                    </div>
+
+                    <p class="payment-secure">
+                        Pagamento processado de forma segura pela Stripe. Os teus dados bancários nunca passam pelos nossos servidores.
+                    </p>
+                </div>
+
+                <aside class="trust-card" aria-label="Garantias de compra">
+                    <div class="trust-card__badge" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 3l7 4v5c0 4.2-2.8 7.9-7 9-4.2-1.1-7-4.8-7-9V7l7-4z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                            <path d="M9.5 12.2l1.8 1.8 3.5-3.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h3 class="trust-card__title">Compra 100% segura</h3>
+                    <ul class="trust-card__list">
+                        <li>Acesso imediato após confirmação do pagamento</li>
+                        <li>30 dias de garantia de reembolso</li>
+                        <li>Suporte por e-mail em português</li>
+                        <li>Faturação com IVA incluído</li>
+                    </ul>
+                </aside>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="checkout.js" defer></script>
+    <script>
+        (function () {
+            var DURATION_MS = 10 * 60 * 1000;
+            var STORAGE_KEY = 'onda-checkout9-countdown-end';
+
+            var bar = document.getElementById('scarcity-bar');
+            var minEl = document.getElementById('countdown-min');
+            var secEl = document.getElementById('countdown-sec');
+            var csEl = document.getElementById('countdown-cs');
+
+            function pad2(n) {
+                return n < 10 ? '0' + n : String(n);
+            }
+
+            function getEndTime() {
+                var stored = sessionStorage.getItem(STORAGE_KEY);
+                var end = stored ? parseInt(stored, 10) : NaN;
+
+                if (!stored || isNaN(end) || end <= Date.now()) {
+                    end = Date.now() + DURATION_MS;
+                    sessionStorage.setItem(STORAGE_KEY, String(end));
+                }
+
+                return end;
+            }
+
+            function render(msLeft) {
+                if (msLeft <= 0) {
+                    minEl.textContent = '00';
+                    secEl.textContent = '00';
+                    csEl.textContent = '00';
+                    bar.classList.add('is-expired');
+                    return;
+                }
+
+                bar.classList.remove('is-expired');
+
+                var totalCs = Math.floor(msLeft / 10);
+                var cs = totalCs % 100;
+                var totalSec = Math.floor(totalCs / 100);
+                var sec = totalSec % 60;
+                var min = Math.floor(totalSec / 60);
+
+                minEl.textContent = pad2(min);
+                secEl.textContent = pad2(sec);
+                csEl.textContent = pad2(cs);
+            }
+
+            var endTime = getEndTime();
+
+            function tick() {
+                var msLeft = endTime - Date.now();
+                render(msLeft);
+
+                if (msLeft <= 0) {
+                    return;
+                }
+
+                requestAnimationFrame(tick);
+            }
+
+            tick();
+        })();
+    </script>
+</body>
+</html>

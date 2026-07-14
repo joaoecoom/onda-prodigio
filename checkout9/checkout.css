@@ -1,0 +1,546 @@
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    background-color: #eef1f4;
+    color: #111;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+}
+
+.checkout-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+/* ── Barra de escassez (contador) ── */
+
+.scarcity-bar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+    background: #f04b4b;
+    padding: 0.65rem 1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.scarcity-bar__inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    max-width: 720px;
+    margin: 0 auto;
+}
+
+.scarcity-bar__timer {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-variant-numeric: tabular-nums;
+    font-weight: 800;
+    font-size: clamp(1.35rem, 4.5vw, 1.75rem);
+    line-height: 1;
+    letter-spacing: 0.02em;
+    color: #fff;
+}
+
+.scarcity-bar__segment {
+    min-width: 2ch;
+    text-align: center;
+}
+
+.scarcity-bar__sep {
+    opacity: 0.95;
+    font-weight: 700;
+    user-select: none;
+}
+
+.scarcity-bar__icon {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    color: #fff;
+}
+
+.scarcity-bar__icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.scarcity-bar__text {
+    font-size: clamp(0.8rem, 2.8vw, 0.95rem);
+    font-weight: 500;
+    line-height: 1.3;
+    color: #fff;
+    text-align: center;
+}
+
+.scarcity-bar.is-expired .scarcity-bar__timer {
+    opacity: 0.85;
+}
+
+@media (max-width: 480px) {
+    .scarcity-bar {
+        padding: 0.55rem 0.75rem;
+    }
+
+    .scarcity-bar__inner {
+        gap: 0.5rem;
+    }
+
+    .scarcity-bar__icon {
+        width: 1.65rem;
+        height: 1.65rem;
+    }
+}
+
+/* ── Primeira dobra: oferta + testemunho ── */
+
+.checkout-hero {
+    padding: 1.25rem 1rem 1rem;
+}
+
+.checkout-hero__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 300px);
+    gap: 1rem;
+    max-width: 980px;
+    margin: 0 auto;
+    align-items: start;
+}
+
+.offer-banner {
+    line-height: 0;
+}
+
+.offer-banner__img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* ── Testemunho (lateral) ── */
+
+.testimonial-card {
+    background: #fff;
+    border: 1px solid #d8dee6;
+    border-radius: 4px;
+    padding: 1.1rem 0.9rem 1rem;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+    text-align: center;
+}
+
+.testimonial-card__avatar {
+    width: 5.5rem;
+    height: 5.5rem;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+    margin: 0 auto 0.65rem;
+    border: 2px solid #e2e8f0;
+}
+
+.testimonial-card__name {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #111;
+    margin-bottom: 0.35rem;
+}
+
+.testimonial-card__stars {
+    color: #f5b301;
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.75rem;
+}
+
+.testimonial-card__quote {
+    text-align: left;
+    font-size: 0.78rem;
+    line-height: 1.55;
+    color: #333;
+    font-style: italic;
+}
+
+.testimonial-card__quote p + p {
+    margin-top: 0.65rem;
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 860px) {
+    .checkout-hero__grid {
+        grid-template-columns: 1fr;
+        max-width: 560px;
+    }
+
+    .checkout-hero .testimonial-card,
+    .checkout-form-section .testimonial-card {
+        order: 2;
+    }
+}
+
+/* ── Segunda dobra: formulário + testemunho ── */
+
+.checkout-form-section {
+    padding: 0 1rem 2.5rem;
+}
+
+.checkout-form-panel {
+    background: #fff;
+    border: 1px solid #d8dee6;
+    border-radius: 4px;
+    padding: 1.25rem 1.1rem 1.35rem;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+}
+
+.product-summary {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    padding-bottom: 1.1rem;
+    margin-bottom: 1.1rem;
+    border-bottom: 1px solid #e8edf2;
+}
+
+.product-summary__thumb {
+    width: 4.5rem;
+    height: 4.5rem;
+    object-fit: cover;
+    object-position: 70% 35%;
+    border-radius: 4px;
+    flex-shrink: 0;
+    border: 1px solid #e2e8f0;
+}
+
+.product-summary__title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #d32f2f;
+    margin-bottom: 0.15rem;
+}
+
+.product-summary__author {
+    font-size: 0.78rem;
+    color: #666;
+    margin-bottom: 0.45rem;
+}
+
+.product-summary__price {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #111;
+    line-height: 1.1;
+}
+
+.product-summary__vat {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #333;
+    margin-top: 0.15rem;
+}
+
+.checkout-form__title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #111;
+    margin-bottom: 1rem;
+}
+
+.form-field {
+    margin-bottom: 0.85rem;
+}
+
+.form-field__label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #111;
+    margin-bottom: 0.35rem;
+}
+
+.form-field__input {
+    width: 100%;
+    font: inherit;
+    font-size: 0.88rem;
+    color: #111;
+    background: #fff;
+    border: 1px solid #cfd8e3;
+    border-radius: 4px;
+    padding: 0.65rem 0.75rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-field__input::placeholder {
+    color: #9aa3ad;
+}
+
+.form-field__input:focus {
+    border-color: #0077c8;
+    box-shadow: 0 0 0 3px rgba(0, 119, 200, 0.12);
+}
+
+.form-field__select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23666' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2rem;
+    cursor: pointer;
+}
+
+.form-field__hint {
+    font-size: 0.72rem;
+    line-height: 1.4;
+    color: #6b7280;
+    margin-top: 0.35rem;
+}
+
+.form-field__phone {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid #cfd8e3;
+    border-radius: 4px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.form-field__phone:focus-within {
+    border-color: #0077c8;
+    box-shadow: 0 0 0 3px rgba(0, 119, 200, 0.12);
+}
+
+.form-field__phone-prefix {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0 0.65rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #333;
+    background: #f8fafc;
+    border-right: 1px solid #cfd8e3;
+    white-space: nowrap;
+}
+
+.form-field__input--phone {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.form-field__input--phone:focus {
+    box-shadow: none;
+}
+
+.checkout-form-section .checkout-hero__grid {
+    align-items: start;
+}
+
+/* ── Botões e ações ── */
+
+.checkout-form__actions {
+    margin-top: 1.15rem;
+}
+
+.checkout-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 3rem;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 4px;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.checkout-btn--primary {
+    background: #f04b4b;
+    color: #fff;
+}
+
+.checkout-btn--primary:hover:not(:disabled) {
+    background: #d93f3f;
+}
+
+.checkout-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+/* ── Terceira dobra: pagamento Stripe ── */
+
+.checkout-payment-section {
+    padding: 0 1rem 2.5rem;
+}
+
+.payment-total {
+    font-size: 0.92rem;
+    color: #333;
+    margin-bottom: 0.45rem;
+}
+
+.payment-total strong {
+    font-size: 1.15rem;
+    color: #111;
+}
+
+.payment-methods-note {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: #6b7280;
+    margin-bottom: 1rem;
+}
+
+.payment-element {
+    min-height: 7rem;
+    margin-bottom: 0.75rem;
+}
+
+.payment-message {
+    min-height: 1.25rem;
+    font-size: 0.82rem;
+    line-height: 1.4;
+    margin-bottom: 0.75rem;
+}
+
+.payment-message--error {
+    color: #b42318;
+}
+
+.payment-secure {
+    margin-top: 0.85rem;
+    font-size: 0.72rem;
+    line-height: 1.45;
+    color: #6b7280;
+}
+
+.trust-card {
+    background: #fff;
+    border: 1px solid #d8dee6;
+    border-radius: 4px;
+    padding: 1.25rem 1rem;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+}
+
+.trust-card__badge {
+    width: 2.75rem;
+    height: 2.75rem;
+    color: #16a34a;
+    margin-bottom: 0.75rem;
+}
+
+.trust-card__badge svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+.trust-card__title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #111;
+    margin-bottom: 0.75rem;
+}
+
+.trust-card__list {
+    list-style: none;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: #333;
+}
+
+.trust-card__list li {
+    position: relative;
+    padding-left: 1rem;
+    margin-bottom: 0.45rem;
+}
+
+.trust-card__list li::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: #16a34a;
+    font-weight: 800;
+}
+
+/* ── Página de sucesso ── */
+
+.checkout-success {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+}
+
+.checkout-success__card {
+    width: min(100%, 520px);
+    background: #fff;
+    border: 1px solid #d8dee6;
+    border-radius: 6px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06);
+}
+
+.checkout-success__icon {
+    width: 3.25rem;
+    height: 3.25rem;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    background: #dcfce7;
+    color: #15803d;
+    display: grid;
+    place-items: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+}
+
+.checkout-success__title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin-bottom: 0.65rem;
+}
+
+.checkout-success__text {
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: #444;
+    margin-bottom: 1.25rem;
+}
+
+.checkout-success__link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.65rem 1rem;
+    border-radius: 4px;
+    background: #111;
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.88rem;
+    font-weight: 700;
+}

@@ -3,3 +3,8 @@
 .vercel
 *.log
 node_modules/
+.env
+.env.local
+.env*.local
+.env.vercel
+stripe-config.env
