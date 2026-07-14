@@ -190,6 +190,10 @@
     text-align: center;
 }
 
+.obgd-loading[hidden] {
+    display: none !important;
+}
+
 .obgd-loading__text {
     font-size: 0.92rem;
     color: #6b7280;

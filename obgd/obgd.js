@@ -41,6 +41,11 @@
     function showThankYouPage(keepPreviewParam) {
         if (loading) {
             loading.hidden = true;
+            loading.setAttribute('aria-hidden', 'true');
+        }
+
+        if (loadingText) {
+            loadingText.textContent = '';
         }
 
         if (previewBanner) {
@@ -115,6 +120,11 @@
                 var result = await verifyPurchaseOnce(paymentIntentId);
 
                 if (result.verified) {
+                    showThankYouPage();
+                    return;
+                }
+
+                if (redirectStatus === 'succeeded' && attempt >= 2) {
                     showThankYouPage();
                     return;
                 }
