@@ -9,6 +9,13 @@
 
     <!-- Vturb: carregamento rápido -->
     <script>!function(i,n){i._plt=i._plt||(n&&n.timeOrigin?n.timeOrigin+n.now():Date.now())}(window,performance);</script>
+    <script>
+        (function () {
+            if (/[?&]vturbMode=/.test(location.search)) return;
+            var join = location.search ? location.search + '&' : '?';
+            history.replaceState(null, '', location.pathname + join + 'vturbMode=open' + location.hash);
+        })();
+    </script>
     <link rel="preload" href="https://scripts.converteai.net/ebaa6fc3-b026-4d3b-a0d5-6fab9b38c8e0/players/6a526964f8c29f2a6c60d24c/v4/player.js" as="script">
     <link rel="preload" href="https://scripts.converteai.net/lib/js/smartplayer-wc/v4/smartplayer.js" as="script">
     <link rel="preload" href="https://cdn.converteai.net/ebaa6fc3-b026-4d3b-a0d5-6fab9b38c8e0/6a5268ed3d8ea0afcdc7a8ec/main.m3u8" as="fetch">
@@ -267,18 +274,71 @@
             if (!overlay) return;
 
             var hasStarted = false;
-            var vturbPlayer = null;
             var wasPaused = true;
+            var isResuming = false;
+            var ignorePauseUntil = 0;
 
             function getPlayer() {
                 return document.querySelector('vturb-smartplayer');
             }
 
+            function getInternalPlayer() {
+                var host = getPlayer();
+                if (!host || !host.shadowRoot) return null;
+                return host.shadowRoot.querySelector('vturb-player');
+            }
+
             function getTime() {
+                var host = getPlayer();
                 if (window.smartplayer && smartplayer.instances && smartplayer.instances.length) {
                     return smartplayer.instances[0].video.currentTime || 0;
                 }
+                if (host && host.currentTime) {
+                    return host.currentTime;
+                }
                 return 0;
+            }
+
+            function isInResumeState() {
+                var host = getPlayer();
+                if (host && host.inResume) {
+                    return true;
+                }
+
+                var internal = getInternalPlayer();
+                if (internal && internal.controllers && internal.controllers.blockers) {
+                    return !!internal.controllers.blockers.resume;
+                }
+
+                return false;
+            }
+
+            function shouldShowOverlay() {
+                if (isResuming || Date.now() < ignorePauseUntil) {
+                    return false;
+                }
+
+                var host = getPlayer();
+                if (!host) return false;
+
+                var time = getTime() || host.currentTime || 0;
+
+                if (isInResumeState()) {
+                    return true;
+                }
+
+                if (hasStarted && host.paused && time > 0) {
+                    return true;
+                }
+
+                return false;
+            }
+
+            function checkResumeOnLoad() {
+                if (!shouldShowOverlay()) return;
+
+                hasStarted = true;
+                showOverlay();
             }
 
             function syncOverlayPosition() {
@@ -292,13 +352,23 @@
             }
 
             function hideVturbResume() {
-                var player = getPlayer();
-                if (!player || !player.shadowRoot) return;
-                if (player.shadowRoot.getElementById('hide-vturb-resume')) return;
-                var style = document.createElement('style');
-                style.id = 'hide-vturb-resume';
-                style.textContent = 'vturb-resume { display: none !important; }';
-                player.shadowRoot.appendChild(style);
+                var host = getPlayer();
+                var internal = getInternalPlayer();
+                var css = 'vturb-resume { display: none !important; visibility: hidden !important; pointer-events: none !important; }';
+
+                if (host && host.shadowRoot && !host.shadowRoot.getElementById('hide-vturb-resume')) {
+                    var hostStyle = document.createElement('style');
+                    hostStyle.id = 'hide-vturb-resume';
+                    hostStyle.textContent = css;
+                    host.shadowRoot.appendChild(hostStyle);
+                }
+
+                if (internal && internal.shadowRoot && !internal.shadowRoot.getElementById('hide-vturb-resume')) {
+                    var style = document.createElement('style');
+                    style.id = 'hide-vturb-resume';
+                    style.textContent = css;
+                    internal.shadowRoot.appendChild(style);
+                }
             }
 
             function showOverlay() {
@@ -313,23 +383,82 @@
                 overlay.setAttribute('hidden', '');
             }
 
-            function resumeVideo() {
-                hideOverlay();
-                var player = getPlayer();
-                if (!player) return;
+            function completeVturbResume(internal) {
+                try {
+                    if (internal.controllers && internal.controllers.blockers) {
+                        internal.controllers.blockers.unblock('resume');
+                    }
+                } catch (err) {}
 
-                if (vturbPlayer && vturbPlayer.playback && typeof vturbPlayer.playback.play === 'function') {
-                    vturbPlayer.playback.play();
+                try {
+                    internal.dispatchEvent(new CustomEvent('resume:continue', { bubbles: true, composed: true }));
+                    internal.dispatchEvent(new CustomEvent('resume:inactive', { bubbles: true, composed: true }));
+                } catch (err) {}
+
+                var playback = internal.playback;
+                if (typeof playback.play === 'function') {
+                    return playback.play();
+                }
+
+                if (playback.video) {
+                    playback.played = true;
+                    return playback.video.play();
+                }
+
+                return null;
+            }
+
+            function resumeVideo() {
+                if (isResuming) return;
+
+                var host = getPlayer();
+                var internal = getInternalPlayer();
+                if (!host || !internal || !internal.playback) return;
+
+                isResuming = true;
+                ignorePauseUntil = Date.now() + 2500;
+
+                var playResult = isInResumeState()
+                    ? completeVturbResume(internal)
+                    : (function () {
+                        var playback = internal.playback;
+                        var video = playback.video;
+
+                        if (video) {
+                            playback.played = true;
+                            return video.play();
+                        }
+
+                        if (typeof playback.play === 'function') {
+                            return playback.play();
+                        }
+
+                        if (typeof internal.togglePlay === 'function') {
+                            internal.togglePlay();
+                        }
+
+                        return null;
+                    })();
+
+                if (playResult && typeof playResult.then === 'function') {
+                    playResult.then(function () {
+                        isResuming = false;
+                        hideOverlay();
+                    }).catch(function () {
+                        isResuming = false;
+                        if (typeof internal.togglePlay === 'function') {
+                            internal.togglePlay();
+                        }
+                    });
                     return;
                 }
 
-                if (player.shadowRoot) {
-                    var playBtn = player.shadowRoot.querySelector('vturb-smallplay button, .bigplay, button[class*="play"]');
-                    if (playBtn) {
-                        playBtn.click();
-                        return;
+                setTimeout(function () {
+                    isResuming = false;
+                    if (!host.paused) {
+                        hideOverlay();
                     }
-                }
+                }, 800);
             }
 
             function bindPlayer(player) {
@@ -338,36 +467,36 @@
 
                 player.addEventListener('video:play', function () {
                     hasStarted = true;
+                    isResuming = false;
                     hideOverlay();
                 });
 
                 player.addEventListener('video:playing', function () {
                     hasStarted = true;
+                    isResuming = false;
                     hideOverlay();
                 });
 
                 player.addEventListener('video:pause', function () {
+                    if (isResuming || Date.now() < ignorePauseUntil) return;
                     if (!hasStarted && getTime() <= 0) return;
                     hasStarted = true;
                     showOverlay();
                 });
 
-                player.addEventListener('player:ready', function (e) {
-                    vturbPlayer = e.detail && e.detail.player ? e.detail.player : null;
-                    hideVturbResume();
+                player.addEventListener('player:ready', function () {
+                    [300, 800, 1500, 2500].forEach(function (delay) {
+                        setTimeout(checkResumeOnLoad, delay);
+                    });
+                });
 
-                    setTimeout(function () {
-                        var time = getTime();
-                        if (time > 0 && player.paused) {
-                            hasStarted = true;
-                            showOverlay();
-                        }
-                    }, 500);
+                player.addEventListener('resume:active', function () {
+                    hasStarted = true;
+                    showOverlay();
                 });
             }
 
             overlay.addEventListener('click', function (e) {
-                e.preventDefault();
                 e.stopPropagation();
                 resumeVideo();
             });
@@ -375,11 +504,18 @@
             window.addEventListener('resize', syncOverlayPosition);
             window.addEventListener('scroll', syncOverlayPosition, true);
 
-            document.addEventListener('player:ready', function (e) {
+            document.addEventListener('player:ready', function () {
                 var player = getPlayer();
                 if (player) bindPlayer(player);
-                vturbPlayer = e.detail && e.detail.player ? e.detail.player : null;
+                [300, 800, 1500, 2500].forEach(function (delay) {
+                    setTimeout(checkResumeOnLoad, delay);
+                });
             });
+
+            document.addEventListener('resume:active', function () {
+                hasStarted = true;
+                showOverlay();
+            }, true);
 
             function init() {
                 document.body.appendChild(overlay);
@@ -387,19 +523,33 @@
                 var player = getPlayer();
                 if (player) bindPlayer(player);
 
+                [500, 1200, 2000, 3500].forEach(function (delay) {
+                    setTimeout(checkResumeOnLoad, delay);
+                });
+
                 setInterval(function () {
                     var player = getPlayer();
                     if (!player) return;
 
+                    hideVturbResume();
+
+                    if (isResuming) return;
+
                     var time = getTime() || player.currentTime || 0;
                     var isPaused = player.paused;
 
-                    if (!isPaused) {
+                    if (!isPaused && !isInResumeState()) {
                         hasStarted = true;
                         hideOverlay();
+                    } else if (shouldShowOverlay()) {
+                        hasStarted = true;
+                        if (!overlay.classList.contains('is-visible')) {
+                            showOverlay();
+                        } else {
+                            syncOverlayPosition();
+                            hideVturbResume();
+                        }
                     } else if (hasStarted && isPaused && !wasPaused && time > 0) {
-                        showOverlay();
-                    } else if (isPaused && time > 0 && hasStarted && !overlay.classList.contains('is-visible')) {
                         showOverlay();
                     }
 
