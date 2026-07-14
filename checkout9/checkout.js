@@ -155,6 +155,14 @@
                 radios: true,
                 spacedAccordionItems: true,
             },
+            paymentMethodOrder: ['mb_way', 'multibanco', 'card', 'klarna', 'link'],
+            defaultValues: {
+                billingDetails: {
+                    address: {
+                        country: 'PT',
+                    },
+                },
+            },
         });
 
         await paymentElement.mount('#payment-element');

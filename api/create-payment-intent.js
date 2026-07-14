@@ -27,9 +27,12 @@ module.exports = async function handler(req, res) {
     var stripe = new Stripe(secretKey);
 
     try {
+        var paymentMethodConfiguration = process.env.STRIPE_PAYMENT_METHOD_CONFIGURATION || 'pmc_1OuDi3AAQoQG6nciqBp2JYfG';
+
         var paymentIntent = await stripe.paymentIntents.create({
             amount: amount,
             currency: 'eur',
+            payment_method_configuration: paymentMethodConfiguration,
             automatic_payment_methods: {
                 enabled: true,
             },
