@@ -20,6 +20,7 @@ module.exports = async function handler(req, res) {
     var fullName = typeof body.full_name === 'string' ? body.full_name.trim() : '';
     var phone = typeof body.phone === 'string' ? body.phone.trim() : '';
     var region = typeof body.region === 'string' ? body.region.trim() : '';
+    var country = typeof body.country === 'string' ? body.country.trim().toUpperCase() : '';
     var amountCents = parseInt(body.amount_cents, 10);
     var orderBumps = Array.isArray(body.order_bumps) ? body.order_bumps.filter(function (item) {
         return typeof item === 'string' && item.trim();
@@ -51,6 +52,7 @@ module.exports = async function handler(req, res) {
                 full_name: fullName || '',
                 phone: phone || '',
                 region: region || '',
+                country: country || '',
                 email: email || '',
                 checkout: stripeClient.settings.checkoutId,
                 stripe_mode: mode,

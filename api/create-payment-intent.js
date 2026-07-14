@@ -19,6 +19,7 @@ module.exports = async function handler(req, res) {
     var fullName = typeof body.full_name === 'string' ? body.full_name.trim() : '';
     var phone = typeof body.phone === 'string' ? body.phone.trim() : '';
     var region = typeof body.region === 'string' ? body.region.trim() : '';
+    var country = typeof body.country === 'string' ? body.country.trim().toUpperCase() : '';
     var tracking = body.tracking && typeof body.tracking === 'object' ? body.tracking : {};
     var userAgent = req.headers['user-agent'] || '';
     var amount = stripeClient.settings.amountCents;
@@ -46,6 +47,7 @@ module.exports = async function handler(req, res) {
                 full_name: fullName || '',
                 phone: phone || '',
                 region: region || '',
+                country: country || '',
                 email: email || '',
                 checkout: stripeClient.settings.checkoutId,
                 stripe_mode: mode,

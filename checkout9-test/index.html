@@ -128,8 +128,16 @@
                         </div>
 
                         <div class="form-field">
-                            <label class="form-field__label" for="region">Região</label>
-                            <select class="form-field__input form-field__select" id="region" name="region" required>
+                            <label class="form-field__label" for="country">País</label>
+                            <select class="form-field__input form-field__select" id="country" name="country" required autocomplete="country">
+                                <option value="" selected disabled>Selecione o seu país</option>
+                            </select>
+                            <p class="form-field__hint">O país de residência pode ser diferente da nacionalidade ou do método de pagamento.</p>
+                        </div>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="region" id="region-label">Região</label>
+                            <select class="form-field__input form-field__select" id="region" name="region" hidden disabled>
                                 <option value="" selected disabled>Selecione a sua região</option>
                                 <option value="aveiro">Aveiro</option>
                                 <option value="beja">Beja</option>
@@ -152,7 +160,16 @@
                                 <option value="acores">Açores</option>
                                 <option value="madeira">Madeira</option>
                             </select>
-                            <p class="form-field__hint">Usamos esta informação para recolher os impostos certos de acordo com a sua localização.</p>
+                            <input
+                                class="form-field__input"
+                                type="text"
+                                id="region-other"
+                                name="region_other"
+                                placeholder="Região, estado ou província"
+                                autocomplete="address-level1"
+                                hidden
+                            >
+                            <p class="form-field__hint" id="region-hint">Usamos esta informação para recolher os impostos certos de acordo com a sua localização.</p>
                         </div>
 
                         <div class="form-field">
@@ -171,7 +188,7 @@
                         <div class="form-field">
                             <label class="form-field__label" for="phone">Telemóvel</label>
                             <div class="form-field__phone">
-                                <span class="form-field__phone-prefix" aria-hidden="true">🇵🇹 +351</span>
+                                <span class="form-field__phone-prefix" id="phone-prefix" aria-hidden="true">+351</span>
                                 <input
                                     class="form-field__input form-field__input--phone"
                                     type="tel"

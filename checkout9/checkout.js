@@ -20,6 +20,117 @@
     var isSubmitting = false;
     var isReady = false;
 
+    var countryField = form.country;
+    var regionField = form.region;
+    var regionOtherField = document.getElementById('region-other');
+    var phonePrefix = document.getElementById('phone-prefix');
+
+    var COUNTRY_OPTIONS = [
+        { code: 'PT', label: 'Portugal', dial: '351', flag: '🇵🇹' },
+        { code: 'LU', label: 'Luxemburgo', dial: '352', flag: '🇱🇺' },
+        { code: 'FR', label: 'França', dial: '33', flag: '🇫🇷' },
+        { code: 'BE', label: 'Bélgica', dial: '32', flag: '🇧🇪' },
+        { code: 'CH', label: 'Suíça', dial: '41', flag: '🇨🇭' },
+        { code: 'DE', label: 'Alemanha', dial: '49', flag: '🇩🇪' },
+        { code: 'ES', label: 'Espanha', dial: '34', flag: '🇪🇸' },
+        { code: 'IT', label: 'Itália', dial: '39', flag: '🇮🇹' },
+        { code: 'NL', label: 'Países Baixos', dial: '31', flag: '🇳🇱' },
+        { code: 'GB', label: 'Reino Unido', dial: '44', flag: '🇬🇧' },
+        { code: 'IE', label: 'Irlanda', dial: '353', flag: '🇮🇪' },
+        { code: 'AT', label: 'Áustria', dial: '43', flag: '🇦🇹' },
+        { code: 'SE', label: 'Suécia', dial: '46', flag: '🇸🇪' },
+        { code: 'NO', label: 'Noruega', dial: '47', flag: '🇳🇴' },
+        { code: 'DK', label: 'Dinamarca', dial: '45', flag: '🇩🇰' },
+        { code: 'US', label: 'Estados Unidos', dial: '1', flag: '🇺🇸' },
+        { code: 'CA', label: 'Canadá', dial: '1', flag: '🇨🇦' },
+        { code: 'BR', label: 'Brasil', dial: '55', flag: '🇧🇷' },
+        { code: 'AO', label: 'Angola', dial: '244', flag: '🇦🇴' },
+        { code: 'MZ', label: 'Moçambique', dial: '258', flag: '🇲🇿' },
+        { code: 'CV', label: 'Cabo Verde', dial: '238', flag: '🇨🇻' },
+        { code: 'GW', label: 'Guiné-Bissau', dial: '245', flag: '🇬🇼' },
+        { code: 'ST', label: 'São Tomé e Príncipe', dial: '239', flag: '🇸🇹' },
+        { code: 'AE', label: 'Emirados Árabes Unidos', dial: '971', flag: '🇦🇪' },
+        { code: 'ZA', label: 'África do Sul', dial: '27', flag: '🇿🇦' },
+        { code: 'AU', label: 'Austrália', dial: '61', flag: '🇦🇺' },
+        { code: 'NZ', label: 'Nova Zelândia', dial: '64', flag: '🇳🇿' },
+    ];
+
+    function getCountryConfig(code) {
+        return COUNTRY_OPTIONS.find(function (country) {
+            return country.code === code;
+        }) || null;
+    }
+
+    function populateCountrySelect() {
+        if (!countryField) {
+            return;
+        }
+
+        COUNTRY_OPTIONS.forEach(function (country) {
+            var option = document.createElement('option');
+            option.value = country.code;
+            option.textContent = country.label;
+            countryField.appendChild(option);
+        });
+    }
+
+    function getSelectedCountryCode() {
+        return countryField ? countryField.value : '';
+    }
+
+    function isPortugalSelected() {
+        return getSelectedCountryCode() === 'PT';
+    }
+
+    function syncRegionFields() {
+        var isPortugal = isPortugalSelected();
+
+        if (regionField) {
+            regionField.hidden = !isPortugal;
+            regionField.required = isPortugal;
+            regionField.disabled = !isPortugal;
+
+            if (!isPortugal) {
+                regionField.value = '';
+            }
+        }
+
+        if (regionOtherField) {
+            regionOtherField.hidden = isPortugal || !getSelectedCountryCode();
+            regionOtherField.required = Boolean(getSelectedCountryCode()) && !isPortugal;
+            regionOtherField.disabled = isPortugal || !getSelectedCountryCode();
+        }
+    }
+
+    function syncPhonePrefix() {
+        if (!phonePrefix) {
+            return;
+        }
+
+        var country = getCountryConfig(getSelectedCountryCode());
+
+        if (!country) {
+            phonePrefix.textContent = '+';
+            return;
+        }
+
+        phonePrefix.textContent = country.flag + ' +' + country.dial;
+    }
+
+    function getRegionValue() {
+        if (isPortugalSelected()) {
+            return regionField ? regionField.value : '';
+        }
+
+        return regionOtherField ? regionOtherField.value.trim() : '';
+    }
+
+    function syncLocationFields() {
+        syncRegionFields();
+        syncPhonePrefix();
+        syncBillingDefaults();
+    }
+
     function getCheckoutAmountCents() {
         if (window.CheckoutOrderBumps) {
             return window.CheckoutOrderBumps.getTotalCents();
@@ -87,18 +198,34 @@
         return String(value || '').replace(/\D/g, '');
     }
 
-    function formatPhoneE164(phone) {
+    function formatPhoneE164(phone, countryCode) {
         var digits = normalizePhone(phone);
 
         if (!digits) {
             return undefined;
         }
 
-        if (digits.indexOf('351') === 0 && digits.length >= 12) {
+        if (digits.indexOf('00') === 0) {
+            return '+' + digits.slice(2);
+        }
+
+        var country = getCountryConfig(countryCode || getSelectedCountryCode());
+
+        if (!country) {
             return '+' + digits;
         }
 
-        return '+351' + digits;
+        var dial = country.dial;
+
+        if (digits.indexOf(dial) === 0 && digits.length > dial.length + 5) {
+            return '+' + digits;
+        }
+
+        if (countryCode === 'PT' && digits.length === 9) {
+            return '+351' + digits;
+        }
+
+        return '+' + dial + digits;
     }
 
     function getConfirmParams(payload) {
@@ -109,9 +236,10 @@
                 billing_details: {
                     name: payload.full_name,
                     email: payload.email,
-                    phone: formatPhoneE164(payload.phone),
+                    phone: formatPhoneE164(payload.phone, payload.country),
                     address: {
-                        country: 'PT',
+                        country: payload.country,
+                        state: payload.region || undefined,
                     },
                 },
             },
@@ -122,14 +250,17 @@
         var email = form.email ? form.email.value.trim() : '';
         var fullName = form.full_name ? form.full_name.value.trim() : '';
         var phone = form.phone ? form.phone.value : '';
+        var country = getSelectedCountryCode();
+        var region = getRegionValue();
 
         return {
             billingDetails: {
                 email: email || undefined,
                 name: fullName || undefined,
-                phone: formatPhoneE164(phone),
+                phone: formatPhoneE164(phone, country),
                 address: {
-                    country: 'PT',
+                    country: country || undefined,
+                    state: region || undefined,
                 },
             },
         };
@@ -148,9 +279,10 @@
         var emailConfirm = form.email_confirm.value.trim();
         var fullName = form.full_name.value.trim();
         var phone = normalizePhone(form.phone.value);
-        var region = form.region.value;
+        var country = getSelectedCountryCode();
+        var region = getRegionValue();
 
-        if (!email || !emailConfirm || !fullName || !phone || !region) {
+        if (!email || !emailConfirm || !fullName || !phone || !country || !region) {
             showMessage('Preenche todos os campos dos dados pessoais.', 'error');
             return null;
         }
@@ -160,7 +292,12 @@
             return null;
         }
 
-        if (phone.length < 9) {
+        if (isPortugalSelected() && phone.length < 9) {
+            showMessage('Introduz um número de telemóvel válido.', 'error');
+            return null;
+        }
+
+        if (!isPortugalSelected() && phone.length < 6) {
             showMessage('Introduz um número de telemóvel válido.', 'error');
             return null;
         }
@@ -171,6 +308,7 @@
             email_confirm: emailConfirm,
             full_name: fullName,
             phone: phone,
+            country: country,
             region: region,
         };
     }
@@ -341,6 +479,7 @@
                 email_confirm: payload ? payload.email_confirm : '',
                 full_name: payload ? payload.full_name : '',
                 phone: payload ? payload.phone : '',
+                country: payload ? payload.country : '',
                 region: payload ? payload.region : '',
                 tracking: getTrackingPayload(),
             })),
@@ -681,6 +820,22 @@
         field.addEventListener('input', syncBillingDefaults);
         field.addEventListener('blur', syncBillingDefaults);
     });
+
+    if (countryField) {
+        countryField.addEventListener('change', syncLocationFields);
+    }
+
+    if (regionOtherField) {
+        regionOtherField.addEventListener('input', syncBillingDefaults);
+        regionOtherField.addEventListener('blur', syncBillingDefaults);
+    }
+
+    if (regionField) {
+        regionField.addEventListener('change', syncBillingDefaults);
+    }
+
+    populateCountrySelect();
+    syncLocationFields();
 
     submitBtn.addEventListener('click', submitPayment);
 
