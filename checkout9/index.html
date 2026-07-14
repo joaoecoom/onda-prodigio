@@ -183,6 +183,12 @@
                         <div class="checkout-payment-block" id="checkout-payment-block">
                             <h2 class="checkout-form__title">Selecionar método de pagamento</h2>
 
+                            <div id="express-checkout-element" class="express-checkout-element" aria-live="polite"></div>
+                            <p id="express-checkout-empty" class="express-checkout-empty" hidden>
+                                Link, Apple Pay e Google Pay ficam disponíveis neste domínio após registo na Stripe.
+                            </p>
+                            <p id="express-checkout-divider" class="express-checkout-divider" aria-hidden="true">ou escolhe outro método</p>
+
                             <div id="payment-element" class="payment-element" aria-live="polite"></div>
                             <p id="payment-message" class="payment-message" role="alert"></p>
 

@@ -1,6 +1,9 @@
 (function () {
     var form = document.getElementById('checkout-form');
     var paymentElementHost = document.getElementById('payment-element');
+    var expressCheckoutHost = document.getElementById('express-checkout-element');
+    var expressCheckoutEmpty = document.getElementById('express-checkout-empty');
+    var expressCheckoutDivider = document.getElementById('express-checkout-divider');
     var paymentMessage = document.getElementById('payment-message');
     var submitBtn = document.getElementById('submit-payment');
     var paymentBlock = document.getElementById('checkout-payment-block');
@@ -12,6 +15,7 @@
     var stripe = null;
     var elements = null;
     var paymentElement = null;
+    var expressCheckoutElement = null;
     var clientSecret = null;
     var isSubmitting = false;
     var isReady = false;
@@ -145,6 +149,106 @@
         return data.clientSecret;
     }
 
+    function getReturnUrl() {
+        return getApiBase() + '/checkout9/success.html';
+    }
+
+    function getConfirmParams(payload) {
+        return {
+            return_url: getReturnUrl(),
+            receipt_email: payload.email,
+            payment_method_data: {
+                billing_details: {
+                    name: payload.full_name,
+                    email: payload.email,
+                    phone: '+351' + payload.phone,
+                },
+            },
+        };
+    }
+
+    function updateExpressCheckoutVisibility(hasMethods) {
+        if (expressCheckoutEmpty) {
+            expressCheckoutEmpty.hidden = hasMethods;
+        }
+
+        if (expressCheckoutHost) {
+            expressCheckoutHost.hidden = !hasMethods;
+        }
+    }
+
+    async function mountExpressCheckoutElement() {
+        if (!expressCheckoutHost || !elements) {
+            return;
+        }
+
+        if (expressCheckoutElement) {
+            try {
+                await expressCheckoutElement.unmount();
+            } catch (error) {
+                // ignore unmount errors during refresh
+            }
+
+            expressCheckoutElement = null;
+        }
+
+        expressCheckoutHost.innerHTML = '';
+        expressCheckoutElement = elements.create('expressCheckout', {
+            buttonHeight: 48,
+            emailRequired: true,
+            paymentMethodOrder: ['link', 'applePay', 'googlePay'],
+            paymentMethods: {
+                link: 'always',
+                applePay: 'always',
+                googlePay: 'always',
+                amazonPay: 'never',
+                paypal: 'never',
+                klarna: 'never',
+            },
+        });
+
+        expressCheckoutElement.on('availablePaymentMethodsChange', function (event) {
+            var methods = event.availablePaymentMethods || {};
+            var hasMethods = Boolean(methods.link || methods.applePay || methods.googlePay);
+
+            updateExpressCheckoutVisibility(hasMethods);
+        });
+
+        expressCheckoutElement.on('click', function (event) {
+            var payload = validateForm();
+
+            if (!payload) {
+                event.preventDefault();
+                showMessage('Preenche todos os campos dos dados pessoais antes de pagar.', 'error');
+            }
+        });
+
+        expressCheckoutElement.on('confirm', async function () {
+            var payload = validateForm();
+
+            if (!payload) {
+                showMessage('Preenche todos os campos dos dados pessoais antes de pagar.', 'error');
+                return;
+            }
+
+            setSubmitLoading(true);
+            showMessage('');
+
+            var result = await stripe.confirmPayment({
+                elements: elements,
+                clientSecret: clientSecret,
+                confirmParams: getConfirmParams(payload),
+            });
+
+            if (result.error) {
+                showMessage(result.error.message || 'O pagamento não foi concluído.', 'error');
+                setSubmitLoading(false);
+            }
+        });
+
+        await expressCheckoutElement.mount('#express-checkout-element');
+    }
+
     async function mountPaymentElement(secret) {
         if (paymentElement) {
             try {
@@ -198,11 +302,7 @@
                 radios: true,
                 spacedAccordionItems: true,
             },
-            paymentMethodOrder: ['link', 'mb_way', 'card', 'klarna'],
-            wallets: {
-                applePay: 'auto',
-                googlePay: 'auto',
-            },
+            paymentMethodOrder: ['mb_way', 'card', 'klarna'],
             fields: {
                 billingDetails: {
                     email: 'never',
@@ -216,6 +316,7 @@
             defaultValues: getBillingDefaults(),
         });
 
+        await mountExpressCheckoutElement();
         await paymentElement.mount('#payment-element');
         syncBillingDefaults();
         isReady = true;
@@ -285,21 +386,11 @@
         setSubmitLoading(true);
         showMessage('');
 
-        var returnUrl = getApiBase() + '/checkout9/success.html';
+        var returnUrl = getReturnUrl();
 
         var result = await stripe.confirmPayment({
             elements: elements,
-            confirmParams: {
-                return_url: returnUrl,
-                receipt_email: payload.email,
-                payment_method_data: {
-                    billing_details: {
-                        name: payload.full_name,
-                        email: payload.email,
-                        phone: '+351' + payload.phone,
-                    },
-                },
-            },
+            confirmParams: getConfirmParams(payload),
         });
 
         if (result.error) {

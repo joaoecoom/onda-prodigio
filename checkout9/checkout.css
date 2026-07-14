@@ -369,6 +369,33 @@ body {
     position: relative;
 }
 
+.express-checkout-element {
+    min-height: 2.75rem;
+    margin-bottom: 0.35rem;
+}
+
+.express-checkout-element:empty {
+    display: none;
+}
+
+.express-checkout-empty {
+    margin: 0 0 0.75rem;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: #6b7280;
+}
+
+.express-checkout-divider {
+    margin: 0.85rem 0 1rem;
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.checkout-payment-block.is-loading .express-checkout-element,
 .checkout-payment-block.is-loading .payment-element {
     opacity: 0.45;
     pointer-events: none;
@@ -377,7 +404,7 @@ body {
 .checkout-payment-block.is-loading::after {
     content: 'A carregar métodos de pagamento…';
     position: absolute;
-    top: 2.75rem;
+    top: 4.5rem;
     left: 0;
     right: 0;
     text-align: center;
