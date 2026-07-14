@@ -67,11 +67,13 @@
     function getBillingDefaults() {
         var email = form.email ? form.email.value.trim() : '';
         var fullName = form.full_name ? form.full_name.value.trim() : '';
+        var phone = form.phone ? form.phone.value : '';
 
         return {
             billingDetails: {
                 email: email || undefined,
                 name: fullName || undefined,
+                phone: formatPhoneE164(phone),
                 address: {
                     country: 'PT',
                 },
@@ -307,7 +309,7 @@
                 billingDetails: {
                     email: 'never',
                     name: 'never',
-                    phone: 'never',
+                    phone: 'auto',
                     address: {
                         country: 'never',
                     },
