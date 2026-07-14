@@ -175,6 +175,10 @@
         if (expressCheckoutHost) {
             expressCheckoutHost.hidden = !hasMethods;
         }
+
+        if (expressCheckoutDivider) {
+            expressCheckoutDivider.hidden = !hasMethods;
+        }
     }
 
     async function mountExpressCheckoutElement() {
@@ -198,7 +202,7 @@
             emailRequired: true,
             paymentMethodOrder: ['link', 'applePay', 'googlePay'],
             paymentMethods: {
-                link: 'always',
+                link: 'auto',
                 applePay: 'always',
                 googlePay: 'always',
                 amazonPay: 'never',
