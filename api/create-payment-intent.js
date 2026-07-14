@@ -20,6 +20,7 @@ module.exports = async function handler(req, res) {
     var phone = typeof body.phone === 'string' ? body.phone.trim() : '';
     var region = typeof body.region === 'string' ? body.region.trim() : '';
     var country = typeof body.country === 'string' ? body.country.trim().toUpperCase() : '';
+    var phoneCountry = typeof body.phone_country === 'string' ? body.phone_country.trim().toUpperCase() : '';
     var tracking = body.tracking && typeof body.tracking === 'object' ? body.tracking : {};
     var userAgent = req.headers['user-agent'] || '';
     var amount = stripeClient.settings.amountCents;
@@ -48,6 +49,7 @@ module.exports = async function handler(req, res) {
                 phone: phone || '',
                 region: region || '',
                 country: country || '',
+                phone_country: phoneCountry || '',
                 email: email || '',
                 checkout: stripeClient.settings.checkoutId,
                 stripe_mode: mode,

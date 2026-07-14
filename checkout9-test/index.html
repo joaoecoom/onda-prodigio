@@ -188,7 +188,13 @@
                         <div class="form-field">
                             <label class="form-field__label" for="phone">Telemóvel</label>
                             <div class="form-field__phone">
-                                <span class="form-field__phone-prefix" id="phone-prefix" aria-hidden="true">+351</span>
+                                <select
+                                    class="form-field__phone-prefix"
+                                    id="phone-country"
+                                    name="phone_country"
+                                    aria-label="Indicativo do telemóvel"
+                                    required
+                                ></select>
                                 <input
                                     class="form-field__input form-field__input--phone"
                                     type="tel"
@@ -200,6 +206,7 @@
                                     required
                                 >
                             </div>
+                            <p class="form-field__hint">O indicativo do telemóvel pode ser diferente do país onde vive.</p>
                         </div>
 
                         <div class="checkout-form__divider" aria-hidden="true"></div>

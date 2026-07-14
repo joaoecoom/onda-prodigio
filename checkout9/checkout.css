@@ -349,14 +349,22 @@ body {
 .form-field__phone-prefix {
     display: flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0 0.65rem;
+    min-width: 6.5rem;
+    max-width: 8.5rem;
+    padding: 0 0.45rem 0 0.55rem;
     font-size: 0.82rem;
     font-weight: 600;
     color: #333;
     background: #f8fafc;
+    border: none;
     border-right: 1px solid #cfd8e3;
     white-space: nowrap;
+    cursor: pointer;
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, #6b7280 50%), linear-gradient(135deg, #6b7280 50%, transparent 50%);
+    background-position: calc(100% - 12px) calc(50% - 2px), calc(100% - 8px) calc(50% - 2px);
+    background-size: 4px 4px, 4px 4px;
+    background-repeat: no-repeat;
 }
 
 .form-field__input--phone {
