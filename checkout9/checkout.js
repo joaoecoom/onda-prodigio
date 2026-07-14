@@ -172,6 +172,46 @@
         }
     }
 
+    function getTrackingPayload() {
+        if (window.OndaTracking && typeof window.OndaTracking.getStripeTrackingMetadata === 'function') {
+            return window.OndaTracking.getStripeTrackingMetadata();
+        }
+
+        return {};
+    }
+
+    function trackCheckoutStarted() {
+        if (window.OndaTracking && typeof window.OndaTracking.trackCheckoutStarted === 'function') {
+            window.OndaTracking.trackCheckoutStarted();
+        }
+    }
+
+    function trackPaymentSubmitted() {
+        if (window.OndaTracking && typeof window.OndaTracking.trackPaymentSubmitted === 'function') {
+            window.OndaTracking.trackPaymentSubmitted();
+        }
+    }
+
+    function trackPaymentFailed(message) {
+        if (window.OndaTracking && typeof window.OndaTracking.trackPaymentFailed === 'function') {
+            window.OndaTracking.trackPaymentFailed({
+                error_message: message || '',
+            });
+        }
+    }
+
+    function trackPaymentSucceeded(paymentIntentId) {
+        if (window.OndaTracking && typeof window.OndaTracking.trackPaymentSucceeded === 'function') {
+            window.OndaTracking.trackPaymentSucceeded({
+                transaction_id: paymentIntentId || '',
+            });
+        }
+    }
+
+    function getPaymentIntentId() {
+        return clientSecret ? clientSecret.split('_secret')[0] : '';
+    }
+
     function getReturnUrl() {
         return getApiBase() + '/obgd/';
     }
@@ -203,11 +243,13 @@
                 var status = retrieved.paymentIntent ? retrieved.paymentIntent.status : '';
 
                 if (status === 'succeeded') {
+                    trackPaymentSucceeded(getPaymentIntentId());
                     redirectToSuccess();
                     return;
                 }
 
                 if (status === 'canceled' || status === 'requires_payment_method') {
+                    trackPaymentFailed('Pagamento MB WAY não concluído.');
                     showMessage('O pagamento não foi concluído. Tenta novamente.', 'error');
                     return;
                 }
@@ -245,7 +287,9 @@
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(payload || {}),
+            body: JSON.stringify(Object.assign({}, payload || {}, {
+                tracking: getTrackingPayload(),
+            })),
         });
 
         var data = await response.json();
@@ -272,6 +316,7 @@
                 full_name: payload ? payload.full_name : '',
                 phone: payload ? payload.phone : '',
                 region: payload ? payload.region : '',
+                tracking: getTrackingPayload(),
             }),
         });
 
@@ -391,10 +436,12 @@
             try {
                 syncBillingDefaults();
                 await syncPaymentIntent(payload);
+                trackPaymentSubmitted();
 
                 var submitResult = await elements.submit();
 
                 if (submitResult.error) {
+                    trackPaymentFailed(submitResult.error.message);
                     throw new Error(submitResult.error.message || 'Verifica os dados de pagamento.');
                 }
 
@@ -405,18 +452,21 @@
                 });
 
                 if (result.error) {
+                    trackPaymentFailed(result.error.message);
                     throw new Error(result.error.message || 'O pagamento não foi concluído.');
                 }
 
                 var status = result.paymentIntent ? result.paymentIntent.status : '';
 
                 if (status === 'succeeded') {
+                    trackPaymentSucceeded(getPaymentIntentId());
                     redirectToSuccess();
                     return;
                 }
 
                 showMessage('Não foi possível concluir o pagamento. Tenta novamente.', 'error');
             } catch (error) {
+                trackPaymentFailed(error.message);
                 showMessage(error.message || 'Erro ao processar o pagamento.', 'error');
 
                 if (event && typeof event.paymentFailed === 'function') {
@@ -520,6 +570,7 @@
         try {
             await loadStripe();
             var secret = await createPaymentIntent({});
+            trackCheckoutStarted();
             await mountPaymentElement(secret);
         } catch (error) {
             showMessage(error.message || 'Erro ao carregar os métodos de pagamento.', 'error');
@@ -548,10 +599,12 @@
         try {
             syncBillingDefaults();
             await syncPaymentIntent(payload);
+            trackPaymentSubmitted();
 
             var submitResult = await elements.submit();
 
             if (submitResult.error) {
+                trackPaymentFailed(submitResult.error.message);
                 showMessage(submitResult.error.message || 'Verifica o método de pagamento seleccionado.', 'error');
                 return;
             }
@@ -563,6 +616,7 @@
             });
 
             if (result.error) {
+                trackPaymentFailed(result.error.message);
                 showMessage(result.error.message || 'O pagamento não foi concluído.', 'error');
                 return;
             }
@@ -570,6 +624,7 @@
             var status = result.paymentIntent ? result.paymentIntent.status : '';
 
             if (status === 'succeeded') {
+                trackPaymentSucceeded(getPaymentIntentId());
                 redirectToSuccess();
                 return;
             }
@@ -580,8 +635,10 @@
                 return;
             }
 
+            trackPaymentFailed('Pagamento não concluído.');
             showMessage('Não foi possível concluir o pagamento. Tenta novamente.', 'error');
         } catch (error) {
+            trackPaymentFailed(error.message);
             showMessage(error.message || 'Erro ao processar o pagamento.', 'error');
         } finally {
             setSubmitLoading(false);

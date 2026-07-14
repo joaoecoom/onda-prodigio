@@ -33,6 +33,13 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({
             verified: true,
             status: paymentIntent.status,
+            transaction_id: paymentIntent.id,
+            amount_cents: paymentIntent.amount,
+            currency: paymentIntent.currency,
+            order_bumps: String(paymentIntent.metadata.order_bumps || '')
+                .split(',')
+                .map(function (item) { return item.trim(); })
+                .filter(Boolean),
         });
     } catch (error) {
         console.error('Erro ao verificar pagamento:', error);

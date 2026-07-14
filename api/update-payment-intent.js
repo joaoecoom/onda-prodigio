@@ -1,4 +1,5 @@
 var Stripe = require('stripe');
+var serverEvents = require('../lib/tracking/server-events');
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -22,6 +23,8 @@ module.exports = async function handler(req, res) {
     var orderBumps = Array.isArray(body.order_bumps) ? body.order_bumps.filter(function (item) {
         return typeof item === 'string' && item.trim();
     }) : [];
+    var tracking = body.tracking && typeof body.tracking === 'object' ? body.tracking : {};
+    var userAgent = req.headers['user-agent'] || '';
 
     if (!clientSecret) {
         return res.status(400).json({ error: 'Sessão de pagamento inválida.' });
@@ -42,15 +45,16 @@ module.exports = async function handler(req, res) {
     try {
         var updatePayload = {
             receipt_email: email || undefined,
-            metadata: {
+            metadata: Object.assign({
                 product: 'Onda Prodígio',
                 price_id: process.env.STRIPE_PRICE_ID || '',
                 full_name: fullName || '',
                 phone: phone || '',
                 region: region || '',
+                email: email || '',
                 checkout: 'checkout9',
                 order_bumps: orderBumps.join(', '),
-            },
+            }, serverEvents.buildStripeTrackingMetadata(tracking, userAgent)),
         };
 
         if (Number.isFinite(amountCents) && amountCents >= baseAmount && amountCents <= maxAmount) {

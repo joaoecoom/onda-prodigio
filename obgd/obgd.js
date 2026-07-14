@@ -82,6 +82,8 @@
             ok: response.ok,
             verified: Boolean(data.verified),
             status: data.status || 'unknown',
+            amountCents: data.amount_cents || 0,
+            orderBumps: Array.isArray(data.order_bumps) ? data.order_bumps : [],
         };
     }
 
