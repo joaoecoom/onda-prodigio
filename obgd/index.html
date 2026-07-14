@@ -15,7 +15,7 @@
 </head>
 <body>
     <div class="checkout-page">
-        <aside class="obgd-success-bar" aria-label="Compra confirmada">
+        <aside class="obgd-success-bar" id="obgd-success-bar" hidden aria-label="Compra confirmada">
             <div class="obgd-success-bar__inner">
                 <span class="obgd-success-bar__icon" aria-hidden="true">✓</span>
                 <p>Compra confirmada com sucesso</p>
@@ -23,7 +23,7 @@
         </aside>
 
         <div class="obgd-loading" id="obgd-loading">
-            <p class="obgd-loading__text">A confirmar o seu pagamento…</p>
+            <p class="obgd-loading__text" id="obgd-loading-text">A confirmar o seu pagamento…</p>
         </div>
 
         <main class="obgd-section" id="obgd-content" hidden>
@@ -64,7 +64,7 @@
                 <aside class="testimonial-card" aria-label="Testemunho de cliente">
                     <img
                         class="testimonial-card__avatar"
-                        src="../checkout9/assets/julia-avatar.jpg"
+                        src="/checkout9/assets/julia-avatar.jpg"
                         alt="Julia M."
                         width="100"
                         height="100"
@@ -83,6 +83,6 @@
         </main>
     </div>
 
-    <script src="obgd.js" defer></script>
+    <script src="/obgd/obgd.js" defer></script>
 </body>
 </html>
