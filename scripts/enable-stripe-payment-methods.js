@@ -11,8 +11,13 @@ const METHODS_TO_ENABLE = [
     'card',
     'link',
     'klarna',
-    'multibanco',
     'mb_way',
+    'apple_pay',
+    'google_pay',
+];
+
+const METHODS_TO_DISABLE = [
+    'multibanco',
     'sepa_debit',
 ];
 
@@ -31,6 +36,10 @@ async function main() {
     }
 
     const configuration = configurations.data.find(function (item) {
+        return item.id === process.env.STRIPE_PAYMENT_METHOD_CONFIGURATION;
+    }) || configurations.data.find(function (item) {
+        return item.active && item.is_default && !item.application;
+    }) || configurations.data.find(function (item) {
         return item.active;
     }) || configurations.data[0];
 
@@ -44,6 +53,14 @@ async function main() {
         };
     });
 
+    METHODS_TO_DISABLE.forEach(function (method) {
+        updatePayload[method] = {
+            display_preference: {
+                preference: 'off',
+            },
+        };
+    });
+
     const updated = await stripe.paymentMethodConfigurations.update(
         configuration.id,
         updatePayload
@@ -51,7 +68,7 @@ async function main() {
 
     console.log('Configuração atualizada:', updated.id);
 
-    METHODS_TO_ENABLE.forEach(function (method) {
+    METHODS_TO_ENABLE.concat(METHODS_TO_DISABLE).forEach(function (method) {
         const methodConfig = updated[method];
 
         if (!methodConfig) {

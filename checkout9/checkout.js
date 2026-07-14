@@ -15,6 +15,12 @@
     var clientSecret = null;
     var isSubmitting = false;
     var isReady = false;
+    var isRefreshing = false;
+    var lastLinkedEmail = '';
+
+    function isValidEmail(value) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+    }
 
     function getApiBase() {
         return window.location.origin;
@@ -31,6 +37,31 @@
 
     function normalizePhone(value) {
         return String(value || '').replace(/\D/g, '');
+    }
+
+    function getBillingDefaults() {
+        var email = form.email ? form.email.value.trim() : '';
+        var fullName = form.full_name ? form.full_name.value.trim() : '';
+        var phone = normalizePhone(form.phone ? form.phone.value : '');
+
+        return {
+            billingDetails: {
+                email: email || undefined,
+                name: fullName || undefined,
+                phone: phone ? '+351' + phone : undefined,
+                address: {
+                    country: 'PT',
+                },
+            },
+        };
+    }
+
+    function syncBillingDefaults() {
+        if (!elements) {
+            return;
+        }
+
+        elements.update(getBillingDefaults());
     }
 
     function validateForm() {
@@ -115,7 +146,19 @@
     }
 
     async function mountPaymentElement(secret) {
+        if (paymentElement) {
+            try {
+                await paymentElement.unmount();
+            } catch (error) {
+                // ignore unmount errors during refresh
+            }
+
+            paymentElement = null;
+        }
+
         clientSecret = secret;
+        isReady = false;
+        submitBtn.disabled = true;
         elements = stripe.elements({
             clientSecret: clientSecret,
             locale: 'pt',
@@ -155,19 +198,54 @@
                 radios: true,
                 spacedAccordionItems: true,
             },
-            paymentMethodOrder: ['mb_way', 'multibanco', 'card', 'klarna', 'link'],
-            defaultValues: {
+            paymentMethodOrder: ['link', 'mb_way', 'card', 'klarna'],
+            wallets: {
+                applePay: 'auto',
+                googlePay: 'auto',
+            },
+            fields: {
                 billingDetails: {
+                    email: 'never',
+                    name: 'never',
+                    phone: 'never',
                     address: {
-                        country: 'PT',
+                        country: 'never',
                     },
                 },
             },
+            defaultValues: getBillingDefaults(),
         });
 
         await paymentElement.mount('#payment-element');
+        syncBillingDefaults();
         isReady = true;
         submitBtn.disabled = false;
+    }
+
+    async function refreshPaymentIntentFromEmail() {
+        var email = form.email ? form.email.value.trim() : '';
+
+        if (!isValidEmail(email) || email === lastLinkedEmail || isRefreshing || !stripe) {
+            return;
+        }
+
+        isRefreshing = true;
+
+        try {
+            var secret = await createPaymentIntent({
+                email: email,
+                full_name: form.full_name ? form.full_name.value.trim() : '',
+                phone: normalizePhone(form.phone ? form.phone.value : ''),
+                region: form.region ? form.region.value : '',
+            });
+
+            lastLinkedEmail = email;
+            await mountPaymentElement(secret);
+        } catch (error) {
+            // Mantém a sessão anterior se o refresh falhar.
+        } finally {
+            isRefreshing = false;
+        }
     }
 
     async function initializeCheckout() {
@@ -228,6 +306,21 @@
             showMessage(result.error.message || 'O pagamento não foi concluído.', 'error');
             setSubmitLoading(false);
         }
+    }
+
+    ['email', 'full_name', 'phone'].forEach(function (fieldName) {
+        var field = form[fieldName];
+
+        if (!field) {
+            return;
+        }
+
+        field.addEventListener('input', syncBillingDefaults);
+        field.addEventListener('blur', syncBillingDefaults);
+    });
+
+    if (form.email) {
+        form.email.addEventListener('blur', refreshPaymentIntentFromEmail);
     }
 
     submitBtn.addEventListener('click', submitPayment);
