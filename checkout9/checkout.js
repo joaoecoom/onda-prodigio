@@ -567,7 +567,7 @@
             updateExpressCheckoutVisibility(hasMethods);
         });
 
-        expressCheckoutElement.on('click', function (event) {
+        expressCheckoutElement.on('click', async function (event) {
             var payload = validateForm();
 
             if (!payload) {
@@ -580,11 +580,23 @@
                 return;
             }
 
-            syncBillingDefaults();
+            try {
+                syncBillingDefaults();
+                await syncPaymentIntent(payload);
+            } catch (error) {
+                showMessage(error.message || 'Não foi possível preparar o pagamento.', 'error');
+
+                if (typeof event.reject === 'function') {
+                    event.reject();
+                }
+
+                return;
+            }
 
             if (typeof event.resolve === 'function') {
                 event.resolve({
                     emailRequired: true,
+                    email: payload.email,
                 });
             }
         });
@@ -614,22 +626,24 @@
                 await syncPaymentIntent(payload);
                 trackPaymentSubmitted();
 
-                var submitResult = await elements.submit();
-
-                if (submitResult.error) {
-                    trackPaymentFailed(submitResult.error.message);
-                    throw new Error(submitResult.error.message || 'Verifica os dados de pagamento.');
-                }
-
                 var result = await stripe.confirmPayment({
                     elements: elements,
+                    clientSecret: clientSecret,
                     confirmParams: getConfirmParams(payload),
-                    redirect: 'if_required',
                 });
 
                 if (result.error) {
                     trackPaymentFailed(result.error.message);
-                    throw new Error(result.error.message || 'O pagamento não foi concluído.');
+                    showMessage(result.error.message || 'O pagamento não foi concluído.', 'error');
+
+                    if (event && typeof event.paymentFailed === 'function') {
+                        event.paymentFailed({
+                            reason: 'fail',
+                            message: result.error.message || 'O pagamento não foi concluído.',
+                        });
+                    }
+
+                    return;
                 }
 
                 var status = result.paymentIntent ? result.paymentIntent.status : '';
