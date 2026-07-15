@@ -19,6 +19,7 @@
     var clientSecret = null;
     var isSubmitting = false;
     var isReady = false;
+    var EXPRESS_CHECKOUT_ENABLED = false;
 
     var countryField = form.country;
     var regionField = form.region;
@@ -531,6 +532,11 @@
     }
 
     async function mountExpressCheckoutElement() {
+        if (!EXPRESS_CHECKOUT_ENABLED) {
+            updateExpressCheckoutVisibility(false);
+            return;
+        }
+
         if (!expressCheckoutHost || !elements) {
             return;
         }
