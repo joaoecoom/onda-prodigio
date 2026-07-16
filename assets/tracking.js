@@ -30,6 +30,22 @@
     var config = null;
     var initialized = false;
     var purchaseEventId = null;
+    var ATTRIBUTION_STORAGE_KEY = 'onda-attribution';
+
+    var ATTRIBUTION_QUERY_KEYS = [
+        'ad_name',
+        'ad_id',
+        'adset_id',
+        'adset_name',
+        'campaign_id',
+        'campaign_name',
+        'utm_source',
+        'utm_medium',
+        'utm_campaign',
+        'utm_content',
+        'utm_term',
+        'fbclid',
+    ];
 
     window.dataLayer = window.dataLayer || [];
 
@@ -76,10 +92,15 @@
     }
 
     function getFbc() {
-        var fbc = getCookie('_fbc');
+        ensureFbcCookie();
+        return getCookie('_fbc');
+    }
 
-        if (fbc) {
-            return fbc;
+    function ensureFbcCookie() {
+        var existing = getCookie('_fbc');
+
+        if (existing) {
+            return existing;
         }
 
         var params = new URLSearchParams(window.location.search);
@@ -89,7 +110,80 @@
             return '';
         }
 
-        return 'fb.1.' + Date.now() + '.' + fbclid;
+        var fbc = 'fb.1.' + Date.now() + '.' + fbclid;
+        var maxAge = 60 * 60 * 24 * 90;
+        document.cookie = '_fbc=' + encodeURIComponent(fbc) + '; path=/; max-age=' + maxAge + '; SameSite=Lax';
+
+        return fbc;
+    }
+
+    function readAttributionFromUrl() {
+        var params = new URLSearchParams(window.location.search);
+        var data = {};
+
+        ATTRIBUTION_QUERY_KEYS.forEach(function (key) {
+            var value = params.get(key);
+
+            if (value) {
+                data[key] = value.trim();
+            }
+        });
+
+        if (data.fbclid && !data.ad_platform) {
+            data.ad_platform = 'facebook';
+        }
+
+        return data;
+    }
+
+    function inferAdPlatformFromFbc(fbc) {
+        if (!fbc) {
+            return '';
+        }
+
+        if (fbc.indexOf('Y2xj') !== -1) {
+            return 'instagram';
+        }
+
+        return 'facebook';
+    }
+
+    function captureAttribution() {
+        var incoming = readAttributionFromUrl();
+        var stored = {};
+        var merged = {};
+
+        if (window.sessionStorage) {
+            try {
+                stored = JSON.parse(window.sessionStorage.getItem(ATTRIBUTION_STORAGE_KEY) || '{}') || {};
+            } catch (error) {
+                stored = {};
+            }
+        }
+
+        merged = Object.assign({}, stored, incoming);
+
+        if (!merged.ad_platform) {
+            merged.ad_platform = inferAdPlatformFromFbc(getFbc()) || stored.ad_platform || '';
+        }
+
+        if (window.sessionStorage) {
+            window.sessionStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(merged));
+        }
+
+        return merged;
+    }
+
+    function getAttribution() {
+        if (window.sessionStorage) {
+            try {
+                return JSON.parse(window.sessionStorage.getItem(ATTRIBUTION_STORAGE_KEY) || '{}') || {};
+            } catch (error) {
+                return {};
+            }
+        }
+
+        return captureAttribution();
     }
 
     function getPurchaseEventId() {
@@ -378,12 +472,14 @@
     }
 
     function getStripeTrackingMetadata() {
-        return {
+        var attribution = getAttribution();
+
+        return Object.assign({
             fbp: getFbp(),
             fbc: getFbc(),
             purchase_event_id: getPurchaseEventId(),
             ga_client_id: getGaClientId(),
-        };
+        }, attribution);
     }
 
     function bindLeadTracking() {
@@ -549,6 +645,8 @@
         }
 
         initialized = true;
+        captureAttribution();
+        ensureFbcCookie();
 
         return fetch(window.location.origin + '/api/tracking-config')
             .then(function (response) {
@@ -587,6 +685,8 @@
         trackCtaClick: trackCtaClick,
         trackVslEvent: trackVslEvent,
         getStripeTrackingMetadata: getStripeTrackingMetadata,
+        getAttribution: getAttribution,
+        captureAttribution: captureAttribution,
         pushEvent: pushEvent,
     };
 
