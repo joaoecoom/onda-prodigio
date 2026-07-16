@@ -95,6 +95,18 @@
         };
     }
 
+    function trackVerifiedPurchase(result, paymentIntentId) {
+        if (!window.OndaTracking || typeof window.OndaTracking.trackPurchase !== 'function') {
+            return;
+        }
+
+        window.OndaTracking.trackPurchase({
+            transactionId: paymentIntentId,
+            amountCents: result.amountCents,
+            orderBumps: result.orderBumps,
+        });
+    }
+
     async function verifyPurchase() {
         if (isPreviewMode()) {
             showPreviewPage();
@@ -120,6 +132,7 @@
                 var result = await verifyPurchaseOnce(paymentIntentId);
 
                 if (result.verified) {
+                    trackVerifiedPurchase(result, paymentIntentId);
                     showThankYouPage();
                     return;
                 }

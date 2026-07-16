@@ -24,6 +24,7 @@
         view_content: 'ViewContent',
         lead: 'Lead',
         initiate_checkout: 'InitiateCheckout',
+        purchase: 'Purchase',
     };
 
     var config = null;
@@ -352,6 +353,22 @@
         pushEvent('payment_succeeded', checkoutPayload);
     }
 
+    function trackPurchase(payload) {
+        if (wasTrackedOnce('onda-track-purchase')) {
+            return;
+        }
+
+        markTrackedOnce('onda-track-purchase');
+
+        var checkoutPayload = buildCheckoutPayload(payload);
+        var eventId = getPurchaseEventId();
+
+        pushEvent('purchase', Object.assign({}, checkoutPayload, {
+            event_id: eventId,
+            transaction_id: payload && payload.transactionId ? payload.transactionId : '',
+        }));
+    }
+
     function trackCtaClick(payload) {
         pushEvent('cta_click', payload || {});
     }
@@ -566,6 +583,7 @@
         trackPaymentSubmitted: trackPaymentSubmitted,
         trackPaymentFailed: trackPaymentFailed,
         trackPaymentSucceeded: trackPaymentSucceeded,
+        trackPurchase: trackPurchase,
         trackCtaClick: trackCtaClick,
         trackVslEvent: trackVslEvent,
         getStripeTrackingMetadata: getStripeTrackingMetadata,
