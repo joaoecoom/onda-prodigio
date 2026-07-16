@@ -43,11 +43,14 @@ module.exports = async function handler(req, res) {
     }
 
     try {
+        var trackingResults = null;
+
         if (event.type === 'payment_intent.succeeded') {
             var metadata = event.data.object.metadata || {};
 
             if (metadata.stripe_mode !== 'test' && metadata.checkout !== 'checkout9-test') {
-                await serverEvents.sendPurchaseFromPaymentIntent(event.data.object, req);
+                trackingResults = await serverEvents.sendPurchaseFromPaymentIntent(event.data.object, req);
+                console.log('Purchase tracking:', event.data.object.id, JSON.stringify(trackingResults));
             }
         }
 
@@ -55,11 +58,15 @@ module.exports = async function handler(req, res) {
             var failedMetadata = event.data.object.metadata || {};
 
             if (failedMetadata.stripe_mode !== 'test' && failedMetadata.checkout !== 'checkout9-test') {
-                await serverEvents.sendPaymentFailedFromPaymentIntent(event.data.object, req);
+                trackingResults = await serverEvents.sendPaymentFailedFromPaymentIntent(event.data.object, req);
+                console.log('Payment failed tracking:', event.data.object.id, JSON.stringify(trackingResults));
             }
         }
 
-        return res.status(200).json({ received: true });
+        return res.status(200).json({
+            received: true,
+            tracking: trackingResults,
+        });
     } catch (error) {
         console.error('Erro ao processar webhook Stripe:', error);
         return res.status(500).json({ error: 'Erro ao processar webhook.' });
