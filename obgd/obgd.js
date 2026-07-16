@@ -96,15 +96,24 @@
     }
 
     function trackVerifiedPurchase(result, paymentIntentId) {
-        if (!window.OndaTracking || typeof window.OndaTracking.trackPurchase !== 'function') {
+        function fire() {
+            if (!window.OndaTracking || typeof window.OndaTracking.trackPurchase !== 'function') {
+                return;
+            }
+
+            window.OndaTracking.trackPurchase({
+                transactionId: paymentIntentId,
+                amountCents: result.amountCents,
+                orderBumps: result.orderBumps,
+            });
+        }
+
+        if (window.OndaTracking && typeof window.OndaTracking.bootstrap === 'function') {
+            window.OndaTracking.bootstrap().then(fire).catch(fire);
             return;
         }
 
-        window.OndaTracking.trackPurchase({
-            transactionId: paymentIntentId,
-            amountCents: result.amountCents,
-            orderBumps: result.orderBumps,
-        });
+        fire();
     }
 
     async function verifyPurchase() {
