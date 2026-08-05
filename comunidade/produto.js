@@ -18,6 +18,15 @@
         'Instruções',
     ];
 
+    var SONO_AULA_SHORT_LABELS = [
+        'Coala',
+        'Cachorrinho',
+        'Gatinho',
+        'Ursinho',
+        'Coelhinho',
+        'Estrelinha',
+    ];
+
     var PDF_MATERIALS = {
         '/comunidade/assets/ebooks/seja-bem-vinda.pdf': {
             name: 'Boas-vindas PDF.pdf',
@@ -176,6 +185,18 @@
                 progress_percent: 100,
             }),
         });
+    }
+
+    function getAulaThumbLabel(aulaItem, index, moduleItem) {
+        if (moduleItem && moduleItem.sort_order === 1 && AULA_THUMB_LABELS[index]) {
+            return AULA_THUMB_LABELS[index];
+        }
+
+        if (moduleItem && moduleItem.sort_order === 3 && SONO_AULA_SHORT_LABELS[index]) {
+            return SONO_AULA_SHORT_LABELS[index];
+        }
+
+        return aulaItem.title;
     }
 
     function resolveAssetUrl(path) {
@@ -571,7 +592,7 @@
     function renderAulaList(aulas) {
         aulaList.innerHTML = aulas.map(function (aulaItem, index) {
             var image = aulaItem.image_url ? '/' + aulaItem.image_url.replace(/^\//, '') : '';
-            var thumbLabel = AULA_THUMB_LABELS[index] || aulaItem.title;
+            var thumbLabel = getAulaThumbLabel(aulaItem, index, getActiveModule());
             var isDone = isItemComplete(aulaItem.id);
 
             return (
@@ -668,7 +689,8 @@
         var isActive = moduleId === state.activeModuleId && aulaItem.id === state.activeAulaId;
         var isDone = isItemComplete(aulaItem.id);
         var image = aulaItem.image_url ? '/' + aulaItem.image_url.replace(/^\//, '') : '';
-        var thumbLabel = AULA_THUMB_LABELS[index] || aulaItem.title;
+        var moduleItem = getModuleById(moduleId);
+        var thumbLabel = getAulaThumbLabel(aulaItem, index, moduleItem);
 
         return (
             '<button type="button" class="comunidade-sidebar-lesson' + (isActive ? ' is-active' : '') + (isDone ? ' is-done' : '') + '" data-module-id="' + moduleId + '" data-aula-id="' + aulaItem.id + '">' +
