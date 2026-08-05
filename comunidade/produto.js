@@ -40,6 +40,7 @@
         searchQuery: '',
         sidebarSearchQuery: '',
         sidebarCollapsed: false,
+        progress: {},
     };
 
     var viewModules = document.getElementById('view-modules');
@@ -76,6 +77,97 @@
     var backBar = document.getElementById('back-bar');
     var btnBackModules = document.getElementById('btn-back-modules');
     var btnBackFromAulas = document.getElementById('btn-back-from-aulas');
+
+    function getItemProgress(moduleId) {
+        return state.progress[moduleId] || 0;
+    }
+
+    function getModuleProgress(moduleItem) {
+        if (!moduleItem) {
+            return 0;
+        }
+
+        if (moduleHasAulas(moduleItem)) {
+            var aulas = moduleItem.aulas;
+
+            if (!aulas.length) {
+                return 0;
+            }
+
+            var total = 0;
+
+            aulas.forEach(function (aulaItem) {
+                total += getItemProgress(aulaItem.id);
+            });
+
+            return Math.round(total / aulas.length);
+        }
+
+        return getItemProgress(moduleItem.id);
+    }
+
+    function isItemComplete(moduleId) {
+        return getItemProgress(moduleId) >= 100;
+    }
+
+    function renderProgressMarkup(percent) {
+        return (
+            '<span class="comunidade-module-card__progress-text">' + percent + '%</span>' +
+            '<div class="comunidade-module-card__progress-bar">' +
+                '<div class="comunidade-module-card__progress-fill" style="width:' + percent + '%"></div>' +
+            '</div>'
+        );
+    }
+
+    function refreshProgressUi() {
+        if (!viewModules.hidden) {
+            renderModuleGrid();
+        }
+
+        if (!viewModuleAulas.hidden) {
+            var activeModule = getActiveModule();
+
+            if (activeModule) {
+                var moduleProgress = getModuleProgress(activeModule);
+                moduleHeaderProgress.style.width = moduleProgress + '%';
+                moduleHeaderProgressText.textContent = moduleProgress + '%';
+                renderAulaList(activeModule.aulas);
+            }
+        }
+
+        if (!viewLesson.hidden) {
+            renderSidebarAulas();
+        }
+    }
+
+    async function loadProgress() {
+        var response = await window.ComunidadeAuth.apiFetch(
+            '/api/comunidade/progress?product_id=' + encodeURIComponent(productId)
+        );
+        var data = await response.json();
+
+        if (response.ok) {
+            state.progress = data.progress || {};
+        }
+    }
+
+    async function markContentViewed(moduleId) {
+        if (state.isAdmin || !moduleId || getItemProgress(moduleId) >= 100) {
+            return;
+        }
+
+        state.progress[moduleId] = 100;
+        refreshProgressUi();
+
+        await window.ComunidadeAuth.apiFetch('/api/comunidade/progress', {
+            method: 'POST',
+            body: JSON.stringify({
+                product_id: productId,
+                module_id: moduleId,
+                progress_percent: 100,
+            }),
+        });
+    }
 
     function resolveAssetUrl(path) {
         if (!path) {
@@ -287,8 +379,10 @@
 
         moduleHeaderNum.textContent = String(moduleIndex + 1);
         moduleHeaderTitle.textContent = moduleItem.title;
-        moduleHeaderProgress.style.width = '0%';
-        moduleHeaderProgressText.textContent = '0%';
+
+        var moduleProgress = getModuleProgress(moduleItem);
+        moduleHeaderProgress.style.width = moduleProgress + '%';
+        moduleHeaderProgressText.textContent = moduleProgress + '%';
 
         renderAulaList(moduleItem.aulas);
     }
@@ -340,17 +434,17 @@
             var thumbIndex = Math.min(index + 1, 5);
             var thumbLabel = THUMB_LABELS[index] || moduleItem.title;
             var image = moduleItem.image_url ? '/' + moduleItem.image_url.replace(/^\//, '') : '';
+            var progress = getModuleProgress(moduleItem);
 
             return (
                 '<button type="button" class="comunidade-module-card" data-open-module="' + moduleItem.id + '">' +
-                    '<div class="comunidade-module-card__thumb comunidade-module-card__thumb--' + thumbIndex + '">' +
-                        (image ? '<img src="' + image + '" alt="">' : '<span class="comunidade-module-card__label">' + escapeHtml(thumbLabel) + '</span>') +
-                        '<div class="comunidade-module-card__progress">' +
-                            '<div class="comunidade-module-card__progress-bar"><div class="comunidade-module-card__progress-fill"></div></div>' +
-                            '<span class="comunidade-module-card__progress-text">0%</span>' +
-                        '</div>' +
+                    '<div class="comunidade-module-card__progress">' +
+                        renderProgressMarkup(progress) +
                     '</div>' +
                     '<div class="comunidade-module-card__title">' + escapeHtml(moduleItem.title) + '</div>' +
+                    '<div class="comunidade-module-card__thumb comunidade-module-card__thumb--' + thumbIndex + '">' +
+                        (image ? '<img src="' + image + '" alt="">' : '<span class="comunidade-module-card__label">' + escapeHtml(thumbLabel) + '</span>') +
+                    '</div>' +
                 '</button>'
             );
         }).join('');
@@ -366,9 +460,10 @@
         aulaList.innerHTML = aulas.map(function (aulaItem, index) {
             var image = aulaItem.image_url ? '/' + aulaItem.image_url.replace(/^\//, '') : '';
             var thumbLabel = AULA_THUMB_LABELS[index] || aulaItem.title;
+            var isDone = isItemComplete(aulaItem.id);
 
             return (
-                '<button type="button" class="comunidade-aula-item" data-open-aula="' + aulaItem.id + '">' +
+                '<button type="button" class="comunidade-aula-item' + (isDone ? ' is-done' : '') + '" data-open-aula="' + aulaItem.id + '">' +
                     '<div class="comunidade-aula-item__thumb">' +
                         (image ? '<img src="' + image + '" alt="">' : '<span class="comunidade-aula-item__thumb-label">' + escapeHtml(thumbLabel) + '</span>') +
                     '</div>' +
@@ -403,11 +498,12 @@
 
     function renderSidebarLessonItem(aulaItem, index) {
         var isActive = aulaItem.id === state.activeAulaId;
+        var isDone = isItemComplete(aulaItem.id);
         var image = aulaItem.image_url ? '/' + aulaItem.image_url.replace(/^\//, '') : '';
         var thumbLabel = AULA_THUMB_LABELS[index] || aulaItem.title;
 
         return (
-            '<button type="button" class="comunidade-sidebar-lesson' + (isActive ? ' is-active' : '') + '" data-aula-id="' + aulaItem.id + '">' +
+            '<button type="button" class="comunidade-sidebar-lesson' + (isActive ? ' is-active' : '') + (isDone ? ' is-done' : '') + '" data-aula-id="' + aulaItem.id + '">' +
                 '<span class="comunidade-sidebar-lesson__thumb">' +
                     (image ?
                         '<img src="' + image + '" alt="">' :
@@ -440,6 +536,7 @@
         var moduleIndex = state.modules.findIndex(function (item) {
             return item.id === moduleItem.id;
         });
+        var moduleProgress = getModuleProgress(moduleItem);
 
         moduleList.innerHTML = (
             '<div class="comunidade-sidebar-module">' +
@@ -448,8 +545,8 @@
                     '<span class="comunidade-sidebar-module__info">' +
                         '<span class="comunidade-sidebar-module__title">' + escapeHtml(moduleItem.title) + '</span>' +
                         '<div class="comunidade-sidebar-module__progress">' +
-                            '<div class="comunidade-sidebar-module__progress-bar"><div class="comunidade-sidebar-module__progress-fill"></div></div>' +
-                            '<span class="comunidade-sidebar-module__progress-text">0%</span>' +
+                            '<div class="comunidade-sidebar-module__progress-bar"><div class="comunidade-sidebar-module__progress-fill" style="width:' + moduleProgress + '%"></div></div>' +
+                            '<span class="comunidade-sidebar-module__progress-text">' + moduleProgress + '%</span>' +
                         '</div>' +
                     '</span>' +
                     '<span class="comunidade-sidebar-module__chevron" aria-hidden="true">' +
@@ -550,6 +647,7 @@
                 previewMode: state.isAdmin,
             });
 
+            markContentViewed(aulaItem.id);
             return;
         }
 
@@ -565,11 +663,13 @@
 
         if (aulaItem.youtube_id) {
             renderVideoPlayer(aulaItem);
+            markContentViewed(aulaItem.id);
             return;
         }
 
         if (aulaItem.pdf_path) {
             renderPdfViewer(aulaItem);
+            markContentViewed(aulaItem.id);
             return;
         }
 
@@ -577,6 +677,8 @@
         contentPlayer.textContent = aulaItem.type === 'video'
             ? 'Vídeo em breve — estamos a preparar esta aula.'
             : 'Material em breve.';
+
+        markContentViewed(aulaItem.id);
     }
 
     function navigateAula(direction) {
@@ -779,6 +881,7 @@
         state.modules = data.product.modules || [];
         document.title = data.product.name + ' — Comunidade Onda Prodígio';
 
+        await loadProgress();
         resolveInitialView();
     }
 
