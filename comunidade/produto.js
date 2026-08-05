@@ -474,7 +474,7 @@
             window.ComunidadeWelcomeSurvey.mount(lessonSurvey, {
                 productId: productId,
                 moduleId: aulaItem.id,
-                isAdmin: state.isAdmin,
+                previewMode: state.isAdmin,
             });
 
             return;
@@ -726,6 +726,11 @@
             if (state.isAdmin) {
                 topbarUser.textContent += ' · Admin';
                 commentContent.placeholder = 'Escreve um comentário ou resposta de suporte…';
+
+                var adminSurveyLink = document.getElementById('admin-survey-link');
+                if (adminSurveyLink) {
+                    adminSurveyLink.hidden = false;
+                }
             }
         }
 

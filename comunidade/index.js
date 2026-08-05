@@ -60,6 +60,11 @@
 
             if (meData.role === 'admin') {
                 topbarUser.textContent += ' · Admin';
+
+                var adminSurveyLink = document.getElementById('admin-survey-link');
+                if (adminSurveyLink) {
+                    adminSurveyLink.hidden = false;
+                }
             }
 
             welcomeTitle.textContent = 'Olá, ' + displayName.split(' ')[0] + '!';

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Comunidade — Onda Prodígio</title>
+    <title>Respostas ao questionário — Onda Prodígio</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,7 +16,7 @@
         <header class="comunidade-topbar">
             <div class="comunidade-topbar__left">
                 <div>
-                    <div class="comunidade-topbar__brand">Onda Prodígio <span>· Comunidade</span></div>
+                    <div class="comunidade-topbar__brand">Onda Prodígio <span>· Admin</span></div>
                     <div class="comunidade-topbar__user" id="topbar-user"></div>
                 </div>
             </div>
@@ -25,23 +25,21 @@
                     <svg class="comunidade-theme-toggle__icon--dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
                     <svg class="comunidade-theme-toggle__icon--light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 </button>
-                <a class="comunidade-btn comunidade-btn--ghost" id="admin-survey-link" href="/respostaquestionario" hidden>Respostas questionário</a>
+                <a class="comunidade-btn comunidade-btn--ghost" href="/comunidade">Comunidade</a>
                 <button class="comunidade-btn comunidade-btn--ghost" type="button" id="btn-logout">Sair</button>
             </div>
         </header>
 
-        <div class="comunidade-main comunidade-main--dashboard">
-            <div class="comunidade-welcome">
-                <h1 id="welcome-title">Os teus cursos</h1>
-                <p id="welcome-subtitle">Acede aos programas incluídos na tua compra.</p>
+        <main class="comunidade-main comunidade-main--dashboard">
+            <div class="comunidade-panel comunidade-respostas-panel" id="responses-root">
+                <p class="comunidade-panel__subtitle" style="margin:0;padding:1.25rem;">A carregar…</p>
             </div>
-
-            <div class="comunidade-grid" id="product-grid"></div>
-        </div>
+        </main>
     </div>
 
     <script src="/comunidade/theme.js"></script>
     <script src="/comunidade/auth.js"></script>
-    <script src="/comunidade/index.js"></script>
+    <script src="/comunidade/welcome-survey.js"></script>
+    <script src="/comunidade/respostaquestionario.js"></script>
 </body>
 </html>

@@ -23,6 +23,10 @@
     {
       "source": "/comunidade/produto",
       "destination": "/comunidade/produto.html"
+    },
+    {
+      "source": "/respostaquestionario",
+      "destination": "/comunidade/respostaquestionario.html"
     }
   ],
   "headers": [

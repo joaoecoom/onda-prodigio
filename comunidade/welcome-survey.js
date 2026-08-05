@@ -229,87 +229,18 @@
         );
     }
 
-    function renderAdminList(container, submissions) {
-        if (!submissions.length) {
-            container.innerHTML = (
-                '<div class="comunidade-survey__admin">' +
-                    '<h2 class="comunidade-survey__title">Respostas ao questionário inicial</h2>' +
-                    '<p class="comunidade-survey__intro">Ainda não há respostas. Quando os membros preencherem o questionário, aparecem aqui.</p>' +
-                '</div>'
-            );
-            return;
-        }
-
-        container.innerHTML = (
-            '<div class="comunidade-survey__admin">' +
-                '<h2 class="comunidade-survey__title">Respostas ao questionário inicial</h2>' +
-                '<p class="comunidade-survey__intro">' + submissions.length + ' resposta(s) recebida(s). Também podes consultar tudo no Supabase (tabela <code>welcome_survey_responses</code>).</p>' +
-                submissions.map(function (submission) {
-                    var answerLines = QUESTIONS.map(function (question) {
-                        var value = submission.answers[question.id] || '—';
-
-                        if (submission.answers[question.id] === '__other__' && question.otherId) {
-                            value = 'Outro: ' + (submission.answers[question.otherId] || '—');
-                        }
-
-                        return (
-                            '<div class="comunidade-survey__admin-row">' +
-                                '<strong>' + escapeHtml(question.label) + '</strong>' +
-                                '<span>' + escapeHtml(value) + '</span>' +
-                            '</div>'
-                        );
-                    }).join('');
-
-                    return (
-                        '<article class="comunidade-survey__admin-card">' +
-                            '<div class="comunidade-survey__admin-head">' +
-                                '<strong>' + escapeHtml(submission.member_name || submission.member_email || 'Membro') + '</strong>' +
-                                '<span>' + escapeHtml(formatDate(submission.created_at)) + '</span>' +
-                            '</div>' +
-                            '<div class="comunidade-survey__admin-email">' + escapeHtml(submission.member_email || '') + '</div>' +
-                            answerLines +
-                        '</article>'
-                    );
-                }).join('') +
+    function renderForm(container, options) {
+        var previewMode = Boolean(options.previewMode);
+        var previewBanner = previewMode ? (
+            '<div class="comunidade-alert comunidade-alert--info comunidade-survey__preview-banner">' +
+                '<strong>Pré-visualização de admin.</strong> Assim veem os membros. ' +
+                'As respostas enviadas estão em <a href="/respostaquestionario">/respostaquestionario</a>.' +
             '</div>'
-        );
-    }
-
-    async function mount(container, options) {
-        if (!container) {
-            return;
-        }
-
-        activeMount = { container: container, options: options || {} };
-        container.hidden = false;
-        container.innerHTML = '<p class="comunidade-panel__subtitle" style="margin:0;">A carregar questionário…</p>';
-
-        var productId = options.productId;
-        var moduleId = options.moduleId;
-        var isAdmin = Boolean(options.isAdmin);
-
-        var response = await window.ComunidadeAuth.apiFetch(
-            '/api/comunidade/survey?product_id=' + encodeURIComponent(productId)
-        );
-        var data = await response.json();
-
-        if (!response.ok) {
-            container.innerHTML = '<div class="comunidade-alert comunidade-alert--error">' + escapeHtml(data.error || 'Erro ao carregar o questionário.') + '</div>';
-            return;
-        }
-
-        if (isAdmin) {
-            renderAdminList(container, data.submissions || []);
-            return;
-        }
-
-        if (data.submitted) {
-            renderSuccess(container, data.created_at);
-            return;
-        }
+        ) : '';
 
         container.innerHTML = (
             '<div class="comunidade-survey">' +
+                previewBanner +
                 '<div class="comunidade-survey__hero">' +
                     '<h2 class="comunidade-survey__title">Questionário de Boas-vindas: Onda Prodígio</h2>' +
                     '<p class="comunidade-survey__intro">Damos-te as boas-vindas à família Onda Prodígio!</p>' +
@@ -320,13 +251,24 @@
                 '<div class="comunidade-alert comunidade-alert--error" id="survey-error" hidden></div>' +
                 '<form class="comunidade-survey__form" id="welcome-survey-form">' +
                     QUESTIONS.map(renderQuestion).join('') +
-                    '<button class="comunidade-btn comunidade-btn--primary comunidade-survey__submit" type="submit">Enviar respostas</button>' +
+                    (previewMode ?
+                        '<p class="comunidade-survey__preview-note">Modo pré-visualização — apenas membros podem enviar respostas.</p>' :
+                        '<button class="comunidade-btn comunidade-btn--primary comunidade-survey__submit" type="submit">Enviar respostas</button>') +
                 '</form>' +
             '</div>'
         );
 
+        if (previewMode) {
+            container.querySelectorAll('input, textarea, select').forEach(function (field) {
+                field.disabled = true;
+            });
+            return;
+        }
+
         var form = container.querySelector('#welcome-survey-form');
         var errorBox = container.querySelector('#survey-error');
+        var productId = options.productId;
+        var moduleId = options.moduleId;
 
         bindOtherFields(form);
 
@@ -362,6 +304,124 @@
         });
     }
 
+    function renderAdminList(container, submissions, options) {
+        options = options || {};
+
+        if (!submissions.length) {
+            container.innerHTML = (
+                '<div class="comunidade-survey__admin">' +
+                    (options.showHeader !== false ?
+                        '<h1 class="comunidade-respostas__title">Respostas ao questionário inicial</h1>' +
+                        '<p class="comunidade-survey__intro">Ainda não há respostas. Quando os membros preencherem o questionário, aparecem aqui.</p>' :
+                        '<p class="comunidade-survey__intro">Ainda não há respostas.</p>') +
+                '</div>'
+            );
+            return;
+        }
+
+        container.innerHTML = (
+            '<div class="comunidade-survey__admin">' +
+                (options.showHeader !== false ?
+                    '<div class="comunidade-respostas__header">' +
+                        '<div>' +
+                            '<h1 class="comunidade-respostas__title">Respostas ao questionário inicial</h1>' +
+                            '<p class="comunidade-survey__intro">' + submissions.length + ' resposta(s) · Onda Prodígio</p>' +
+                        '</div>' +
+                        '<a class="comunidade-btn comunidade-btn--ghost" href="/comunidade/produto?id=onda-prodigio">Ver questionário na aula</a>' +
+                    '</div>' :
+                    '') +
+                submissions.map(function (submission, index) {
+                    var answerLines = QUESTIONS.map(function (question) {
+                        var value = submission.answers[question.id] || '—';
+
+                        if (submission.answers[question.id] === '__other__' && question.otherId) {
+                            value = 'Outro: ' + (submission.answers[question.otherId] || '—');
+                        }
+
+                        return (
+                            '<div class="comunidade-survey__admin-row">' +
+                                '<strong>' + escapeHtml(question.label) + '</strong>' +
+                                '<span>' + escapeHtml(value) + '</span>' +
+                            '</div>'
+                        );
+                    }).join('');
+
+                    return (
+                        '<article class="comunidade-survey__admin-card">' +
+                            '<div class="comunidade-survey__admin-head">' +
+                                '<div>' +
+                                    '<strong>' + escapeHtml(submission.member_name || 'Membro') + '</strong>' +
+                                    '<div class="comunidade-survey__admin-email">' + escapeHtml(submission.member_email || '') + '</div>' +
+                                '</div>' +
+                                '<span>' + escapeHtml(formatDate(submission.created_at)) + '</span>' +
+                            '</div>' +
+                            answerLines +
+                        '</article>'
+                    );
+                }).join('') +
+            '</div>'
+        );
+    }
+
+    async function mountResponsesPage(container, productId) {
+        container.innerHTML = '<p class="comunidade-panel__subtitle">A carregar respostas…</p>';
+
+        var response = await window.ComunidadeAuth.apiFetch(
+            '/api/comunidade/survey?product_id=' + encodeURIComponent(productId)
+        );
+        var data = await response.json();
+
+        if (!response.ok) {
+            container.innerHTML = '<div class="comunidade-alert comunidade-alert--error">' + escapeHtml(data.error || 'Erro ao carregar respostas.') + '</div>';
+            return;
+        }
+
+        renderAdminList(container, data.submissions || [], { showHeader: true });
+    }
+
+    async function mount(container, options) {
+        if (!container) {
+            return;
+        }
+
+        activeMount = { container: container, options: options || {} };
+        container.hidden = false;
+        container.innerHTML = '<p class="comunidade-panel__subtitle" style="margin:0;">A carregar questionário…</p>';
+
+        var productId = options.productId;
+        var moduleId = options.moduleId;
+
+        if (options.previewMode) {
+            renderForm(container, {
+                productId: productId,
+                moduleId: moduleId,
+                previewMode: true,
+            });
+            return;
+        }
+
+        var response = await window.ComunidadeAuth.apiFetch(
+            '/api/comunidade/survey?product_id=' + encodeURIComponent(productId)
+        );
+        var data = await response.json();
+
+        if (!response.ok) {
+            container.innerHTML = '<div class="comunidade-alert comunidade-alert--error">' + escapeHtml(data.error || 'Erro ao carregar o questionário.') + '</div>';
+            return;
+        }
+
+        if (data.submitted) {
+            renderSuccess(container, data.created_at);
+            return;
+        }
+
+        renderForm(container, {
+            productId: productId,
+            moduleId: moduleId,
+            previewMode: false,
+        });
+    }
+
     function unmount(container) {
         if (container) {
             container.hidden = true;
@@ -375,6 +435,7 @@
         LESSON_TITLE_MATCH: LESSON_TITLE_MATCH,
         isSurveyLesson: isSurveyLesson,
         mount: mount,
+        mountResponsesPage: mountResponsesPage,
         unmount: unmount,
     };
 })();
