@@ -18,6 +18,17 @@
         'Instruções',
     ];
 
+    var PDF_MATERIALS = {
+        '/comunidade/assets/ebooks/seja-bem-vinda.pdf': {
+            name: 'Boas-vindas PDF.pdf',
+            size: '10,7 MB',
+        },
+        '/comunidade/assets/ebooks/instrucoes.pdf': {
+            name: 'Instruções PDF.pdf',
+            size: '14,8 MB',
+        },
+    };
+
     var state = {
         product: null,
         modules: [],
@@ -44,8 +55,9 @@
     var sidebarProductName = document.getElementById('sidebar-product-name');
     var moduleList = document.getElementById('module-list');
     var contentPlayer = document.getElementById('content-player');
-    var ebookDownload = document.getElementById('ebook-download');
-    var ebookLink = document.getElementById('ebook-link');
+    var lessonMaterials = document.getElementById('lesson-materials');
+    var materialsList = document.getElementById('materials-list');
+    var materialsCount = document.getElementById('materials-count');
     var lessonTitle = document.getElementById('lesson-title');
     var lessonDescription = document.getElementById('lesson-description');
     var commentsList = document.getElementById('comments-list');
@@ -61,6 +73,75 @@
     var btnBackModules = document.getElementById('btn-back-modules');
     var btnBackFromAulas = document.getElementById('btn-back-from-aulas');
 
+    function resolveAssetUrl(path) {
+        if (!path) {
+            return '';
+        }
+
+        return path.charAt(0) === '/' ? path : '/' + path.replace(/^\//, '');
+    }
+
+    function getPdfMeta(pdfPath) {
+        var url = resolveAssetUrl(pdfPath);
+        var meta = PDF_MATERIALS[url];
+
+        if (meta) {
+            return meta;
+        }
+
+        var fileName = url.split('/').pop() || 'Material.pdf';
+
+        return {
+            name: decodeURIComponent(fileName),
+            size: 'PDF',
+        };
+    }
+
+    function renderMaterials(aulaItem) {
+        if (!aulaItem.pdf_path) {
+            lessonMaterials.hidden = true;
+            materialsList.innerHTML = '';
+            return;
+        }
+
+        var url = resolveAssetUrl(aulaItem.pdf_path);
+        var meta = getPdfMeta(aulaItem.pdf_path);
+
+        lessonMaterials.hidden = false;
+        materialsCount.textContent = '1';
+        materialsList.innerHTML = (
+            '<a class="comunidade-materials__file" href="' + url + '" download="' + escapeHtml(meta.name) + '" target="_blank" rel="noopener">' +
+                '<span class="comunidade-materials__file-icon" aria-hidden="true">' +
+                    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>' +
+                '</span>' +
+                '<span class="comunidade-materials__file-info">' +
+                    '<span class="comunidade-materials__file-name">' + escapeHtml(meta.name) + '</span>' +
+                    '<span class="comunidade-materials__file-meta">PDF · ' + escapeHtml(meta.size) + '</span>' +
+                '</span>' +
+                '<span class="comunidade-materials__file-action">Descarregar</span>' +
+            '</a>'
+        );
+    }
+
+    function renderPdfViewer(aulaItem) {
+        var url = resolveAssetUrl(aulaItem.pdf_path);
+
+        contentPlayer.className = 'comunidade-player comunidade-player--pdf';
+        contentPlayer.innerHTML = (
+            '<iframe src="' + url + '#view=FitH&toolbar=1&navpanes=0" ' +
+            'title="' + escapeHtml(aulaItem.title) + '" ' +
+            'loading="lazy"></iframe>'
+        );
+    }
+
+    function renderVideoPlayer(aulaItem) {
+        contentPlayer.className = 'comunidade-player';
+        contentPlayer.innerHTML = (
+            '<iframe src="https://www.youtube.com/embed/' + encodeURIComponent(aulaItem.youtube_id) + '" ' +
+            'title="' + escapeHtml(aulaItem.title) + '" ' +
+            'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>'
+        );
+    }
     function escapeHtml(value) {
         return String(value || '')
             .replace(/&/g, '&amp;')
@@ -376,40 +457,22 @@
             ? 'Assiste a esta aula em vídeo.'
             : 'Descarrega o material em PDF.');
 
-        if (aulaItem.type === 'video') {
-            if (aulaItem.youtube_id) {
-                contentPlayer.className = 'comunidade-player';
-                contentPlayer.innerHTML = '<iframe src="https://www.youtube.com/embed/' + encodeURIComponent(aulaItem.youtube_id) + '" title="' + escapeHtml(aulaItem.title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>';
-            } else {
-                contentPlayer.className = 'comunidade-player comunidade-player--empty';
-                contentPlayer.textContent = aulaItem.pdf_path
-                    ? 'Vídeo em breve — podes descarregar o material complementar abaixo.'
-                    : 'Vídeo em breve — estamos a preparar esta aula.';
-            }
+        renderMaterials(aulaItem);
 
-            if (aulaItem.pdf_path) {
-                ebookDownload.hidden = false;
-                ebookLink.href = aulaItem.pdf_path.charAt(0) === '/'
-                    ? aulaItem.pdf_path
-                    : '/' + aulaItem.pdf_path.replace(/^\//, '');
-            } else {
-                ebookDownload.hidden = true;
-            }
+        if (aulaItem.youtube_id) {
+            renderVideoPlayer(aulaItem);
+            return;
+        }
 
+        if (aulaItem.pdf_path) {
+            renderPdfViewer(aulaItem);
             return;
         }
 
         contentPlayer.className = 'comunidade-player comunidade-player--empty';
-        contentPlayer.textContent = aulaItem.pdf_path ? 'Material disponível para download abaixo.' : 'Material em breve.';
-
-        if (aulaItem.pdf_path) {
-            ebookDownload.hidden = false;
-            ebookLink.href = aulaItem.pdf_path.charAt(0) === '/'
-                ? aulaItem.pdf_path
-                : '/' + aulaItem.pdf_path.replace(/^\//, '');
-        } else {
-            ebookDownload.hidden = true;
-        }
+        contentPlayer.textContent = aulaItem.type === 'video'
+            ? 'Vídeo em breve — estamos a preparar esta aula.'
+            : 'Material em breve.';
     }
 
     function navigateAula(direction) {

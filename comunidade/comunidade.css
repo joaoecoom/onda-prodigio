@@ -528,24 +528,127 @@ html[data-theme="light"] .comunidade-theme-toggle__icon--light {
     color: var(--text);
 }
 
+.comunidade-player--pdf {
+    aspect-ratio: auto;
+    height: min(75vh, 820px);
+    min-height: 420px;
+}
+
+.comunidade-player--pdf iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    background: #1a1a2e;
+}
+
 .comunidade-lesson-info__desc {
     font-size: 0.875rem;
     color: var(--text-muted);
     line-height: 1.55;
+    white-space: pre-line;
 }
 
-.comunidade-ebook-bar {
+.comunidade-materials {
+    padding: 1rem 1.25rem 1.25rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg-subtle);
+}
+
+.comunidade-materials__hint {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.comunidade-materials__tabs {
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.75rem;
+}
+
+.comunidade-materials__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text);
+    border-bottom: 2px solid var(--accent);
+    margin-bottom: -1px;
+}
+
+.comunidade-materials__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    padding: 0 0.35rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #fff;
+    font-size: 0.6875rem;
+    font-weight: 700;
+}
+
+.comunidade-materials__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.comunidade-materials__file {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.85rem 1.25rem;
-    background: var(--bg-subtle);
-    border-top: 1px solid var(--border);
+    padding: 0.75rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s, background 0.15s;
 }
 
-.comunidade-ebook-bar__text {
+.comunidade-materials__file:hover {
+    border-color: var(--accent);
+    background: var(--surface-hover);
+}
+
+.comunidade-materials__file-icon {
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+}
+
+.comunidade-materials__file-info {
+    min-width: 0;
+}
+
+.comunidade-materials__file-name {
     font-size: 0.875rem;
-    color: var(--text-muted);
+    font-weight: 600;
+    color: var(--text);
+    word-break: break-word;
+}
+
+.comunidade-materials__file-meta {
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    color: var(--text-subtle);
+}
+
+.comunidade-materials__file-action {
+    margin-left: auto;
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--accent);
 }
 
 /* ── Grid de módulos (estilo Hotmart) ── */
