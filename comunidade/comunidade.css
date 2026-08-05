@@ -362,6 +362,17 @@ html[data-theme="light"] .comunidade-theme-toggle__icon--light {
     padding: 0.65rem 0.75rem 1rem;
 }
 
+.comunidade-sidebar-module + .comunidade-sidebar-module {
+    margin-top: 0.35rem;
+    padding-top: 0.35rem;
+    border-top: 1px solid var(--border);
+}
+
+.comunidade-sidebar-module.is-active .comunidade-sidebar-module__head {
+    background: var(--surface-hover);
+    border-radius: 8px;
+}
+
 .comunidade-sidebar-module__head {
     display: flex;
     align-items: flex-start;

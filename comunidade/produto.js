@@ -46,7 +46,7 @@
         replyToId: null,
         searchQuery: '',
         sidebarSearchQuery: '',
-        sidebarCollapsed: false,
+        sidebarExpandedModules: {},
         progress: {},
     };
 
@@ -505,6 +505,7 @@
 
         state.activeModuleId = moduleId;
         state.activeAulaId = aulaId;
+        state.sidebarExpandedModules[moduleId] = true;
 
         var moduleItem = getModuleById(moduleId);
         backBar.hidden = !moduleHasAulas(moduleItem);
@@ -593,28 +594,84 @@
         });
     }
 
-    function getFilteredSidebarAulas() {
-        var aulas = getActiveAulas();
+    function isSidebarModuleExpanded(moduleId) {
+        if (Object.prototype.hasOwnProperty.call(state.sidebarExpandedModules, moduleId)) {
+            return state.sidebarExpandedModules[moduleId];
+        }
+
+        if (moduleId === state.activeModuleId) {
+            return true;
+        }
+
+        var query = state.sidebarSearchQuery.trim().toLowerCase();
+
+        if (query) {
+            var moduleItem = getModuleById(moduleId);
+
+            if (moduleItem) {
+                var moduleHaystack = (moduleItem.title + ' ' + (moduleItem.description || '')).toLowerCase();
+
+                if (moduleHaystack.indexOf(query) === -1) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    function toggleSidebarModule(moduleId) {
+        state.sidebarExpandedModules[moduleId] = !isSidebarModuleExpanded(moduleId);
+        renderSidebarAulas();
+    }
+
+    function getSidebarModules() {
         var query = state.sidebarSearchQuery.trim().toLowerCase();
 
         if (!query) {
-            return aulas;
+            return state.modules;
         }
 
-        return aulas.filter(function (aulaItem) {
+        return state.modules.filter(function (moduleItem) {
+            var haystack = (moduleItem.title + ' ' + (moduleItem.description || '')).toLowerCase();
+
+            if (haystack.indexOf(query) !== -1) {
+                return true;
+            }
+
+            if (moduleHasAulas(moduleItem)) {
+                return moduleItem.aulas.some(function (aulaItem) {
+                    var aulaHaystack = (aulaItem.title + ' ' + (aulaItem.description || '')).toLowerCase();
+                    return aulaHaystack.indexOf(query) !== -1;
+                });
+            }
+
+            return false;
+        });
+    }
+
+    function getSidebarLessonsForModule(moduleItem) {
+        var query = state.sidebarSearchQuery.trim().toLowerCase();
+        var lessons = moduleHasAulas(moduleItem) ? moduleItem.aulas : [moduleItem];
+
+        if (!query) {
+            return lessons;
+        }
+
+        return lessons.filter(function (aulaItem) {
             var haystack = (aulaItem.title + ' ' + (aulaItem.description || '')).toLowerCase();
             return haystack.indexOf(query) !== -1;
         });
     }
 
-    function renderSidebarLessonItem(aulaItem, index) {
-        var isActive = aulaItem.id === state.activeAulaId;
+    function renderSidebarLessonItem(moduleId, aulaItem, index) {
+        var isActive = moduleId === state.activeModuleId && aulaItem.id === state.activeAulaId;
         var isDone = isItemComplete(aulaItem.id);
         var image = aulaItem.image_url ? '/' + aulaItem.image_url.replace(/^\//, '') : '';
         var thumbLabel = AULA_THUMB_LABELS[index] || aulaItem.title;
 
         return (
-            '<button type="button" class="comunidade-sidebar-lesson' + (isActive ? ' is-active' : '') + (isDone ? ' is-done' : '') + '" data-aula-id="' + aulaItem.id + '">' +
+            '<button type="button" class="comunidade-sidebar-lesson' + (isActive ? ' is-active' : '') + (isDone ? ' is-done' : '') + '" data-module-id="' + moduleId + '" data-aula-id="' + aulaItem.id + '">' +
                 '<span class="comunidade-sidebar-lesson__thumb">' +
                     (image ?
                         '<img src="' + image + '" alt="">' :
@@ -634,24 +691,15 @@
         );
     }
 
-    function renderSidebarAulas() {
-        var moduleItem = getActiveModule();
-        var aulas = getFilteredSidebarAulas();
-        var allAulas = getActiveAulas();
-
-        if (!moduleItem) {
-            moduleList.innerHTML = '';
-            return;
-        }
-
-        var moduleIndex = state.modules.findIndex(function (item) {
-            return item.id === moduleItem.id;
-        });
+    function renderSidebarModule(moduleItem, moduleIndex) {
+        var expanded = isSidebarModuleExpanded(moduleItem.id);
         var moduleProgress = getModuleProgress(moduleItem);
+        var lessons = getSidebarLessonsForModule(moduleItem);
+        var isActiveModule = moduleItem.id === state.activeModuleId;
 
-        moduleList.innerHTML = (
-            '<div class="comunidade-sidebar-module">' +
-                '<button type="button" class="comunidade-sidebar-module__head" id="sidebar-module-toggle" aria-expanded="' + (!state.sidebarCollapsed) + '">' +
+        return (
+            '<div class="comunidade-sidebar-module' + (isActiveModule ? ' is-active' : '') + '">' +
+                '<button type="button" class="comunidade-sidebar-module__head" data-module-toggle="' + moduleItem.id + '" aria-expanded="' + expanded + '">' +
                     '<span class="comunidade-sidebar-module__num">' + (moduleIndex + 1) + '</span>' +
                     '<span class="comunidade-sidebar-module__info">' +
                         '<span class="comunidade-sidebar-module__title">' + escapeHtml(moduleItem.title) + '</span>' +
@@ -664,30 +712,45 @@
                         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>' +
                     '</span>' +
                 '</button>' +
-                '<div class="comunidade-sidebar-lessons' + (state.sidebarCollapsed ? ' is-collapsed' : '') + '" id="sidebar-lessons">' +
-                    (aulas.length ?
-                        aulas.map(function (aulaItem) {
-                            var index = allAulas.findIndex(function (item) {
-                                return item.id === aulaItem.id;
-                            });
-                            return renderSidebarLessonItem(aulaItem, index);
+                '<div class="comunidade-sidebar-lessons' + (expanded ? '' : ' is-collapsed') + '">' +
+                    (lessons.length ?
+                        lessons.map(function (aulaItem, index) {
+                            return renderSidebarLessonItem(moduleItem.id, aulaItem, index);
                         }).join('') :
                         '<p class="comunidade-sidebar-lessons__empty">Nenhuma aula encontrada.</p>') +
                 '</div>' +
             '</div>'
         );
+    }
 
-        var toggleBtn = document.getElementById('sidebar-module-toggle');
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', function () {
-                state.sidebarCollapsed = !state.sidebarCollapsed;
-                renderSidebarAulas();
-            });
+    function renderSidebarAulas() {
+        var modules = getSidebarModules();
+
+        if (!modules.length) {
+            moduleList.innerHTML = '<p class="comunidade-sidebar-lessons__empty">Nenhum conteúdo encontrado.</p>';
+            return;
         }
+
+        moduleList.innerHTML = modules.map(function (moduleItem) {
+            var moduleIndex = state.modules.findIndex(function (item) {
+                return item.id === moduleItem.id;
+            });
+
+            return renderSidebarModule(moduleItem, moduleIndex);
+        }).join('');
+
+        moduleList.querySelectorAll('[data-module-toggle]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                toggleSidebarModule(button.getAttribute('data-module-toggle'));
+            });
+        });
 
         moduleList.querySelectorAll('[data-aula-id]').forEach(function (button) {
             button.addEventListener('click', function () {
-                selectAula(button.getAttribute('data-aula-id'));
+                showLessonView(
+                    button.getAttribute('data-module-id'),
+                    button.getAttribute('data-aula-id')
+                );
                 closeSidebar();
             });
         });
