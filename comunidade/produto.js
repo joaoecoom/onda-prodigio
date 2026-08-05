@@ -29,6 +29,13 @@
         },
     };
 
+    var AUDIO_MATERIALS = {
+        '/comunidade/assets/audio/metodo-onda-prodigio.mp3': {
+            name: 'Onda Prodígio Áudio.mp3',
+            size: '15,4 MB',
+        },
+    };
+
     var state = {
         product: null,
         modules: [],
@@ -58,11 +65,13 @@
     var sidebarSearch = document.getElementById('sidebar-search');
     var moduleList = document.getElementById('module-list');
     var lessonPlayerWrap = document.querySelector('.comunidade-player-wrap');
+    var lessonInstructions = document.getElementById('lesson-instructions');
     var contentPlayer = document.getElementById('content-player');
     var lessonSurvey = document.getElementById('lesson-survey');
     var lessonMaterials = document.getElementById('lesson-materials');
     var materialsList = document.getElementById('materials-list');
     var materialsCount = document.getElementById('materials-count');
+    var materialsHint = document.getElementById('materials-hint');
     var lessonTitle = document.getElementById('lesson-title');
     var lessonDescription = document.getElementById('lesson-description');
     var commentsList = document.getElementById('comments-list');
@@ -193,29 +202,131 @@
         };
     }
 
+    function getAudioMeta(audioPath) {
+        var url = resolveAssetUrl(audioPath);
+        var meta = AUDIO_MATERIALS[url];
+
+        if (meta) {
+            return meta;
+        }
+
+        var fileName = url.split('/').pop() || 'Audio.mp3';
+
+        return {
+            name: decodeURIComponent(fileName),
+            size: 'MP3',
+        };
+    }
+
+    function renderMaterialFile(url, meta, kind) {
+        var icon = kind === 'audio'
+            ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
+            : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>';
+        var typeLabel = kind === 'audio' ? 'MP3' : 'PDF';
+
+        return (
+            '<a class="comunidade-materials__file" href="' + url + '" download="' + escapeHtml(meta.name) + '" target="_blank" rel="noopener">' +
+                '<span class="comunidade-materials__file-icon" aria-hidden="true">' + icon + '</span>' +
+                '<span class="comunidade-materials__file-info">' +
+                    '<span class="comunidade-materials__file-name">' + escapeHtml(meta.name) + '</span>' +
+                    '<span class="comunidade-materials__file-meta">' + typeLabel + ' · ' + escapeHtml(meta.size) + '</span>' +
+                '</span>' +
+                '<span class="comunidade-materials__file-action">Descarregar</span>' +
+            '</a>'
+        );
+    }
+
+    function renderInstructions(text) {
+        if (!lessonInstructions) {
+            return;
+        }
+
+        if (!text) {
+            lessonInstructions.hidden = true;
+            lessonInstructions.innerHTML = '';
+            return;
+        }
+
+        var html = text.split('\n\n').map(function (paragraph) {
+            var trimmed = paragraph.trim();
+
+            if (!trimmed) {
+                return '';
+            }
+
+            if (trimmed === 'INSTRUÇÕES') {
+                return '<h3 class="comunidade-lesson-instructions__title">' + escapeHtml(trimmed) + '</h3>';
+            }
+
+            var parts = trimmed.match(/^([^:]+):\s*(.+)$/);
+
+            if (parts) {
+                return '<p class="comunidade-lesson-instructions__item"><strong>' + escapeHtml(parts[1]) + ':</strong> ' + escapeHtml(parts[2]) + '</p>';
+            }
+
+            return '<p class="comunidade-lesson-instructions__item">' + escapeHtml(trimmed) + '</p>';
+        }).join('');
+
+        lessonInstructions.hidden = false;
+        lessonInstructions.innerHTML = html;
+    }
+
     function renderMaterials(aulaItem) {
-        if (!aulaItem.pdf_path) {
+        var items = [];
+
+        if (aulaItem.pdf_path) {
+            items.push(renderMaterialFile(
+                resolveAssetUrl(aulaItem.pdf_path),
+                getPdfMeta(aulaItem.pdf_path),
+                'pdf'
+            ));
+        }
+
+        if (aulaItem.audio_path) {
+            items.push(renderMaterialFile(
+                resolveAssetUrl(aulaItem.audio_path),
+                getAudioMeta(aulaItem.audio_path),
+                'audio'
+            ));
+        }
+
+        if (!items.length) {
             lessonMaterials.hidden = true;
             materialsList.innerHTML = '';
             return;
         }
 
-        var url = resolveAssetUrl(aulaItem.pdf_path);
-        var meta = getPdfMeta(aulaItem.pdf_path);
+        if (materialsHint) {
+            if (aulaItem.audio_path && !aulaItem.pdf_path) {
+                materialsHint.textContent = 'Se quiseres descarregar o áudio, vai ao material adjunto 👇👇';
+            } else if (aulaItem.audio_path && aulaItem.pdf_path) {
+                materialsHint.textContent = 'Se quiseres descarregar os materiais, vê abaixo 👇👇';
+            } else {
+                materialsHint.textContent = 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇';
+            }
+        }
 
         lessonMaterials.hidden = false;
-        materialsCount.textContent = '1';
-        materialsList.innerHTML = (
-            '<a class="comunidade-materials__file" href="' + url + '" download="' + escapeHtml(meta.name) + '" target="_blank" rel="noopener">' +
-                '<span class="comunidade-materials__file-icon" aria-hidden="true">' +
-                    '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>' +
-                '</span>' +
-                '<span class="comunidade-materials__file-info">' +
-                    '<span class="comunidade-materials__file-name">' + escapeHtml(meta.name) + '</span>' +
-                    '<span class="comunidade-materials__file-meta">PDF · ' + escapeHtml(meta.size) + '</span>' +
-                '</span>' +
-                '<span class="comunidade-materials__file-action">Descarregar</span>' +
-            '</a>'
+        materialsCount.textContent = String(items.length);
+        materialsList.innerHTML = items.join('');
+    }
+
+    function renderAudioPlayer(aulaItem) {
+        var audioUrl = resolveAssetUrl(aulaItem.audio_path);
+        var coverUrl = aulaItem.image_url ? resolveAssetUrl(aulaItem.image_url) : '';
+
+        contentPlayer.className = 'comunidade-player comunidade-player--audio';
+        contentPlayer.innerHTML = (
+            '<div class="comunidade-audio-player">' +
+                (coverUrl ?
+                    '<div class="comunidade-audio-player__cover">' +
+                        '<img src="' + coverUrl + '" alt="' + escapeHtml(aulaItem.title) + '">' +
+                    '</div>' :
+                    '') +
+                '<audio class="comunidade-audio-player__controls" controls preload="metadata" src="' + audioUrl + '">' +
+                    'O teu browser não suporta áudio.' +
+                '</audio>' +
+            '</div>'
         );
     }
 
@@ -629,11 +740,20 @@
         renderSidebarAulas();
 
         lessonTitle.textContent = aulaItem.title;
-        lessonDescription.textContent = aulaItem.description || (aulaItem.type === 'video'
-            ? 'Assiste a esta aula em vídeo.'
-            : 'Descarrega o material em PDF.');
+
+        if (aulaItem.audio_path && aulaItem.description) {
+            renderInstructions(aulaItem.description);
+            lessonDescription.textContent = 'Ouve o áudio completo e segue as instruções acima.';
+        } else {
+            renderInstructions('');
+            lessonDescription.textContent = aulaItem.description || (aulaItem.type === 'video'
+                ? 'Assiste a esta aula em vídeo.'
+                : 'Descarrega o material em PDF.');
+        }
 
         if (window.ComunidadeWelcomeSurvey && window.ComunidadeWelcomeSurvey.isSurveyLesson(aulaItem)) {
+            renderInstructions('');
+
             if (lessonPlayerWrap) {
                 lessonPlayerWrap.hidden = true;
             }
@@ -663,6 +783,12 @@
 
         if (aulaItem.youtube_id) {
             renderVideoPlayer(aulaItem);
+            markContentViewed(aulaItem.id);
+            return;
+        }
+
+        if (aulaItem.audio_path) {
+            renderAudioPlayer(aulaItem);
             markContentViewed(aulaItem.id);
             return;
         }
