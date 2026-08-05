@@ -1,6 +1,15 @@
 (function () {
     var params = new URLSearchParams(window.location.search);
     var productId = params.get('id') || '';
+    var moduleParam = params.get('module') || '';
+
+    var THUMB_LABELS = [
+        'Começa aqui',
+        'Método Onda Prodígio',
+        'Protocolo do Sono Profundo',
+        'Ofertas',
+        'Método Concluído',
+    ];
 
     var state = {
         product: null,
@@ -9,8 +18,13 @@
         comments: [],
         isAdmin: false,
         replyToId: null,
+        searchQuery: '',
     };
 
+    var viewModules = document.getElementById('view-modules');
+    var viewLesson = document.getElementById('view-lesson');
+    var moduleGrid = document.getElementById('module-grid');
+    var moduleSearch = document.getElementById('module-search');
     var sidebar = document.getElementById('sidebar');
     var sidebarOverlay = document.getElementById('sidebar-overlay');
     var sidebarProductName = document.getElementById('sidebar-product-name');
@@ -29,6 +43,8 @@
     var btnNext = document.getElementById('btn-next');
     var btnList = document.getElementById('btn-list');
     var btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
+    var backBar = document.getElementById('back-bar');
+    var btnBackModules = document.getElementById('btn-back-modules');
 
     function escapeHtml(value) {
         return String(value || '')
@@ -47,6 +63,22 @@
         } catch (error) {
             return value;
         }
+    }
+
+    function hasModuleGrid() {
+        return state.modules.length > 1;
+    }
+
+    function updateUrl(moduleId) {
+        var url = new URL(window.location.href);
+
+        if (moduleId && hasModuleGrid()) {
+            url.searchParams.set('module', moduleId);
+        } else {
+            url.searchParams.delete('module');
+        }
+
+        history.replaceState(null, '', url.pathname + url.search);
     }
 
     function getActiveIndex() {
@@ -70,6 +102,81 @@
 
         btnPrev.disabled = index <= 0;
         btnNext.disabled = index < 0 || index >= state.modules.length - 1;
+    }
+
+    function showModuleGridView() {
+        viewModules.hidden = false;
+        viewLesson.hidden = true;
+        btnToggleSidebar.hidden = true;
+        state.activeModuleId = null;
+        updateUrl(null);
+        renderModuleGrid();
+    }
+
+    function showLessonView(moduleId) {
+        viewModules.hidden = true;
+        viewLesson.hidden = false;
+        btnToggleSidebar.hidden = false;
+        backBar.hidden = !hasModuleGrid();
+
+        if (moduleId) {
+            selectModule(moduleId, false);
+        }
+    }
+
+    function getFilteredModules() {
+        var query = state.searchQuery.trim().toLowerCase();
+
+        if (!query) {
+            return state.modules;
+        }
+
+        return state.modules.filter(function (moduleItem) {
+            var haystack = (moduleItem.title + ' ' + (moduleItem.description || '')).toLowerCase();
+            return haystack.indexOf(query) !== -1;
+        });
+    }
+
+    function renderModuleGrid() {
+        var modules = getFilteredModules();
+
+        if (!modules.length) {
+            moduleGrid.innerHTML = '<p class="comunidade-panel__subtitle">Nenhum módulo encontrado.</p>';
+            return;
+        }
+
+        moduleGrid.innerHTML = modules.map(function (moduleItem) {
+            var index = state.modules.findIndex(function (item) {
+                return item.id === moduleItem.id;
+            });
+            var thumbIndex = Math.min(index + 1, 5);
+            var thumbLabel = THUMB_LABELS[index] || moduleItem.title;
+            var image = moduleItem.image_url ? '/' + moduleItem.image_url.replace(/^\//, '') : '';
+
+            return (
+                '<button type="button" class="comunidade-module-card" data-open-module="' + moduleItem.id + '">' +
+                    '<div class="comunidade-module-card__thumb comunidade-module-card__thumb--' + thumbIndex + '">' +
+                        (image ? '<img src="' + image + '" alt="">' : '<span class="comunidade-module-card__label">' + escapeHtml(thumbLabel) + '</span>') +
+                        '<div class="comunidade-module-card__progress">' +
+                            '<div class="comunidade-module-card__progress-bar"><div class="comunidade-module-card__progress-fill"></div></div>' +
+                            '<span class="comunidade-module-card__progress-text">0%</span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="comunidade-module-card__title">' + escapeHtml(moduleItem.title) + '</div>' +
+                '</button>'
+            );
+        }).join('');
+
+        moduleGrid.querySelectorAll('[data-open-module]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                openModule(button.getAttribute('data-open-module'));
+            });
+        });
+    }
+
+    function openModule(moduleId) {
+        updateUrl(moduleId);
+        showLessonView(moduleId);
     }
 
     function showCommentsError(message) {
@@ -108,7 +215,11 @@
         updateNavButtons();
     }
 
-    function selectModule(moduleId) {
+    function selectModule(moduleId, syncUrl) {
+        if (syncUrl === undefined) {
+            syncUrl = true;
+        }
+
         var moduleItem = state.modules.find(function (item) {
             return item.id === moduleId;
         });
@@ -118,12 +229,17 @@
         }
 
         state.activeModuleId = moduleId;
+
+        if (syncUrl) {
+            updateUrl(moduleId);
+        }
+
         renderModules();
 
         lessonTitle.textContent = moduleItem.title;
-        lessonDescription.textContent = moduleItem.type === 'video'
+        lessonDescription.textContent = moduleItem.description || (moduleItem.type === 'video'
             ? 'Assiste a este módulo em vídeo.'
-            : 'Descarrega o material em PDF.';
+            : 'Descarrega o material em PDF.');
 
         if (moduleItem.type === 'video') {
             ebookDownload.hidden = true;
@@ -257,8 +373,12 @@
 
         renderModules();
 
-        if (state.modules.length) {
-            selectModule(state.modules[0].id);
+        var initialModule = moduleParam || (hasModuleGrid() ? null : (state.modules[0] && state.modules[0].id));
+
+        if (initialModule) {
+            showLessonView(initialModule);
+        } else {
+            showModuleGridView();
         }
     }
 
@@ -294,9 +414,23 @@
         navigateModule(1);
     });
 
-    btnList.addEventListener('click', openSidebar);
+    btnList.addEventListener('click', function () {
+        if (hasModuleGrid()) {
+            showModuleGridView();
+            return;
+        }
+
+        openSidebar();
+    });
+
+    btnBackModules.addEventListener('click', showModuleGridView);
     btnToggleSidebar.addEventListener('click', openSidebar);
     sidebarOverlay.addEventListener('click', closeSidebar);
+
+    moduleSearch.addEventListener('input', function () {
+        state.searchQuery = moduleSearch.value;
+        renderModuleGrid();
+    });
 
     commentForm.addEventListener('submit', async function (event) {
         event.preventDefault();

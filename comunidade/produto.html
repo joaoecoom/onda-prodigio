@@ -9,12 +9,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/comunidade/comunidade.css">
+    <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('comunidade-theme') === 'light' ? 'light' : 'dark');</script>
 </head>
 <body>
     <div class="comunidade-shell">
         <header class="comunidade-topbar">
             <div class="comunidade-topbar__left">
-                <button class="comunidade-topbar__menu-btn" type="button" id="btn-toggle-sidebar" aria-label="Lista de módulos">
+                <button class="comunidade-topbar__menu-btn" type="button" id="btn-toggle-sidebar" aria-label="Lista de módulos" hidden>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
                 </button>
                 <div>
@@ -23,6 +24,10 @@
                 </div>
             </div>
             <div class="comunidade-topbar__actions">
+                <button type="button" class="comunidade-theme-toggle" data-theme-toggle aria-label="Alternar tema">
+                    <svg class="comunidade-theme-toggle__icon--dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                    <svg class="comunidade-theme-toggle__icon--light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
                 <a class="comunidade-btn comunidade-btn--ghost" href="/comunidade">Meus cursos</a>
                 <button class="comunidade-btn comunidade-btn--ghost" type="button" id="btn-logout">Sair</button>
             </div>
@@ -30,7 +35,20 @@
 
         <div class="comunidade-sidebar-overlay" id="sidebar-overlay"></div>
 
-        <div class="comunidade-layout">
+        <!-- Vista grelha de módulos -->
+        <div class="comunidade-main comunidade-main--dashboard" id="view-modules" hidden>
+            <div class="comunidade-content-header">
+                <h1>Todos os conteúdos</h1>
+                <label class="comunidade-search">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                    <input type="search" id="module-search" placeholder="Pesquisar conteúdo" autocomplete="off">
+                </label>
+            </div>
+            <div class="comunidade-module-grid" id="module-grid"></div>
+        </div>
+
+        <!-- Vista aula / player -->
+        <div class="comunidade-layout" id="view-lesson" hidden>
             <aside class="comunidade-sidebar" id="sidebar">
                 <div class="comunidade-sidebar__header">
                     <div class="comunidade-sidebar__title">Conteúdo do curso</div>
@@ -40,6 +58,10 @@
             </aside>
 
             <main class="comunidade-main">
+                <div class="comunidade-back-bar" id="back-bar" hidden>
+                    <button type="button" class="comunidade-btn comunidade-btn--ghost" id="btn-back-modules">← Todos os conteúdos</button>
+                </div>
+
                 <section class="comunidade-panel">
                     <div class="comunidade-player-wrap">
                         <div class="comunidade-player comunidade-player--empty" id="content-player">Selecciona um módulo</div>
@@ -60,7 +82,7 @@
                     </div>
 
                     <div class="comunidade-ebook-bar" id="ebook-download" hidden>
-                        <span style="font-size:0.875rem;color:#374151;">Material disponível para download</span>
+                        <span class="comunidade-ebook-bar__text">Material disponível para download</span>
                         <a class="comunidade-btn comunidade-btn--primary" id="ebook-link" href="#" target="_blank" rel="noopener">Descarregar ebook</a>
                     </div>
 
@@ -91,6 +113,7 @@
         </div>
     </div>
 
+    <script src="/comunidade/theme.js"></script>
     <script src="/comunidade/auth.js"></script>
     <script src="/comunidade/produto.js"></script>
 </body>
