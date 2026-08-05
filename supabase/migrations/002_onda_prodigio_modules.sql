@@ -36,8 +36,8 @@ INSERT INTO content_modules (product_id, title, description, type, sort_order) V
     ),
     (
         'onda-prodigio',
-        '👉 Método Concluído! Reclama o teu regalo surpresa aqui 🎁',
-        'Parabéns por concluíres o método. Reclama aqui o teu regalo final.',
+        '👉 Método Concluído! Reclama aqui o teu presente surpresa 🎁',
+        'Parabéns por concluíres o método. Reclama aqui o teu presente final.',
         'video',
         5
     );

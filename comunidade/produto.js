@@ -2,19 +2,27 @@
     var params = new URLSearchParams(window.location.search);
     var productId = params.get('id') || '';
     var moduleParam = params.get('module') || '';
+    var aulaParam = params.get('aula') || '';
 
     var THUMB_LABELS = [
         'Começa aqui',
         'Método Onda Prodígio',
-        'Protocolo do Sono Profundo',
+        'Protocolo do Sono',
         'Ofertas',
         'Método Concluído',
+    ];
+
+    var AULA_THUMB_LABELS = [
+        'Boas-vindas',
+        'Questionário',
+        'Instruções',
     ];
 
     var state = {
         product: null,
         modules: [],
         activeModuleId: null,
+        activeAulaId: null,
         comments: [],
         isAdmin: false,
         replyToId: null,
@@ -22,9 +30,15 @@
     };
 
     var viewModules = document.getElementById('view-modules');
+    var viewModuleAulas = document.getElementById('view-module-aulas');
     var viewLesson = document.getElementById('view-lesson');
     var moduleGrid = document.getElementById('module-grid');
     var moduleSearch = document.getElementById('module-search');
+    var aulaList = document.getElementById('aula-list');
+    var moduleHeaderNum = document.getElementById('module-header-num');
+    var moduleHeaderTitle = document.getElementById('module-header-title');
+    var moduleHeaderProgress = document.getElementById('module-header-progress');
+    var moduleHeaderProgressText = document.getElementById('module-header-progress-text');
     var sidebar = document.getElementById('sidebar');
     var sidebarOverlay = document.getElementById('sidebar-overlay');
     var sidebarProductName = document.getElementById('sidebar-product-name');
@@ -45,6 +59,7 @@
     var btnToggleSidebar = document.getElementById('btn-toggle-sidebar');
     var backBar = document.getElementById('back-bar');
     var btnBackModules = document.getElementById('btn-back-modules');
+    var btnBackFromAulas = document.getElementById('btn-back-from-aulas');
 
     function escapeHtml(value) {
         return String(value || '')
@@ -65,25 +80,73 @@
         }
     }
 
+    function getModuleById(moduleId) {
+        return state.modules.find(function (item) {
+            return item.id === moduleId;
+        });
+    }
+
+    function moduleHasAulas(moduleItem) {
+        return Boolean(moduleItem && moduleItem.aulas && moduleItem.aulas.length);
+    }
+
+    function getActiveModule() {
+        return getModuleById(state.activeModuleId);
+    }
+
+    function getActiveAulas() {
+        var moduleItem = getActiveModule();
+
+        if (!moduleItem) {
+            return [];
+        }
+
+        if (moduleHasAulas(moduleItem)) {
+            return moduleItem.aulas;
+        }
+
+        return [moduleItem];
+    }
+
+    function getActiveAula() {
+        var aulas = getActiveAulas();
+
+        return aulas.find(function (item) {
+            return item.id === state.activeAulaId;
+        }) || null;
+    }
+
     function hasModuleGrid() {
         return state.modules.length > 1;
     }
 
-    function updateUrl(moduleId) {
+    function hideAllViews() {
+        viewModules.hidden = true;
+        viewModuleAulas.hidden = true;
+        viewLesson.hidden = true;
+    }
+
+    function updateUrl() {
         var url = new URL(window.location.href);
 
-        if (moduleId && hasModuleGrid()) {
-            url.searchParams.set('module', moduleId);
+        if (state.activeModuleId && hasModuleGrid()) {
+            url.searchParams.set('module', state.activeModuleId);
         } else {
             url.searchParams.delete('module');
+        }
+
+        if (state.activeAulaId) {
+            url.searchParams.set('aula', state.activeAulaId);
+        } else {
+            url.searchParams.delete('aula');
         }
 
         history.replaceState(null, '', url.pathname + url.search);
     }
 
-    function getActiveIndex() {
-        return state.modules.findIndex(function (item) {
-            return item.id === state.activeModuleId;
+    function getActiveAulaIndex() {
+        return getActiveAulas().findIndex(function (item) {
+            return item.id === state.activeAulaId;
         });
     }
 
@@ -98,29 +161,66 @@
     }
 
     function updateNavButtons() {
-        var index = getActiveIndex();
+        var index = getActiveAulaIndex();
+        var aulas = getActiveAulas();
 
         btnPrev.disabled = index <= 0;
-        btnNext.disabled = index < 0 || index >= state.modules.length - 1;
+        btnNext.disabled = index < 0 || index >= aulas.length - 1;
     }
 
     function showModuleGridView() {
+        hideAllViews();
         viewModules.hidden = false;
-        viewLesson.hidden = true;
         btnToggleSidebar.hidden = true;
         state.activeModuleId = null;
-        updateUrl(null);
+        state.activeAulaId = null;
+        updateUrl();
         renderModuleGrid();
     }
 
-    function showLessonView(moduleId) {
-        viewModules.hidden = true;
+    function showModuleAulasView(moduleId) {
+        var moduleItem = getModuleById(moduleId);
+
+        if (!moduleItem || !moduleHasAulas(moduleItem)) {
+            return;
+        }
+
+        hideAllViews();
+        viewModuleAulas.hidden = false;
+        btnToggleSidebar.hidden = true;
+        state.activeModuleId = moduleId;
+        state.activeAulaId = null;
+        updateUrl();
+
+        var moduleIndex = state.modules.findIndex(function (item) {
+            return item.id === moduleId;
+        });
+
+        moduleHeaderNum.textContent = String(moduleIndex + 1);
+        moduleHeaderTitle.textContent = moduleItem.title;
+        moduleHeaderProgress.style.width = '0%';
+        moduleHeaderProgressText.textContent = '0%';
+
+        renderAulaList(moduleItem.aulas);
+    }
+
+    function showLessonView(moduleId, aulaId) {
+        hideAllViews();
         viewLesson.hidden = false;
         btnToggleSidebar.hidden = false;
-        backBar.hidden = !hasModuleGrid();
 
-        if (moduleId) {
-            selectModule(moduleId, false);
+        state.activeModuleId = moduleId;
+        state.activeAulaId = aulaId;
+
+        var moduleItem = getModuleById(moduleId);
+        backBar.hidden = !moduleHasAulas(moduleItem);
+
+        sidebarProductName.textContent = moduleItem ? moduleItem.title : state.product.name;
+        updateUrl();
+        renderSidebarAulas();
+
+        if (aulaId) {
+            selectAula(aulaId, false);
         }
     }
 
@@ -174,9 +274,148 @@
         });
     }
 
+    function renderAulaList(aulas) {
+        aulaList.innerHTML = aulas.map(function (aulaItem, index) {
+            var image = aulaItem.image_url ? '/' + aulaItem.image_url.replace(/^\//, '') : '';
+            var thumbLabel = AULA_THUMB_LABELS[index] || aulaItem.title;
+
+            return (
+                '<button type="button" class="comunidade-aula-item" data-open-aula="' + aulaItem.id + '">' +
+                    '<div class="comunidade-aula-item__thumb">' +
+                        (image ? '<img src="' + image + '" alt="">' : '<span class="comunidade-aula-item__thumb-label">' + escapeHtml(thumbLabel) + '</span>') +
+                    '</div>' +
+                    '<span class="comunidade-aula-item__title">' + escapeHtml(aulaItem.title) + '</span>' +
+                    '<span class="comunidade-aula-item__check" aria-hidden="true">' +
+                        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>' +
+                    '</span>' +
+                '</button>'
+            );
+        }).join('');
+
+        aulaList.querySelectorAll('[data-open-aula]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                openAula(button.getAttribute('data-open-aula'));
+            });
+        });
+    }
+
+    function renderSidebarAulas() {
+        var aulas = getActiveAulas();
+
+        moduleList.innerHTML = aulas.map(function (aulaItem, index) {
+            var isActive = aulaItem.id === state.activeAulaId;
+            var typeLabel = aulaItem.type === 'video' ? 'Vídeo' : 'Ebook';
+
+            return (
+                '<button type="button" class="comunidade-module-item' + (isActive ? ' is-active' : '') + '" data-aula-id="' + aulaItem.id + '">' +
+                    '<span class="comunidade-module-item__num">' + (index + 1) + '</span>' +
+                    '<span class="comunidade-module-item__info">' +
+                        '<span class="comunidade-module-item__title">' + escapeHtml(aulaItem.title) + '</span>' +
+                        '<span class="comunidade-module-item__type">' + typeLabel + '</span>' +
+                    '</span>' +
+                '</button>'
+            );
+        }).join('');
+
+        moduleList.querySelectorAll('[data-aula-id]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                selectAula(button.getAttribute('data-aula-id'));
+                closeSidebar();
+            });
+        });
+
+        updateNavButtons();
+    }
+
     function openModule(moduleId) {
-        updateUrl(moduleId);
-        showLessonView(moduleId);
+        var moduleItem = getModuleById(moduleId);
+
+        if (!moduleItem) {
+            return;
+        }
+
+        if (moduleHasAulas(moduleItem)) {
+            showModuleAulasView(moduleId);
+            return;
+        }
+
+        showLessonView(moduleId, moduleItem.id);
+    }
+
+    function openAula(aulaId) {
+        if (!state.activeModuleId) {
+            return;
+        }
+
+        showLessonView(state.activeModuleId, aulaId);
+    }
+
+    function selectAula(aulaId, syncUrl) {
+        if (syncUrl === undefined) {
+            syncUrl = true;
+        }
+
+        var aulaItem = getActiveAulas().find(function (item) {
+            return item.id === aulaId;
+        });
+
+        if (!aulaItem) {
+            return;
+        }
+
+        state.activeAulaId = aulaId;
+
+        if (syncUrl) {
+            updateUrl();
+        }
+
+        renderSidebarAulas();
+
+        lessonTitle.textContent = aulaItem.title;
+        lessonDescription.textContent = aulaItem.description || (aulaItem.type === 'video'
+            ? 'Assiste a esta aula em vídeo.'
+            : 'Descarrega o material em PDF.');
+
+        if (aulaItem.type === 'video') {
+            ebookDownload.hidden = true;
+
+            if (aulaItem.youtube_id) {
+                contentPlayer.className = 'comunidade-player';
+                contentPlayer.innerHTML = '<iframe src="https://www.youtube.com/embed/' + encodeURIComponent(aulaItem.youtube_id) + '" title="' + escapeHtml(aulaItem.title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>';
+            } else {
+                contentPlayer.className = 'comunidade-player comunidade-player--empty';
+                contentPlayer.textContent = 'Vídeo em breve — estamos a preparar esta aula.';
+            }
+
+            return;
+        }
+
+        contentPlayer.className = 'comunidade-player comunidade-player--empty';
+        contentPlayer.textContent = aulaItem.pdf_path ? 'Material disponível para download abaixo.' : 'Material em breve.';
+
+        if (aulaItem.pdf_path) {
+            ebookDownload.hidden = false;
+            ebookLink.href = aulaItem.pdf_path;
+        } else {
+            ebookDownload.hidden = true;
+        }
+    }
+
+    function navigateAula(direction) {
+        var index = getActiveAulaIndex();
+        var aulas = getActiveAulas();
+
+        if (index < 0) {
+            return;
+        }
+
+        var nextIndex = index + direction;
+
+        if (nextIndex < 0 || nextIndex >= aulas.length) {
+            return;
+        }
+
+        selectAula(aulas[nextIndex].id);
     }
 
     function showCommentsError(message) {
@@ -187,99 +426,6 @@
     function clearCommentsError() {
         commentsError.hidden = true;
         commentsError.textContent = '';
-    }
-
-    function renderModules() {
-        moduleList.innerHTML = state.modules.map(function (moduleItem, index) {
-            var isActive = moduleItem.id === state.activeModuleId;
-            var typeLabel = moduleItem.type === 'video' ? 'Vídeo' : 'Ebook';
-
-            return (
-                '<button type="button" class="comunidade-module-item' + (isActive ? ' is-active' : '') + '" data-module-id="' + moduleItem.id + '">' +
-                    '<span class="comunidade-module-item__num">' + (index + 1) + '</span>' +
-                    '<span class="comunidade-module-item__info">' +
-                        '<span class="comunidade-module-item__title">' + escapeHtml(moduleItem.title) + '</span>' +
-                        '<span class="comunidade-module-item__type">' + typeLabel + '</span>' +
-                    '</span>' +
-                '</button>'
-            );
-        }).join('');
-
-        moduleList.querySelectorAll('[data-module-id]').forEach(function (button) {
-            button.addEventListener('click', function () {
-                selectModule(button.getAttribute('data-module-id'));
-                closeSidebar();
-            });
-        });
-
-        updateNavButtons();
-    }
-
-    function selectModule(moduleId, syncUrl) {
-        if (syncUrl === undefined) {
-            syncUrl = true;
-        }
-
-        var moduleItem = state.modules.find(function (item) {
-            return item.id === moduleId;
-        });
-
-        if (!moduleItem) {
-            return;
-        }
-
-        state.activeModuleId = moduleId;
-
-        if (syncUrl) {
-            updateUrl(moduleId);
-        }
-
-        renderModules();
-
-        lessonTitle.textContent = moduleItem.title;
-        lessonDescription.textContent = moduleItem.description || (moduleItem.type === 'video'
-            ? 'Assiste a este módulo em vídeo.'
-            : 'Descarrega o material em PDF.');
-
-        if (moduleItem.type === 'video') {
-            ebookDownload.hidden = true;
-
-            if (moduleItem.youtube_id) {
-                contentPlayer.className = 'comunidade-player';
-                contentPlayer.innerHTML = '<iframe src="https://www.youtube.com/embed/' + encodeURIComponent(moduleItem.youtube_id) + '" title="' + escapeHtml(moduleItem.title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>';
-            } else {
-                contentPlayer.className = 'comunidade-player comunidade-player--empty';
-                contentPlayer.textContent = 'Vídeo em breve — estamos a preparar este conteúdo.';
-            }
-
-            return;
-        }
-
-        contentPlayer.className = 'comunidade-player comunidade-player--empty';
-        contentPlayer.textContent = moduleItem.pdf_path ? 'Ebook disponível para download abaixo.' : 'Ebook em breve.';
-
-        if (moduleItem.pdf_path) {
-            ebookDownload.hidden = false;
-            ebookLink.href = moduleItem.pdf_path;
-        } else {
-            ebookDownload.hidden = true;
-        }
-    }
-
-    function navigateModule(direction) {
-        var index = getActiveIndex();
-
-        if (index < 0) {
-            return;
-        }
-
-        var nextIndex = index + direction;
-
-        if (nextIndex < 0 || nextIndex >= state.modules.length) {
-            return;
-        }
-
-        selectModule(state.modules[nextIndex].id);
     }
 
     function buildCommentTree(comments) {
@@ -352,6 +498,45 @@
         renderComments();
     }
 
+    function resolveInitialView() {
+        if (moduleParam) {
+            var moduleItem = getModuleById(moduleParam);
+
+            if (!moduleItem) {
+                showModuleGridView();
+                return;
+            }
+
+            if (aulaParam) {
+                showLessonView(moduleParam, aulaParam);
+                return;
+            }
+
+            if (moduleHasAulas(moduleItem)) {
+                showModuleAulasView(moduleParam);
+                return;
+            }
+
+            showLessonView(moduleParam, moduleItem.id);
+            return;
+        }
+
+        if (hasModuleGrid()) {
+            showModuleGridView();
+            return;
+        }
+
+        var onlyModule = state.modules[0];
+
+        if (onlyModule) {
+            if (moduleHasAulas(onlyModule)) {
+                showModuleAulasView(onlyModule.id);
+            } else {
+                showLessonView(onlyModule.id, onlyModule.id);
+            }
+        }
+    }
+
     async function loadProduct() {
         if (!productId) {
             window.location.href = '/comunidade';
@@ -368,18 +553,9 @@
 
         state.product = data.product;
         state.modules = data.product.modules || [];
-        sidebarProductName.textContent = data.product.name;
         document.title = data.product.name + ' — Comunidade Onda Prodígio';
 
-        renderModules();
-
-        var initialModule = moduleParam || (hasModuleGrid() ? null : (state.modules[0] && state.modules[0].id));
-
-        if (initialModule) {
-            showLessonView(initialModule);
-        } else {
-            showModuleGridView();
-        }
+        resolveInitialView();
     }
 
     async function boot() {
@@ -407,14 +583,21 @@
     }
 
     btnPrev.addEventListener('click', function () {
-        navigateModule(-1);
+        navigateAula(-1);
     });
 
     btnNext.addEventListener('click', function () {
-        navigateModule(1);
+        navigateAula(1);
     });
 
     btnList.addEventListener('click', function () {
+        var moduleItem = getActiveModule();
+
+        if (moduleItem && moduleHasAulas(moduleItem)) {
+            showModuleAulasView(state.activeModuleId);
+            return;
+        }
+
         if (hasModuleGrid()) {
             showModuleGridView();
             return;
@@ -423,7 +606,16 @@
         openSidebar();
     });
 
-    btnBackModules.addEventListener('click', showModuleGridView);
+    btnBackModules.addEventListener('click', function () {
+        if (state.activeModuleId && moduleHasAulas(getActiveModule())) {
+            showModuleAulasView(state.activeModuleId);
+            return;
+        }
+
+        showModuleGridView();
+    });
+
+    btnBackFromAulas.addEventListener('click', showModuleGridView);
     btnToggleSidebar.addEventListener('click', openSidebar);
     sidebarOverlay.addEventListener('click', closeSidebar);
 
@@ -445,7 +637,7 @@
 
         var payload = {
             product_id: productId,
-            module_id: state.activeModuleId,
+            module_id: state.activeAulaId || state.activeModuleId,
             content: content,
         };
 
