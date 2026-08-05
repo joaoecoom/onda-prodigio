@@ -36,6 +36,11 @@
         '13-18 anos',
     ];
 
+    var CONCLUIDO_AULA_SHORT_LABELS = [
+        'Inquérito',
+        'Presente',
+    ];
+
     var PDF_MATERIALS = {
         '/comunidade/assets/ebooks/seja-bem-vinda.pdf': {
             name: 'Boas-vindas PDF.pdf',
@@ -207,6 +212,10 @@
 
         if (moduleItem && moduleItem.sort_order === 4 && OFERTAS_AULA_SHORT_LABELS[index]) {
             return OFERTAS_AULA_SHORT_LABELS[index];
+        }
+
+        if (moduleItem && moduleItem.sort_order === 5 && CONCLUIDO_AULA_SHORT_LABELS[index]) {
+            return CONCLUIDO_AULA_SHORT_LABELS[index];
         }
 
         return aulaItem.title;
