@@ -1136,6 +1136,35 @@ html[data-theme="light"] .comunidade-theme-toggle__icon--light {
     margin-left: 1.25rem;
 }
 
+.comunidade-comment__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.65rem;
+}
+
+.comunidade-btn--danger {
+    color: #fca5a5;
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    background: rgba(127, 29, 29, 0.15);
+}
+
+.comunidade-btn--danger:hover:not(:disabled) {
+    background: rgba(127, 29, 29, 0.28);
+    border-color: rgba(248, 113, 113, 0.55);
+}
+
+html[data-theme="light"] .comunidade-btn--danger {
+    color: #b91c1c;
+    border-color: rgba(185, 28, 28, 0.25);
+    background: rgba(254, 226, 226, 0.85);
+}
+
+html[data-theme="light"] .comunidade-btn--danger:hover:not(:disabled) {
+    background: #fee2e2;
+    border-color: rgba(185, 28, 28, 0.45);
+}
+
 /* ── Formulários ── */
 
 .comunidade-form {

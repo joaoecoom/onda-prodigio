@@ -517,6 +517,17 @@
     }
 
     function renderComment(comment, isReply) {
+        var adminActions = '';
+
+        if (state.isAdmin) {
+            adminActions = '<div class="comunidade-comment__actions">' +
+                (!comment.is_admin ?
+                    '<button type="button" class="comunidade-btn comunidade-btn--light" data-reply-id="' + comment.id + '">Responder</button>' :
+                    '') +
+                '<button type="button" class="comunidade-btn comunidade-btn--danger" data-delete-id="' + comment.id + '">Eliminar</button>' +
+            '</div>';
+        }
+
         return (
             '<article class="comunidade-comment' + (comment.is_admin ? ' is-admin' : '') + (isReply ? ' comunidade-comment__reply' : '') + '">' +
                 '<div class="comunidade-comment__head">' +
@@ -524,9 +535,7 @@
                     '<span class="comunidade-comment__date">' + escapeHtml(formatDate(comment.created_at)) + '</span>' +
                 '</div>' +
                 '<div class="comunidade-comment__content">' + escapeHtml(comment.content) + '</div>' +
-                (state.isAdmin && !comment.is_admin ?
-                    '<button type="button" class="comunidade-btn comunidade-btn--light" style="margin-top:0.65rem;" data-reply-id="' + comment.id + '">Responder</button>' :
-                    '') +
+                adminActions +
             '</article>'
         );
     }
@@ -555,6 +564,43 @@
                 state.replyToId = button.getAttribute('data-reply-id');
                 commentContent.placeholder = 'Resposta de suporte…';
                 commentContent.focus();
+            });
+        });
+
+        commentsList.querySelectorAll('[data-delete-id]').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                var commentId = button.getAttribute('data-delete-id');
+
+                if (!commentId) {
+                    return;
+                }
+
+                if (!window.confirm('Eliminar este comentário? Esta acção não pode ser desfeita.')) {
+                    return;
+                }
+
+                clearCommentsError();
+                button.disabled = true;
+
+                var response = await window.ComunidadeAuth.apiFetch('/api/comunidade/comments', {
+                    method: 'DELETE',
+                    body: JSON.stringify({ id: commentId }),
+                });
+
+                var data = await response.json();
+
+                if (!response.ok) {
+                    button.disabled = false;
+                    showCommentsError(data.error || 'Não foi possível eliminar o comentário.');
+                    return;
+                }
+
+                if (state.replyToId === commentId) {
+                    state.replyToId = null;
+                    commentContent.placeholder = 'Escreve um comentário ou resposta de suporte…';
+                }
+
+                await loadComments();
             });
         });
     }
