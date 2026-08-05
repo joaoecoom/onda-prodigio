@@ -794,16 +794,23 @@
 
         if (meResponse.ok) {
             state.isAdmin = meData.role === 'admin';
-            topbarUser.textContent = meData.name ? meData.name + ' · ' + meData.email : meData.email;
 
             if (state.isAdmin) {
-                topbarUser.textContent += ' · Admin';
+                topbarUser.textContent = (meData.name || 'Admin') + ' · Admin';
+                topbarUser.title = meData.email || '';
                 commentContent.placeholder = 'Escreve um comentário ou resposta de suporte…';
 
                 var adminSurveyLink = document.getElementById('admin-survey-link');
                 if (adminSurveyLink) {
                     adminSurveyLink.hidden = false;
                 }
+            } else {
+                topbarUser.textContent = meData.name ? meData.name + ' · ' + meData.email : meData.email;
+                topbarUser.title = '';
+            }
+
+            if (window.ComunidadeTheme && window.ComunidadeTheme.syncTopbarHeight) {
+                window.ComunidadeTheme.syncTopbarHeight();
             }
         }
 

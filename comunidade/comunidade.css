@@ -167,22 +167,42 @@ html[data-theme="light"] .comunidade-theme-toggle__icon--light {
 .comunidade-topbar {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 0 1.25rem;
-    height: 56px;
+    padding: 0.55rem 1.25rem;
+    min-height: 56px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.75rem 1rem;
     position: sticky;
     top: 0;
     z-index: 100;
 }
 
-.comunidade-topbar__left {
+.comunidade-topbar__row {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.65rem;
     min-width: 0;
+}
+
+.comunidade-topbar__row--main {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.comunidade-topbar__row--actions {
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.comunidade-topbar__identity {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.comunidade-topbar__theme {
+    flex-shrink: 0;
 }
 
 .comunidade-topbar__menu-btn {
@@ -217,9 +237,10 @@ html[data-theme="light"] .comunidade-theme-toggle__icon--light {
 .comunidade-topbar__user {
     font-size: 0.8125rem;
     color: var(--text-muted);
-    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 .comunidade-topbar__actions {
@@ -1753,20 +1774,50 @@ html[data-theme="light"] .comunidade-btn--danger:hover:not(:disabled) {
 
 /* ── Responsive ── */
 
+@media (max-width: 768px) {
+    .comunidade-topbar {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 0.65rem 0.85rem;
+        gap: 0.55rem;
+    }
+
+    .comunidade-topbar__row--main {
+        width: 100%;
+    }
+
+    .comunidade-topbar__row--actions {
+        width: 100%;
+        justify-content: stretch;
+        gap: 0.4rem;
+    }
+
+    .comunidade-topbar__row--actions .comunidade-btn--ghost {
+        flex: 1 1 calc(33.333% - 0.3rem);
+        min-width: 0;
+        padding: 0.5rem 0.45rem;
+        font-size: 0.75rem;
+        text-align: center;
+    }
+
+    .comunidade-topbar__brand {
+        font-size: 0.875rem;
+    }
+
+    .comunidade-topbar__user {
+        font-size: 0.75rem;
+    }
+}
+
 @media (max-width: 900px) {
     .comunidade-topbar__menu-btn {
         display: grid;
         place-items: center;
     }
 
-    .comunidade-topbar__actions .comunidade-btn--ghost {
-        padding: 0.45rem 0.65rem;
-        font-size: 0.8125rem;
-    }
-
     .comunidade-sidebar {
         position: fixed;
-        top: 56px;
+        top: var(--comunidade-topbar-height, 56px);
         left: 0;
         bottom: 0;
         z-index: 200;

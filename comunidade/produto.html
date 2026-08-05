@@ -14,22 +14,22 @@
 <body>
     <div class="comunidade-shell">
         <header class="comunidade-topbar">
-            <div class="comunidade-topbar__left">
+            <div class="comunidade-topbar__row comunidade-topbar__row--main">
                 <button class="comunidade-topbar__menu-btn" type="button" id="btn-toggle-sidebar" aria-label="Lista de módulos" hidden>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
                 </button>
-                <div>
+                <div class="comunidade-topbar__identity">
                     <div class="comunidade-topbar__brand">Onda Prodígio <span>· Comunidade</span></div>
                     <div class="comunidade-topbar__user" id="topbar-user"></div>
                 </div>
-            </div>
-            <div class="comunidade-topbar__actions">
-                <button type="button" class="comunidade-theme-toggle" data-theme-toggle aria-label="Alternar tema">
+                <button type="button" class="comunidade-theme-toggle comunidade-topbar__theme" data-theme-toggle aria-label="Alternar tema">
                     <svg class="comunidade-theme-toggle__icon--dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
                     <svg class="comunidade-theme-toggle__icon--light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 </button>
+            </div>
+            <div class="comunidade-topbar__row comunidade-topbar__row--actions">
                 <a class="comunidade-btn comunidade-btn--ghost" href="/comunidade">Meus cursos</a>
-                <a class="comunidade-btn comunidade-btn--ghost" id="admin-survey-link" href="/respostaquestionario" hidden>Respostas questionário</a>
+                <a class="comunidade-btn comunidade-btn--ghost" id="admin-survey-link" href="/respostaquestionario" title="Respostas ao questionário inicial" hidden>Respostas</a>
                 <button class="comunidade-btn comunidade-btn--ghost" type="button" id="btn-logout">Sair</button>
             </div>
         </header>

@@ -31,12 +31,34 @@
         document.querySelectorAll('[data-theme-toggle]').forEach(function (button) {
             button.addEventListener('click', toggle);
         });
+
+        syncTopbarHeight();
+        window.addEventListener('resize', syncTopbarHeight);
+
+        if (typeof ResizeObserver !== 'undefined') {
+            var topbar = document.querySelector('.comunidade-topbar');
+
+            if (topbar) {
+                new ResizeObserver(syncTopbarHeight).observe(topbar);
+            }
+        }
+    }
+
+    function syncTopbarHeight() {
+        var topbar = document.querySelector('.comunidade-topbar');
+
+        if (!topbar) {
+            return;
+        }
+
+        document.documentElement.style.setProperty('--comunidade-topbar-height', topbar.offsetHeight + 'px');
     }
 
     window.ComunidadeTheme = {
         getTheme: getTheme,
         applyTheme: applyTheme,
         toggle: toggle,
+        syncTopbarHeight: syncTopbarHeight,
     };
 
     if (document.readyState === 'loading') {

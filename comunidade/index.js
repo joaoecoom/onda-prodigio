@@ -56,11 +56,12 @@
 
         if (meResponse.ok) {
             var displayName = meData.name || meData.email.split('@')[0];
-            topbarUser.textContent = meData.email;
+            topbarUser.textContent = meData.role === 'admin'
+                ? (meData.name || 'Admin') + ' · Admin'
+                : meData.email;
+            topbarUser.title = meData.role === 'admin' ? (meData.email || '') : '';
 
             if (meData.role === 'admin') {
-                topbarUser.textContent += ' · Admin';
-
                 var adminSurveyLink = document.getElementById('admin-survey-link');
                 if (adminSurveyLink) {
                     adminSurveyLink.hidden = false;
@@ -69,6 +70,10 @@
 
             welcomeTitle.textContent = 'Olá, ' + displayName.split(' ')[0] + '!';
             welcomeSubtitle.textContent = 'Acede aos programas incluídos na tua compra.';
+
+            if (window.ComunidadeTheme && window.ComunidadeTheme.syncTopbarHeight) {
+                window.ComunidadeTheme.syncTopbarHeight();
+            }
         }
 
         var productsResponse = await window.ComunidadeAuth.apiFetch('/api/comunidade/products');

@@ -18,7 +18,12 @@
             return;
         }
 
-        topbarUser.textContent = (meData.name || meData.email) + ' · Admin';
+        topbarUser.textContent = (meData.name || 'Admin') + ' · Admin';
+        topbarUser.title = meData.email || '';
+
+        if (window.ComunidadeTheme && window.ComunidadeTheme.syncTopbarHeight) {
+            window.ComunidadeTheme.syncTopbarHeight();
+        }
 
         if (window.ComunidadeWelcomeSurvey) {
             await window.ComunidadeWelcomeSurvey.mountResponsesPage(responsesRoot, PRODUCT_ID);
