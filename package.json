@@ -2,6 +2,7 @@
   "name": "onda-prodigio",
   "private": true,
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.0",
     "micro": "^10.0.1",
     "stripe": "^17.7.0"
   }

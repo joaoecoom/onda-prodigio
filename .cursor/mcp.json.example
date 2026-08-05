@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "supabase-onda-prodigio": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=vmyezkbkthguojmxhacw",
+      "headers": {
+        "Authorization": "Bearer COLOCA_AQUI_O_PAT_DA_ANGELA"
+      }
+    }
+  }
+}

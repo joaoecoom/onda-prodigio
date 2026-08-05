@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar — Comunidade Onda Prodígio</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/comunidade/comunidade.css">
+</head>
+<body>
+    <main class="comunidade-login-page">
+        <section class="comunidade-login-card" aria-labelledby="login-title">
+            <span class="comunidade-badge">Área de membros</span>
+            <h1 id="login-title">Comunidade Onda Prodígio</h1>
+            <p>Usa o email da compra. Se for o teu primeiro acesso, vais definir a password aqui.</p>
+
+            <div class="comunidade-alert comunidade-alert--error" id="login-error" hidden></div>
+
+            <div class="comunidade-steps is-visible" id="step-email">
+                <div class="comunidade-form">
+                    <div class="comunidade-field">
+                        <label for="email">Email da compra</label>
+                        <input id="email" type="email" autocomplete="email" placeholder="nome@email.com" required>
+                    </div>
+                    <button class="comunidade-btn comunidade-btn--primary" type="button" id="btn-check-email">Continuar</button>
+                </div>
+            </div>
+
+            <div class="comunidade-steps" id="step-password">
+                <div class="comunidade-alert comunidade-alert--info" id="login-info"></div>
+                <div class="comunidade-form">
+                    <div class="comunidade-field">
+                        <label for="password">Password</label>
+                        <input id="password" type="password" autocomplete="current-password" minlength="8" required>
+                    </div>
+                    <button class="comunidade-btn comunidade-btn--primary" type="button" id="btn-login">Entrar</button>
+                    <button class="comunidade-btn comunidade-btn--light" type="button" id="btn-back">Voltar</button>
+                </div>
+            </div>
+
+            <div class="comunidade-steps" id="step-create-password">
+                <div class="comunidade-alert comunidade-alert--info">
+                    Primeiro acesso detectado. Cria a tua password para entrar na comunidade.
+                </div>
+                <div class="comunidade-form">
+                    <div class="comunidade-field">
+                        <label for="new-password">Nova password</label>
+                        <input id="new-password" type="password" autocomplete="new-password" minlength="8" required>
+                    </div>
+                    <div class="comunidade-field">
+                        <label for="confirm-password">Confirmar password</label>
+                        <input id="confirm-password" type="password" autocomplete="new-password" minlength="8" required>
+                    </div>
+                    <button class="comunidade-btn comunidade-btn--primary" type="button" id="btn-create-password">Criar password e entrar</button>
+                    <button class="comunidade-btn comunidade-btn--light" type="button" id="btn-back-create">Voltar</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="/comunidade/auth.js"></script>
+    <script src="/comunidade/login.js"></script>
+</body>
+</html>

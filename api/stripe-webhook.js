@@ -52,6 +52,15 @@ module.exports = async function handler(req, res) {
                 trackingResults = await serverEvents.sendPurchaseFromPaymentIntent(event.data.object, req);
                 console.log('Purchase tracking:', event.data.object.id, JSON.stringify(trackingResults));
             }
+
+            try {
+                var grantAccess = require('../lib/comunidade/grant-access');
+                var accessResult = await grantAccess.grantAccessFromPaymentIntent(event.data.object);
+
+                console.log('Comunidade access:', event.data.object.id, JSON.stringify(accessResult));
+            } catch (accessError) {
+                console.error('Erro ao criar acesso à comunidade:', accessError);
+            }
         }
 
         if (event.type === 'payment_intent.payment_failed') {

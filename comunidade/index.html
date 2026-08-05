@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comunidade — Onda Prodígio</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/comunidade/comunidade.css">
+</head>
+<body>
+    <div class="comunidade-shell">
+        <header class="comunidade-topbar">
+            <div class="comunidade-topbar__left">
+                <div>
+                    <div class="comunidade-topbar__brand">Onda Prodígio <span>· Comunidade</span></div>
+                    <div class="comunidade-topbar__user" id="topbar-user"></div>
+                </div>
+            </div>
+            <div class="comunidade-topbar__actions">
+                <button class="comunidade-btn comunidade-btn--ghost" type="button" id="btn-logout">Sair</button>
+            </div>
+        </header>
+
+        <div class="comunidade-main comunidade-main--dashboard">
+            <div class="comunidade-welcome">
+                <h1 id="welcome-title">Os teus cursos</h1>
+                <p id="welcome-subtitle">Acede aos programas incluídos na tua compra.</p>
+            </div>
+
+            <div class="comunidade-grid" id="product-grid"></div>
+        </div>
+    </div>
+
+    <script src="/comunidade/auth.js"></script>
+    <script src="/comunidade/index.js"></script>
+</body>
+</html>

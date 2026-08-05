@@ -11,6 +11,18 @@
     {
       "source": "/obgd-test",
       "destination": "/obgd-test/index.html"
+    },
+    {
+      "source": "/comunidade",
+      "destination": "/comunidade/index.html"
+    },
+    {
+      "source": "/comunidade/login",
+      "destination": "/comunidade/login.html"
+    },
+    {
+      "source": "/comunidade/produto",
+      "destination": "/comunidade/produto.html"
     }
   ],
   "headers": [
