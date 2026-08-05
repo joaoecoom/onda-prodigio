@@ -548,19 +548,33 @@ html[data-theme="light"] .comunidade-sidebar-lesson.is-active {
 }
 
 .comunidade-sidebar-lesson__title {
-    flex: 1;
-    min-width: 0;
+    display: block;
     font-size: 0.8125rem;
     font-weight: 600;
     line-height: 1.35;
     color: var(--text-muted);
 }
 
+.comunidade-sidebar-lesson__info {
+    flex: 1;
+    min-width: 0;
+}
+
 .comunidade-sidebar-lesson.is-active .comunidade-sidebar-lesson__title {
     color: var(--text);
 }
 
-.comunidade-sidebar-lesson__check {
+.comunidade-sidebar-lesson__unlock,
+.comunidade-aula-item__unlock {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--text-subtle);
+}
+
+.comunidade-sidebar-lesson__check,
+.comunidade-sidebar-lesson__status {
     width: 22px;
     height: 22px;
     border-radius: 50%;
@@ -571,10 +585,23 @@ html[data-theme="light"] .comunidade-sidebar-lesson.is-active {
     color: transparent;
 }
 
-.comunidade-sidebar-lesson.is-done .comunidade-sidebar-lesson__check {
+.comunidade-sidebar-lesson.is-done .comunidade-sidebar-lesson__check,
+.comunidade-sidebar-lesson.is-done .comunidade-sidebar-lesson__status {
     border-color: var(--accent);
     background: var(--accent-soft);
     color: var(--accent);
+}
+
+.comunidade-sidebar-lesson.is-locked .comunidade-sidebar-lesson__status,
+.comunidade-aula-item.is-locked .comunidade-aula-item__status {
+    border-color: var(--border-strong);
+    background: transparent;
+    color: var(--text-subtle);
+}
+
+.comunidade-sidebar-lesson.is-locked,
+.comunidade-aula-item.is-locked {
+    opacity: 0.82;
 }
 
 .comunidade-main {
@@ -1282,14 +1309,20 @@ html[data-theme="light"] .comunidade-sidebar-lesson.is-active {
 }
 
 .comunidade-aula-item__title {
-    flex: 1;
+    display: block;
     font-size: 0.875rem;
     font-weight: 600;
     line-height: 1.35;
     color: var(--text);
 }
 
-.comunidade-aula-item__check {
+.comunidade-aula-item__meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.comunidade-aula-item__check,
+.comunidade-aula-item__status {
     width: 22px;
     height: 22px;
     border-radius: 50%;
@@ -1300,10 +1333,51 @@ html[data-theme="light"] .comunidade-sidebar-lesson.is-active {
     color: transparent;
 }
 
-.comunidade-aula-item.is-done .comunidade-aula-item__check {
+.comunidade-aula-item.is-done .comunidade-aula-item__check,
+.comunidade-aula-item.is-done .comunidade-aula-item__status {
     border-color: var(--accent);
     background: var(--accent-soft);
     color: var(--accent);
+}
+
+.comunidade-player--locked {
+    aspect-ratio: auto;
+    min-height: 240px;
+    display: grid;
+    place-items: center;
+    background: var(--surface);
+}
+
+.comunidade-locked {
+    text-align: center;
+    padding: 2rem 1.5rem;
+    max-width: 28rem;
+}
+
+.comunidade-locked__icon {
+    color: var(--text-subtle);
+    margin-bottom: 0.85rem;
+}
+
+.comunidade-locked__title {
+    margin: 0 0 0.45rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.comunidade-locked__date {
+    margin: 0 0 0.65rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.comunidade-locked__hint {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    line-height: 1.45;
 }
 
 /* ── Dashboard ── */

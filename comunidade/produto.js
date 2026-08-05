@@ -27,6 +27,15 @@
         'Estrelinha',
     ];
 
+    var OFERTAS_AULA_SHORT_LABELS = [
+        'Receitas',
+        'Teste',
+        'Guia',
+        '3-6 anos',
+        '7-12 anos',
+        '13-18 anos',
+    ];
+
     var PDF_MATERIALS = {
         '/comunidade/assets/ebooks/seja-bem-vinda.pdf': {
             name: 'Boas-vindas PDF.pdf',
@@ -196,7 +205,43 @@
             return SONO_AULA_SHORT_LABELS[index];
         }
 
+        if (moduleItem && moduleItem.sort_order === 4 && OFERTAS_AULA_SHORT_LABELS[index]) {
+            return OFERTAS_AULA_SHORT_LABELS[index];
+        }
+
         return aulaItem.title;
+    }
+
+    function isAulaLocked(aulaItem) {
+        return Boolean(aulaItem && aulaItem.is_locked && !state.isAdmin);
+    }
+
+    function renderLockedPlayer(aulaItem) {
+        if (lessonSurvey) {
+            window.ComunidadeWelcomeSurvey.unmount(lessonSurvey);
+        }
+
+        if (lessonPlayerWrap) {
+            lessonPlayerWrap.hidden = false;
+        }
+
+        lessonMaterials.hidden = true;
+        materialsList.innerHTML = '';
+        renderInstructions('');
+
+        contentPlayer.className = 'comunidade-player comunidade-player--locked';
+        contentPlayer.innerHTML = (
+            '<div class="comunidade-locked">' +
+                '<div class="comunidade-locked__icon" aria-hidden="true">' +
+                    '<svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>' +
+                '</div>' +
+                '<p class="comunidade-locked__title">Este conteúdo ainda não está disponível.</p>' +
+                (aulaItem.unlock_label ?
+                    '<p class="comunidade-locked__date">' + escapeHtml(aulaItem.unlock_label) + '</p>' :
+                    '') +
+                '<p class="comunidade-locked__hint">O desbloqueio é calculado a partir da data da tua compra.</p>' +
+            '</div>'
+        );
     }
 
     function resolveAssetUrl(path) {
@@ -594,15 +639,23 @@
             var image = aulaItem.image_url ? '/' + aulaItem.image_url.replace(/^\//, '') : '';
             var thumbLabel = getAulaThumbLabel(aulaItem, index, getActiveModule());
             var isDone = isItemComplete(aulaItem.id);
+            var isLocked = isAulaLocked(aulaItem);
 
             return (
-                '<button type="button" class="comunidade-aula-item' + (isDone ? ' is-done' : '') + '" data-open-aula="' + aulaItem.id + '">' +
+                '<button type="button" class="comunidade-aula-item' + (isDone ? ' is-done' : '') + (isLocked ? ' is-locked' : '') + '" data-open-aula="' + aulaItem.id + '">' +
                     '<div class="comunidade-aula-item__thumb">' +
                         (image ? '<img src="' + image + '" alt="">' : '<span class="comunidade-aula-item__thumb-label">' + escapeHtml(thumbLabel) + '</span>') +
                     '</div>' +
-                    '<span class="comunidade-aula-item__title">' + escapeHtml(aulaItem.title) + '</span>' +
-                    '<span class="comunidade-aula-item__check" aria-hidden="true">' +
-                        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>' +
+                    '<span class="comunidade-aula-item__meta">' +
+                        '<span class="comunidade-aula-item__title">' + escapeHtml(aulaItem.title) + '</span>' +
+                        (isLocked && aulaItem.unlock_label ?
+                            '<span class="comunidade-aula-item__unlock">' + escapeHtml(aulaItem.unlock_label) + '</span>' :
+                            '') +
+                    '</span>' +
+                    '<span class="comunidade-aula-item__status" aria-hidden="true">' +
+                        (isLocked ?
+                            '<svg class="comunidade-aula-item__lock" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>' :
+                            '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>') +
                     '</span>' +
                 '</button>'
             );
@@ -688,26 +741,34 @@
     function renderSidebarLessonItem(moduleId, aulaItem, index) {
         var isActive = moduleId === state.activeModuleId && aulaItem.id === state.activeAulaId;
         var isDone = isItemComplete(aulaItem.id);
+        var isLocked = isAulaLocked(aulaItem);
         var image = aulaItem.image_url ? '/' + aulaItem.image_url.replace(/^\//, '') : '';
         var moduleItem = getModuleById(moduleId);
         var thumbLabel = getAulaThumbLabel(aulaItem, index, moduleItem);
 
         return (
-            '<button type="button" class="comunidade-sidebar-lesson' + (isActive ? ' is-active' : '') + (isDone ? ' is-done' : '') + '" data-module-id="' + moduleId + '" data-aula-id="' + aulaItem.id + '">' +
+            '<button type="button" class="comunidade-sidebar-lesson' + (isActive ? ' is-active' : '') + (isDone ? ' is-done' : '') + (isLocked ? ' is-locked' : '') + '" data-module-id="' + moduleId + '" data-aula-id="' + aulaItem.id + '">' +
                 '<span class="comunidade-sidebar-lesson__thumb">' +
                     (image ?
                         '<img src="' + image + '" alt="">' :
                         '<span class="comunidade-sidebar-lesson__thumb-label">' + escapeHtml(thumbLabel) + '</span>') +
-                    (isActive ?
+                    (isActive && !isLocked ?
                         '<span class="comunidade-sidebar-lesson__playing">' +
                             '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>' +
                             'A reproduzir agora' +
                         '</span>' :
                         '') +
                 '</span>' +
-                '<span class="comunidade-sidebar-lesson__title">' + escapeHtml(aulaItem.title) + '</span>' +
-                '<span class="comunidade-sidebar-lesson__check" aria-hidden="true">' +
-                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>' +
+                '<span class="comunidade-sidebar-lesson__info">' +
+                    '<span class="comunidade-sidebar-lesson__title">' + escapeHtml(aulaItem.title) + '</span>' +
+                    (isLocked && aulaItem.unlock_label ?
+                        '<span class="comunidade-sidebar-lesson__unlock">' + escapeHtml(aulaItem.unlock_label) + '</span>' :
+                        '') +
+                '</span>' +
+                '<span class="comunidade-sidebar-lesson__status" aria-hidden="true">' +
+                    (isLocked ?
+                        '<svg class="comunidade-sidebar-lesson__lock" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>' :
+                        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>') +
                 '</span>' +
             '</button>'
         );
@@ -853,6 +914,12 @@
             });
 
             markContentViewed(aulaItem.id);
+            return;
+        }
+
+        if (isAulaLocked(aulaItem)) {
+            renderLockedPlayer(aulaItem);
+            lessonDescription.textContent = aulaItem.description || 'Material complementar do método.';
             return;
         }
 
