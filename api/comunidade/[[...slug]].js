@@ -8,9 +8,34 @@ var routes = {
     comments: require('../../lib/comunidade/handlers/comments'),
 };
 
-module.exports = async function handler(req, res) {
+function getRoute(req) {
     var slug = req.query.slug;
-    var route = Array.isArray(slug) ? slug[0] : slug;
+
+    if (Array.isArray(slug) && slug[0]) {
+        return slug[0];
+    }
+
+    if (typeof slug === 'string' && slug) {
+        return slug;
+    }
+
+    var url = req.url || '';
+
+    if (url.indexOf('?') !== -1) {
+        url = url.split('?')[0];
+    }
+
+    var prefix = '/api/comunidade/';
+
+    if (url.indexOf(prefix) === 0) {
+        return url.slice(prefix.length).replace(/\/$/, '');
+    }
+
+    return '';
+}
+
+module.exports = async function handler(req, res) {
+    var route = getRoute(req);
 
     if (!route || !routes[route]) {
         return res.status(404).json({ error: 'Rota não encontrada.' });
