@@ -377,14 +377,23 @@
             : 'Descarrega o material em PDF.');
 
         if (aulaItem.type === 'video') {
-            ebookDownload.hidden = true;
-
             if (aulaItem.youtube_id) {
                 contentPlayer.className = 'comunidade-player';
                 contentPlayer.innerHTML = '<iframe src="https://www.youtube.com/embed/' + encodeURIComponent(aulaItem.youtube_id) + '" title="' + escapeHtml(aulaItem.title) + '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>';
             } else {
                 contentPlayer.className = 'comunidade-player comunidade-player--empty';
-                contentPlayer.textContent = 'Vídeo em breve — estamos a preparar esta aula.';
+                contentPlayer.textContent = aulaItem.pdf_path
+                    ? 'Vídeo em breve — podes descarregar o material complementar abaixo.'
+                    : 'Vídeo em breve — estamos a preparar esta aula.';
+            }
+
+            if (aulaItem.pdf_path) {
+                ebookDownload.hidden = false;
+                ebookLink.href = aulaItem.pdf_path.charAt(0) === '/'
+                    ? aulaItem.pdf_path
+                    : '/' + aulaItem.pdf_path.replace(/^\//, '');
+            } else {
+                ebookDownload.hidden = true;
             }
 
             return;
@@ -395,7 +404,9 @@
 
         if (aulaItem.pdf_path) {
             ebookDownload.hidden = false;
-            ebookLink.href = aulaItem.pdf_path;
+            ebookLink.href = aulaItem.pdf_path.charAt(0) === '/'
+                ? aulaItem.pdf_path
+                : '/' + aulaItem.pdf_path.replace(/^\//, '');
         } else {
             ebookDownload.hidden = true;
         }
