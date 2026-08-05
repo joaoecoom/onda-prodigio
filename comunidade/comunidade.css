@@ -530,16 +530,81 @@ html[data-theme="light"] .comunidade-theme-toggle__icon--light {
 
 .comunidade-player--pdf {
     aspect-ratio: auto;
-    height: min(75vh, 820px);
-    min-height: 420px;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
 }
 
-.comunidade-player--pdf iframe {
+.comunidade-pdf-viewer-host {
     width: 100%;
-    height: 100%;
-    border: 0;
+}
+
+.comunidade-pdf-viewer__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    background: var(--player-nav);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-wrap: wrap;
+}
+
+.comunidade-pdf-viewer__hint {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.72);
+}
+
+.comunidade-pdf-viewer__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+.comunidade-pdf-viewer__actions .comunidade-btn {
+    padding: 0.4rem 0.7rem;
+    font-size: 0.75rem;
+}
+
+.comunidade-pdf-viewer__status {
+    padding: 0.65rem 0.85rem;
+    font-size: 0.8125rem;
+    color: var(--text-subtle);
+    background: var(--bg-subtle);
+    border-bottom: 1px solid var(--border);
+}
+
+.comunidade-pdf-viewer__pages {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #242433;
+}
+
+.comunidade-pdf-page {
+    width: 100% !important;
+    height: auto !important;
     display: block;
-    background: #1a1a2e;
+    margin: 0 auto;
+    border-radius: 4px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
+}
+
+.comunidade-pdf-viewer__fallback {
+    padding: 1.25rem;
+    text-align: center;
+}
+
+.comunidade-pdf-viewer__fallback p {
+    margin: 0 0 1rem;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.comunidade-pdf-viewer__fallback .comunidade-pdf-viewer__actions {
+    justify-content: center;
 }
 
 .comunidade-lesson-info__desc {
@@ -1487,6 +1552,11 @@ html[data-theme="light"] .comunidade-btn--danger:hover:not(:disabled) {
         place-items: center;
     }
 
+    .comunidade-topbar__actions .comunidade-btn--ghost {
+        padding: 0.45rem 0.65rem;
+        font-size: 0.8125rem;
+    }
+
     .comunidade-sidebar {
         position: fixed;
         top: 56px;
@@ -1503,10 +1573,95 @@ html[data-theme="light"] .comunidade-btn--danger:hover:not(:disabled) {
     }
 
     .comunidade-main {
-        padding: 1rem;
+        padding: 0.85rem;
     }
 
     .comunidade-grid {
         grid-template-columns: 1fr;
+    }
+
+    .comunidade-content-header {
+        align-items: stretch;
+    }
+
+    .comunidade-search {
+        max-width: none;
+        min-width: 0;
+    }
+
+    .comunidade-module-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.75rem;
+    }
+
+    .comunidade-module-card__title {
+        font-size: 0.8125rem;
+    }
+
+    .comunidade-player {
+        aspect-ratio: 16 / 10;
+    }
+
+    .comunidade-player--pdf {
+        aspect-ratio: auto;
+    }
+
+    .comunidade-pdf-viewer__toolbar {
+        align-items: flex-start;
+    }
+
+    .comunidade-pdf-viewer__pages {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .comunidade-lesson-nav {
+        padding: 0.55rem 0.65rem;
+    }
+
+    .comunidade-lesson-nav__btn {
+        min-width: 48px;
+        font-size: 0.6875rem;
+    }
+
+    .comunidade-lesson-info,
+    .comunidade-materials,
+    .comunidade-survey,
+    .comunidade-survey__admin {
+        padding-left: 0.85rem;
+        padding-right: 0.85rem;
+    }
+
+    .comunidade-materials__file {
+        align-items: flex-start;
+    }
+
+    .comunidade-materials__file-action {
+        margin-left: 0;
+        width: 100%;
+        margin-top: 0.35rem;
+    }
+
+    .comunidade-survey__option {
+        padding: 0.8rem 0.85rem;
+    }
+
+    .comunidade-comment__head {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .comunidade-module-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .comunidade-topbar__brand span {
+        display: none;
+    }
+
+    .comunidade-aula-item {
+        gap: 0.65rem;
     }
 }

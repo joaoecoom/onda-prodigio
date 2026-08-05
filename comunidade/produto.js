@@ -129,11 +129,15 @@
         var url = resolveAssetUrl(aulaItem.pdf_path);
 
         contentPlayer.className = 'comunidade-player comunidade-player--pdf';
-        contentPlayer.innerHTML = (
-            '<iframe src="' + url + '#view=FitH&toolbar=1&navpanes=0" ' +
-            'title="' + escapeHtml(aulaItem.title) + '" ' +
-            'loading="lazy"></iframe>'
-        );
+        contentPlayer.innerHTML = '<div class="comunidade-pdf-viewer-host"></div>';
+
+        if (window.ComunidadePdfViewer) {
+            window.ComunidadePdfViewer.render(
+                contentPlayer.querySelector('.comunidade-pdf-viewer-host'),
+                url,
+                aulaItem.title
+            );
+        }
     }
 
     function renderVideoPlayer(aulaItem) {
