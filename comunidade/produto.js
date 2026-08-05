@@ -38,6 +38,8 @@
         isAdmin: false,
         replyToId: null,
         searchQuery: '',
+        sidebarSearchQuery: '',
+        sidebarCollapsed: false,
     };
 
     var viewModules = document.getElementById('view-modules');
@@ -52,7 +54,7 @@
     var moduleHeaderProgressText = document.getElementById('module-header-progress-text');
     var sidebar = document.getElementById('sidebar');
     var sidebarOverlay = document.getElementById('sidebar-overlay');
-    var sidebarProductName = document.getElementById('sidebar-product-name');
+    var sidebarSearch = document.getElementById('sidebar-search');
     var moduleList = document.getElementById('module-list');
     var lessonPlayerWrap = document.querySelector('.comunidade-player-wrap');
     var contentPlayer = document.getElementById('content-player');
@@ -302,7 +304,6 @@
         var moduleItem = getModuleById(moduleId);
         backBar.hidden = !moduleHasAulas(moduleItem);
 
-        sidebarProductName.textContent = moduleItem ? moduleItem.title : state.product.name;
         updateUrl();
         renderSidebarAulas();
 
@@ -386,23 +387,95 @@
         });
     }
 
-    function renderSidebarAulas() {
+    function getFilteredSidebarAulas() {
         var aulas = getActiveAulas();
+        var query = state.sidebarSearchQuery.trim().toLowerCase();
 
-        moduleList.innerHTML = aulas.map(function (aulaItem, index) {
-            var isActive = aulaItem.id === state.activeAulaId;
-            var typeLabel = aulaItem.type === 'video' ? 'Vídeo' : 'Ebook';
+        if (!query) {
+            return aulas;
+        }
 
-            return (
-                '<button type="button" class="comunidade-module-item' + (isActive ? ' is-active' : '') + '" data-aula-id="' + aulaItem.id + '">' +
-                    '<span class="comunidade-module-item__num">' + (index + 1) + '</span>' +
-                    '<span class="comunidade-module-item__info">' +
-                        '<span class="comunidade-module-item__title">' + escapeHtml(aulaItem.title) + '</span>' +
-                        '<span class="comunidade-module-item__type">' + typeLabel + '</span>' +
+        return aulas.filter(function (aulaItem) {
+            var haystack = (aulaItem.title + ' ' + (aulaItem.description || '')).toLowerCase();
+            return haystack.indexOf(query) !== -1;
+        });
+    }
+
+    function renderSidebarLessonItem(aulaItem, index) {
+        var isActive = aulaItem.id === state.activeAulaId;
+        var image = aulaItem.image_url ? '/' + aulaItem.image_url.replace(/^\//, '') : '';
+        var thumbLabel = AULA_THUMB_LABELS[index] || aulaItem.title;
+
+        return (
+            '<button type="button" class="comunidade-sidebar-lesson' + (isActive ? ' is-active' : '') + '" data-aula-id="' + aulaItem.id + '">' +
+                '<span class="comunidade-sidebar-lesson__thumb">' +
+                    (image ?
+                        '<img src="' + image + '" alt="">' :
+                        '<span class="comunidade-sidebar-lesson__thumb-label">' + escapeHtml(thumbLabel) + '</span>') +
+                    (isActive ?
+                        '<span class="comunidade-sidebar-lesson__playing">' +
+                            '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>' +
+                            'A reproduzir agora' +
+                        '</span>' :
+                        '') +
+                '</span>' +
+                '<span class="comunidade-sidebar-lesson__title">' + escapeHtml(aulaItem.title) + '</span>' +
+                '<span class="comunidade-sidebar-lesson__check" aria-hidden="true">' +
+                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>' +
+                '</span>' +
+            '</button>'
+        );
+    }
+
+    function renderSidebarAulas() {
+        var moduleItem = getActiveModule();
+        var aulas = getFilteredSidebarAulas();
+        var allAulas = getActiveAulas();
+
+        if (!moduleItem) {
+            moduleList.innerHTML = '';
+            return;
+        }
+
+        var moduleIndex = state.modules.findIndex(function (item) {
+            return item.id === moduleItem.id;
+        });
+
+        moduleList.innerHTML = (
+            '<div class="comunidade-sidebar-module">' +
+                '<button type="button" class="comunidade-sidebar-module__head" id="sidebar-module-toggle" aria-expanded="' + (!state.sidebarCollapsed) + '">' +
+                    '<span class="comunidade-sidebar-module__num">' + (moduleIndex + 1) + '</span>' +
+                    '<span class="comunidade-sidebar-module__info">' +
+                        '<span class="comunidade-sidebar-module__title">' + escapeHtml(moduleItem.title) + '</span>' +
+                        '<div class="comunidade-sidebar-module__progress">' +
+                            '<div class="comunidade-sidebar-module__progress-bar"><div class="comunidade-sidebar-module__progress-fill"></div></div>' +
+                            '<span class="comunidade-sidebar-module__progress-text">0%</span>' +
+                        '</div>' +
                     '</span>' +
-                '</button>'
-            );
-        }).join('');
+                    '<span class="comunidade-sidebar-module__chevron" aria-hidden="true">' +
+                        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>' +
+                    '</span>' +
+                '</button>' +
+                '<div class="comunidade-sidebar-lessons' + (state.sidebarCollapsed ? ' is-collapsed' : '') + '" id="sidebar-lessons">' +
+                    (aulas.length ?
+                        aulas.map(function (aulaItem) {
+                            var index = allAulas.findIndex(function (item) {
+                                return item.id === aulaItem.id;
+                            });
+                            return renderSidebarLessonItem(aulaItem, index);
+                        }).join('') :
+                        '<p class="comunidade-sidebar-lessons__empty">Nenhuma aula encontrada.</p>') +
+                '</div>' +
+            '</div>'
+        );
+
+        var toggleBtn = document.getElementById('sidebar-module-toggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function () {
+                state.sidebarCollapsed = !state.sidebarCollapsed;
+                renderSidebarAulas();
+            });
+        }
 
         moduleList.querySelectorAll('[data-aula-id]').forEach(function (button) {
             button.addEventListener('click', function () {
@@ -779,6 +852,13 @@
         state.searchQuery = moduleSearch.value;
         renderModuleGrid();
     });
+
+    if (sidebarSearch) {
+        sidebarSearch.addEventListener('input', function () {
+            state.sidebarSearchQuery = sidebarSearch.value;
+            renderSidebarAulas();
+        });
+    }
 
     commentForm.addEventListener('submit', async function (event) {
         event.preventDefault();

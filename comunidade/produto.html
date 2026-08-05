@@ -69,9 +69,11 @@
         <!-- Vista aula / player -->
         <div class="comunidade-layout" id="view-lesson" hidden>
             <aside class="comunidade-sidebar" id="sidebar">
-                <div class="comunidade-sidebar__header">
-                    <div class="comunidade-sidebar__title">Aulas deste módulo</div>
-                    <div class="comunidade-sidebar__product-name" id="sidebar-product-name">A carregar…</div>
+                <div class="comunidade-sidebar__toolbar">
+                    <label class="comunidade-sidebar-search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/></svg>
+                        <input type="search" id="sidebar-search" placeholder="Pesquisar conteúdo" autocomplete="off">
+                    </label>
                 </div>
                 <div class="comunidade-module-list" id="module-list"></div>
             </aside>
