@@ -6,6 +6,7 @@ var routes = {
     products: require('../../lib/comunidade/handlers/products'),
     product: require('../../lib/comunidade/handlers/product'),
     comments: require('../../lib/comunidade/handlers/comments'),
+    survey: require('../../lib/comunidade/handlers/survey'),
 };
 
 function getRoute(req) {

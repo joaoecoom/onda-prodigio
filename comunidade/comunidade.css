@@ -1228,6 +1228,186 @@ html[data-theme="light"] .comunidade-btn--danger:hover:not(:disabled) {
     border: 1px solid var(--alert-info-border);
 }
 
+.comunidade-survey-host {
+    border-top: 1px solid var(--border);
+}
+
+.comunidade-survey {
+    padding: 1.25rem;
+}
+
+.comunidade-survey__hero {
+    margin-bottom: 1.25rem;
+}
+
+.comunidade-survey__title {
+    margin: 0 0 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.comunidade-survey__intro {
+    margin: 0 0 0.65rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    color: var(--text-muted);
+}
+
+.comunidade-survey__note {
+    margin: 0.85rem 0 0;
+    font-size: 0.8125rem;
+    color: var(--text-subtle);
+}
+
+.comunidade-survey__note span {
+    color: #f87171;
+    font-weight: 700;
+}
+
+.comunidade-survey__form {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.comunidade-survey__question-label {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    line-height: 1.45;
+    color: var(--text);
+    margin-bottom: 0.65rem;
+}
+
+.comunidade-survey__question-num {
+    color: var(--accent);
+}
+
+.comunidade-survey__required {
+    color: #f87171;
+}
+
+.comunidade-survey__options {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.comunidade-survey__option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.7rem 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-raised);
+    cursor: pointer;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--text-muted);
+}
+
+.comunidade-survey__option:has(input:checked) {
+    border-color: var(--accent-border);
+    background: var(--comment-admin-bg);
+    color: var(--text);
+}
+
+.comunidade-survey__option input {
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+}
+
+.comunidade-survey__other {
+    width: 100%;
+    margin-top: 0.45rem;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    font: inherit;
+    font-size: 0.875rem;
+    background: var(--input-bg);
+    color: var(--text);
+}
+
+.comunidade-survey__textarea {
+    width: 100%;
+    min-height: 110px;
+    border: 1px solid var(--input-border);
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+    font: inherit;
+    font-size: 0.875rem;
+    background: var(--input-bg);
+    color: var(--text);
+    resize: vertical;
+}
+
+.comunidade-survey__submit {
+    justify-self: start;
+    margin-top: 0.25rem;
+}
+
+.comunidade-survey__success {
+    padding: 1.5rem 1.25rem;
+}
+
+.comunidade-survey__success-title {
+    margin: 0 0 0.5rem;
+    font-size: 1.125rem;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.comunidade-survey__success-text {
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+
+.comunidade-survey__admin {
+    padding: 1.25rem;
+}
+
+.comunidade-survey__admin-card {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    background: var(--surface-raised);
+    margin-top: 0.85rem;
+}
+
+.comunidade-survey__admin-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.comunidade-survey__admin-email {
+    font-size: 0.8125rem;
+    color: var(--text-subtle);
+    margin-bottom: 0.75rem;
+}
+
+.comunidade-survey__admin-row {
+    display: grid;
+    gap: 0.2rem;
+    padding: 0.55rem 0;
+    border-top: 1px solid var(--border);
+    font-size: 0.8125rem;
+}
+
+.comunidade-survey__admin-row strong {
+    color: var(--text);
+}
+
+.comunidade-survey__admin-row span {
+    color: var(--text-muted);
+    line-height: 1.45;
+    white-space: pre-wrap;
+}
+
 /* ── Login ── */
 
 .comunidade-login-page {

@@ -54,7 +54,9 @@
     var sidebarOverlay = document.getElementById('sidebar-overlay');
     var sidebarProductName = document.getElementById('sidebar-product-name');
     var moduleList = document.getElementById('module-list');
+    var lessonPlayerWrap = document.querySelector('.comunidade-player-wrap');
     var contentPlayer = document.getElementById('content-player');
+    var lessonSurvey = document.getElementById('lesson-survey');
     var lessonMaterials = document.getElementById('lesson-materials');
     var materialsList = document.getElementById('materials-list');
     var materialsCount = document.getElementById('materials-count');
@@ -456,6 +458,31 @@
         lessonDescription.textContent = aulaItem.description || (aulaItem.type === 'video'
             ? 'Assiste a esta aula em vídeo.'
             : 'Descarrega o material em PDF.');
+
+        if (window.ComunidadeWelcomeSurvey && window.ComunidadeWelcomeSurvey.isSurveyLesson(aulaItem)) {
+            if (lessonPlayerWrap) {
+                lessonPlayerWrap.hidden = true;
+            }
+
+            lessonMaterials.hidden = true;
+            materialsList.innerHTML = '';
+
+            window.ComunidadeWelcomeSurvey.mount(lessonSurvey, {
+                productId: productId,
+                moduleId: aulaItem.id,
+                isAdmin: state.isAdmin,
+            });
+
+            return;
+        }
+
+        if (lessonSurvey) {
+            window.ComunidadeWelcomeSurvey.unmount(lessonSurvey);
+        }
+
+        if (lessonPlayerWrap) {
+            lessonPlayerWrap.hidden = false;
+        }
 
         renderMaterials(aulaItem);
 
