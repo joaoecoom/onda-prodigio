@@ -331,10 +331,22 @@
         return Boolean(aulaItem && aulaItem.is_locked && !state.isAdmin);
     }
 
-    function renderLockedPlayer(aulaItem) {
-        if (lessonSurvey) {
+    function unmountLessonSurveys() {
+        if (!lessonSurvey) {
+            return;
+        }
+
+        if (window.ComunidadeWelcomeSurvey) {
             window.ComunidadeWelcomeSurvey.unmount(lessonSurvey);
         }
+
+        if (window.ComunidadeGeniusTest) {
+            window.ComunidadeGeniusTest.unmount(lessonSurvey);
+        }
+    }
+
+    function renderLockedPlayer(aulaItem) {
+        unmountLessonSurveys();
 
         if (lessonPlayerWrap) {
             lessonPlayerWrap.hidden = false;
@@ -1031,6 +1043,10 @@
             lessonMaterials.hidden = true;
             materialsList.innerHTML = '';
 
+            if (window.ComunidadeGeniusTest) {
+                window.ComunidadeGeniusTest.unmount(lessonSurvey);
+            }
+
             window.ComunidadeWelcomeSurvey.mount(lessonSurvey, {
                 productId: productId,
                 moduleId: aulaItem.id,
@@ -1038,6 +1054,32 @@
             });
 
             markContentViewed(aulaItem.id);
+            return;
+        }
+
+        if (window.ComunidadeGeniusTest && window.ComunidadeGeniusTest.isGeniusTestLesson(aulaItem)) {
+            renderInstructions('');
+
+            if (lessonPlayerWrap) {
+                lessonPlayerWrap.hidden = true;
+            }
+
+            lessonMaterials.hidden = true;
+            materialsList.innerHTML = '';
+
+            if (window.ComunidadeWelcomeSurvey) {
+                window.ComunidadeWelcomeSurvey.unmount(lessonSurvey);
+            }
+
+            window.ComunidadeGeniusTest.mount(lessonSurvey, {
+                productId: productId,
+                moduleId: aulaItem.id,
+                previewMode: state.isAdmin,
+                onComplete: function () {
+                    markContentViewed(aulaItem.id);
+                },
+            });
+
             return;
         }
 
@@ -1052,7 +1094,7 @@
         }
 
         if (lessonSurvey) {
-            window.ComunidadeWelcomeSurvey.unmount(lessonSurvey);
+            unmountLessonSurveys();
         }
 
         if (lessonPlayerWrap) {

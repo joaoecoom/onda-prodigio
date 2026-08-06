@@ -1848,6 +1848,51 @@ html[data-theme="light"] .comunidade-btn--danger:hover:not(:disabled) {
     color: var(--text-muted);
 }
 
+.comunidade-genius-result {
+    text-align: center;
+}
+
+.comunidade-genius-result__badge {
+    font-size: 3rem;
+    line-height: 1;
+    margin-bottom: 0.75rem;
+}
+
+.comunidade-genius-result__meta {
+    margin: 0 0 1rem;
+    font-size: 0.8125rem;
+    color: var(--text-subtle);
+}
+
+.comunidade-genius-result__tips {
+    margin-top: 1.25rem;
+    padding: 1rem 1.1rem;
+    border-radius: 12px;
+    background: var(--bg-subtle);
+    border: 1px solid var(--border);
+    text-align: left;
+}
+
+.comunidade-genius-result__tips strong {
+    display: block;
+    margin-bottom: 0.45rem;
+    color: var(--text);
+}
+
+.comunidade-genius-result__tips p {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+
+.comunidade-genius-result__next {
+    margin: 1.25rem 0 0;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--text-muted);
+}
+
 .comunidade-survey__preview-banner {
     margin-bottom: 1rem;
 }
