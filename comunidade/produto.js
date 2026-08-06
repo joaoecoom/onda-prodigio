@@ -247,13 +247,7 @@
         };
     }
 
-    function getAulaDisplayTitle(aulaItem, index, moduleItem) {
-        var sonoMeta = getSonoAulaMeta(aulaItem, moduleItem);
-
-        if (sonoMeta) {
-            return 'HISTÓRIA ' + (sonoMeta.index + 1) + ' — ' + SONO_AULA_SHORT_LABELS[sonoMeta.index];
-        }
-
+    function getAulaDisplayTitle(aulaItem) {
         return aulaItem.title;
     }
 
@@ -768,7 +762,7 @@
                         (image ? '<img src="' + image + '" alt="">' : '<span class="comunidade-aula-item__thumb-label">' + escapeHtml(thumbLabel) + '</span>') +
                     '</div>' +
                     '<span class="comunidade-aula-item__meta">' +
-                        '<span class="comunidade-aula-item__title">' + escapeHtml(getAulaDisplayTitle(aulaItem, index, getActiveModule())) + '</span>' +
+                        '<span class="comunidade-aula-item__title">' + escapeHtml(getAulaDisplayTitle(aulaItem)) + '</span>' +
                         (isLocked && aulaItem.unlock_label ?
                             '<span class="comunidade-aula-item__unlock">' + escapeHtml(aulaItem.unlock_label) + '</span>' :
                             '') +
@@ -881,7 +875,7 @@
                         '') +
                 '</span>' +
                 '<span class="comunidade-sidebar-lesson__info">' +
-                    '<span class="comunidade-sidebar-lesson__title">' + escapeHtml(getAulaDisplayTitle(aulaItem, index, moduleItem)) + '</span>' +
+                    '<span class="comunidade-sidebar-lesson__title">' + escapeHtml(getAulaDisplayTitle(aulaItem)) + '</span>' +
                     (isLocked && aulaItem.unlock_label ?
                         '<span class="comunidade-sidebar-lesson__unlock">' + escapeHtml(aulaItem.unlock_label) + '</span>' :
                         '') +
