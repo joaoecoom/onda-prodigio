@@ -21,7 +21,7 @@
     var SONO_AULA_SHORT_LABELS = [
         'Coala',
         'Cachorrinho',
-        'Gatinho',
+        'Capivara',
         'Ursinho',
         'Coelhinho',
         'Estrelinha',
