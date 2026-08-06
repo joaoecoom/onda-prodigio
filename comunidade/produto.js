@@ -20,11 +20,32 @@
 
     var SONO_AULA_SHORT_LABELS = [
         'Coala',
-        'Cachorrinho',
+        'Tobias',
         'Capivara',
-        'Ursinho',
-        'Coelhinho',
-        'Estrelinha',
+        'Eco',
+        'Luz',
+        'Ponte',
+    ];
+
+    var SONO_AULA_META = [
+        {
+            infoTitle: 'O Coala Kiko que Não Queria Dormir 🐨',
+        },
+        {
+            infoTitle: 'O Cachorrinho Tobias e o Lugar Onde o Coração Descansa 🐶',
+        },
+        {
+            infoTitle: 'O Capivara e a Coragem de Dormir Sozinho 🦫',
+        },
+        {
+            infoTitle: 'O Eco do Quarto Vazio 🍃',
+        },
+        {
+            infoTitle: 'A Luz que Ficou Acesa 💡',
+        },
+        {
+            infoTitle: 'A Ponte que Só Aparece de Noite 🌉',
+        },
     ];
 
     var OFERTAS_AULA_SHORT_LABELS = [
@@ -97,6 +118,11 @@
     var materialsHint = document.getElementById('materials-hint');
     var lessonTitle = document.getElementById('lesson-title');
     var lessonDescription = document.getElementById('lesson-description');
+    var lessonInfo = document.querySelector('.comunidade-lesson-info');
+    var lessonInfoLabel = document.getElementById('lesson-info-label');
+    var lessonHeader = document.getElementById('lesson-header');
+    var lessonHeaderTitle = document.getElementById('lesson-header-title');
+    var btnCompleteLesson = document.getElementById('btn-complete-lesson');
     var commentsList = document.getElementById('comments-list');
     var commentsError = document.getElementById('comments-error');
     var commentForm = document.getElementById('comment-form');
@@ -199,6 +225,92 @@
                 progress_percent: 100,
             }),
         });
+    }
+
+    function getSonoAulaMeta(aulaItem, moduleItem) {
+        if (!moduleItem || moduleItem.sort_order !== 3 || !aulaItem) {
+            return null;
+        }
+
+        var aulas = moduleHasAulas(moduleItem) ? moduleItem.aulas : [];
+        var index = aulas.findIndex(function (item) {
+            return item.id === aulaItem.id;
+        });
+
+        if (index < 0 || !SONO_AULA_META[index]) {
+            return null;
+        }
+
+        return {
+            index: index,
+            infoTitle: SONO_AULA_META[index].infoTitle,
+        };
+    }
+
+    function getAulaDisplayTitle(aulaItem, index, moduleItem) {
+        var sonoMeta = getSonoAulaMeta(aulaItem, moduleItem);
+
+        if (sonoMeta) {
+            return 'HISTÓRIA ' + (sonoMeta.index + 1) + ' — ' + SONO_AULA_SHORT_LABELS[sonoMeta.index];
+        }
+
+        return aulaItem.title;
+    }
+
+    function updateCompleteButton(aulaItem) {
+        if (!btnCompleteLesson) {
+            return;
+        }
+
+        var isDone = isItemComplete(aulaItem.id);
+
+        btnCompleteLesson.classList.toggle('is-done', isDone);
+        btnCompleteLesson.disabled = isDone;
+        btnCompleteLesson.innerHTML = isDone
+            ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg> Concluída'
+            : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg> Concluir';
+    }
+
+    function renderSonoLessonChrome(aulaItem, moduleItem) {
+        var sonoMeta = getSonoAulaMeta(aulaItem, moduleItem);
+
+        if (!sonoMeta) {
+            if (lessonHeader) {
+                lessonHeader.hidden = true;
+            }
+
+            if (lessonInfo) {
+                lessonInfo.classList.remove('is-sono');
+            }
+
+            if (lessonInfoLabel) {
+                lessonInfoLabel.classList.remove('is-tab');
+            }
+
+            return false;
+        }
+
+        if (lessonHeader) {
+            lessonHeader.hidden = false;
+        }
+
+        if (lessonHeaderTitle) {
+            lessonHeaderTitle.textContent = aulaItem.title;
+        }
+
+        if (lessonInfo) {
+            lessonInfo.classList.add('is-sono');
+        }
+
+        if (lessonInfoLabel) {
+            lessonInfoLabel.classList.add('is-tab');
+        }
+
+        lessonTitle.textContent = sonoMeta.infoTitle;
+        lessonDescription.textContent = aulaItem.description || '';
+        updateCompleteButton(aulaItem);
+
+        return true;
     }
 
     function getAulaThumbLabel(aulaItem, index, moduleItem) {
@@ -656,7 +768,7 @@
                         (image ? '<img src="' + image + '" alt="">' : '<span class="comunidade-aula-item__thumb-label">' + escapeHtml(thumbLabel) + '</span>') +
                     '</div>' +
                     '<span class="comunidade-aula-item__meta">' +
-                        '<span class="comunidade-aula-item__title">' + escapeHtml(aulaItem.title) + '</span>' +
+                        '<span class="comunidade-aula-item__title">' + escapeHtml(getAulaDisplayTitle(aulaItem, index, getActiveModule())) + '</span>' +
                         (isLocked && aulaItem.unlock_label ?
                             '<span class="comunidade-aula-item__unlock">' + escapeHtml(aulaItem.unlock_label) + '</span>' :
                             '') +
@@ -769,7 +881,7 @@
                         '') +
                 '</span>' +
                 '<span class="comunidade-sidebar-lesson__info">' +
-                    '<span class="comunidade-sidebar-lesson__title">' + escapeHtml(aulaItem.title) + '</span>' +
+                    '<span class="comunidade-sidebar-lesson__title">' + escapeHtml(getAulaDisplayTitle(aulaItem, index, moduleItem)) + '</span>' +
                     (isLocked && aulaItem.unlock_label ?
                         '<span class="comunidade-sidebar-lesson__unlock">' + escapeHtml(aulaItem.unlock_label) + '</span>' :
                         '') +
@@ -894,16 +1006,25 @@
 
         renderSidebarAulas();
 
-        lessonTitle.textContent = aulaItem.title;
+        var moduleItem = getActiveModule();
+        var isSonoLayout = renderSonoLessonChrome(aulaItem, moduleItem);
+
+        if (!isSonoLayout) {
+            lessonTitle.textContent = aulaItem.title;
+        }
 
         if (aulaItem.audio_path && aulaItem.description) {
             renderInstructions(aulaItem.description);
-            lessonDescription.textContent = 'Ouve o áudio completo e segue as instruções acima.';
-        } else {
+            if (!isSonoLayout) {
+                lessonDescription.textContent = 'Ouve o áudio completo e segue as instruções acima.';
+            }
+        } else if (!isSonoLayout) {
             renderInstructions('');
             lessonDescription.textContent = aulaItem.description || (aulaItem.type === 'video'
                 ? 'Assiste a esta aula em vídeo.'
                 : 'Descarrega o material em PDF.');
+        } else {
+            renderInstructions('');
         }
 
         if (window.ComunidadeWelcomeSurvey && window.ComunidadeWelcomeSurvey.isSurveyLesson(aulaItem)) {
@@ -928,7 +1049,11 @@
 
         if (isAulaLocked(aulaItem)) {
             renderLockedPlayer(aulaItem);
-            lessonDescription.textContent = aulaItem.description || 'Material complementar do método.';
+
+            if (!isSonoLayout) {
+                lessonDescription.textContent = aulaItem.description || 'Material complementar do método.';
+            }
+
             return;
         }
 
@@ -1244,6 +1369,19 @@
     btnBackFromAulas.addEventListener('click', showModuleGridView);
     btnToggleSidebar.addEventListener('click', openSidebar);
     sidebarOverlay.addEventListener('click', closeSidebar);
+
+    if (btnCompleteLesson) {
+        btnCompleteLesson.addEventListener('click', async function () {
+            var aulaItem = getActiveAula();
+
+            if (!aulaItem || isItemComplete(aulaItem.id)) {
+                return;
+            }
+
+            await markContentViewed(aulaItem.id);
+            updateCompleteButton(aulaItem);
+        });
+    }
 
     moduleSearch.addEventListener('input', function () {
         state.searchQuery = moduleSearch.value;

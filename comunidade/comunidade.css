@@ -717,6 +717,72 @@ html[data-theme="light"] .comunidade-sidebar-lesson.is-active {
     height: 18px;
 }
 
+.comunidade-lesson-header {
+    padding: 1.25rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.comunidade-lesson-header__gift {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.65rem;
+}
+
+.comunidade-lesson-header__row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.comunidade-lesson-header__title {
+    margin: 0;
+    font-size: clamp(1.125rem, 2.4vw, 1.5rem);
+    font-weight: 800;
+    line-height: 1.35;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+}
+
+.comunidade-lesson-header__actions {
+    flex-shrink: 0;
+    padding-top: 0.15rem;
+}
+
+.comunidade-lesson-complete {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.85rem;
+    border: 1.5px solid var(--text);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.comunidade-lesson-complete:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.comunidade-lesson-complete.is-done {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.comunidade-lesson-complete:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
 .comunidade-lesson-info {
     padding: 1rem 1.25rem 1.25rem;
     border-top: 1px solid var(--border);
@@ -731,11 +797,28 @@ html[data-theme="light"] .comunidade-sidebar-lesson.is-active {
     margin-bottom: 0.5rem;
 }
 
+.comunidade-lesson-info__label.is-tab {
+    text-transform: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0;
+    color: var(--text);
+    border-bottom: 2px solid var(--text);
+    display: inline-block;
+    padding-bottom: 0.55rem;
+    margin-bottom: 1rem;
+}
+
 .comunidade-lesson-info__title {
     font-size: 1rem;
     font-weight: 700;
     margin-bottom: 0.35rem;
     color: var(--text);
+}
+
+.comunidade-lesson-info.is-sono .comunidade-lesson-info__title {
+    font-size: 1.0625rem;
+    margin-bottom: 0.75rem;
 }
 
 .comunidade-player--pdf {
