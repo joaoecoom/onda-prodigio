@@ -789,6 +789,38 @@ html[data-theme="light"] .comunidade-sidebar-lesson.is-active {
     cursor: default;
 }
 
+.comunidade-panel:has(.comunidade-lesson-info.is-sono) {
+    display: flex;
+    flex-direction: column;
+}
+
+.comunidade-panel:has(.comunidade-lesson-info.is-sono) .comunidade-lesson-header {
+    order: 1;
+}
+
+.comunidade-panel:has(.comunidade-lesson-info.is-sono) .comunidade-lesson-instructions {
+    order: 2;
+}
+
+.comunidade-panel:has(.comunidade-lesson-info.is-sono) .comunidade-lesson-info {
+    order: 3;
+    border-top: 0;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1.15rem;
+}
+
+.comunidade-panel:has(.comunidade-lesson-info.is-sono) .comunidade-player-wrap {
+    order: 4;
+}
+
+.comunidade-panel:has(.comunidade-lesson-info.is-sono) .comunidade-survey-host {
+    order: 5;
+}
+
+.comunidade-panel:has(.comunidade-lesson-info.is-sono) .comunidade-materials {
+    order: 6;
+}
+
 .comunidade-lesson-info {
     padding: 1rem 1.25rem 1.25rem;
     border-top: 1px solid var(--border);
