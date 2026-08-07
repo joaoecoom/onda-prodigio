@@ -71,6 +71,10 @@
             name: 'Instruções PDF.pdf',
             size: '14,8 MB',
         },
+        '/comunidade/assets/ebooks/20-receitas-genio.pdf': {
+            name: '20 Receitas para alimentar um Génio.pdf',
+            size: '81 MB',
+        },
     };
 
     var AUDIO_MATERIALS = {
@@ -265,27 +269,33 @@
             : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg> Concluir';
     }
 
+    function hideLessonHeaderChrome() {
+        if (lessonHeader) {
+            lessonHeader.hidden = true;
+        }
+
+        if (lessonInfo) {
+            lessonInfo.classList.remove('is-sono');
+        }
+
+        if (lessonInfoLabel) {
+            lessonInfoLabel.classList.remove('is-tab');
+        }
+    }
+
     function renderSonoLessonChrome(aulaItem, moduleItem) {
         var sonoMeta = getSonoAulaMeta(aulaItem, moduleItem);
 
         if (!sonoMeta) {
-            if (lessonHeader) {
-                lessonHeader.hidden = true;
-            }
-
-            if (lessonInfo) {
-                lessonInfo.classList.remove('is-sono');
-            }
-
-            if (lessonInfoLabel) {
-                lessonInfoLabel.classList.remove('is-tab');
-            }
-
             return false;
         }
 
         if (lessonHeader) {
             lessonHeader.hidden = false;
+        }
+
+        if (document.getElementById('lesson-header-gift')) {
+            document.getElementById('lesson-header-gift').textContent = '🎁 Oferta — Protocolo do Sono Profundo';
         }
 
         if (lessonHeaderTitle) {
@@ -305,6 +315,52 @@
         updateCompleteButton(aulaItem);
 
         return true;
+    }
+
+    function renderOfertasLessonChrome(aulaItem, moduleItem) {
+        if (!moduleItem || moduleItem.sort_order !== 4) {
+            return false;
+        }
+
+        if (lessonHeader) {
+            lessonHeader.hidden = false;
+        }
+
+        if (document.getElementById('lesson-header-gift')) {
+            document.getElementById('lesson-header-gift').textContent = '🎁 Ofertas';
+        }
+
+        if (lessonHeaderTitle) {
+            lessonHeaderTitle.textContent = aulaItem.title;
+        }
+
+        if (lessonInfo) {
+            lessonInfo.classList.add('is-sono');
+        }
+
+        if (lessonInfoLabel) {
+            lessonInfoLabel.classList.add('is-tab');
+        }
+
+        lessonTitle.textContent = aulaItem.title;
+        lessonDescription.textContent = aulaItem.description || '';
+        updateCompleteButton(aulaItem);
+
+        return true;
+    }
+
+    function renderLessonHeaderChrome(aulaItem, moduleItem) {
+        hideLessonHeaderChrome();
+
+        if (renderSonoLessonChrome(aulaItem, moduleItem)) {
+            return true;
+        }
+
+        if (renderOfertasLessonChrome(aulaItem, moduleItem)) {
+            return true;
+        }
+
+        return false;
     }
 
     function getAulaThumbLabel(aulaItem, index, moduleItem) {
@@ -1013,18 +1069,18 @@
         renderSidebarAulas();
 
         var moduleItem = getActiveModule();
-        var isSonoLayout = renderSonoLessonChrome(aulaItem, moduleItem);
+        var isLessonChromeLayout = renderLessonHeaderChrome(aulaItem, moduleItem);
 
-        if (!isSonoLayout) {
+        if (!isLessonChromeLayout) {
             lessonTitle.textContent = aulaItem.title;
         }
 
         if (aulaItem.audio_path && aulaItem.description) {
             renderInstructions(aulaItem.description);
-            if (!isSonoLayout) {
+            if (!isLessonChromeLayout) {
                 lessonDescription.textContent = 'Ouve o áudio completo e segue as instruções acima.';
             }
-        } else if (!isSonoLayout) {
+        } else if (!isLessonChromeLayout) {
             renderInstructions('');
             lessonDescription.textContent = aulaItem.description || (aulaItem.type === 'video'
                 ? 'Assiste a esta aula em vídeo.'
@@ -1086,7 +1142,7 @@
         if (isAulaLocked(aulaItem)) {
             renderLockedPlayer(aulaItem);
 
-            if (!isSonoLayout) {
+            if (!isLessonChromeLayout) {
                 lessonDescription.textContent = aulaItem.description || 'Material complementar do método.';
             }
 
