@@ -106,6 +106,10 @@
             name: 'Boas-vindas — Leitura Rápida.pdf',
             size: '53 MB',
         },
+        '/comunidade/assets/ebooks/leitura-rapida-nivel-semente.pdf': {
+            name: 'Nível Semente (4 a 5 anos) — Pré-leitores.pdf',
+            size: '14 MB',
+        },
     };
 
     var ORDER_BUMP_LESSON_CHROME = {
@@ -570,6 +574,19 @@
                     'INSTRUÇÕES\n\n' +
                     'Como usar: Descarrega o PDF abaixo ou lê online. Este guia apresenta o módulo de Leitura Rápida e explica o percurso por níveis etários.\n\n' +
                     'Por onde começar: Lê a introdução completa e identifica o nível mais adequado à idade do teu filho — depois avança aula a aula no teu ritmo.'
+                ),
+            };
+        }
+
+        if (aulaItem.sort_order === 2) {
+            return {
+                infoTitle: 'Nível Semente (4 a 5 anos) – «Pré-leitores»',
+                materialsHint: 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as actividades que precisares e pratica com o teu filho em momentos calmos do dia.\n\n' +
+                    'Objectivo do nível: Despertar a curiosidade pela leitura, reconhecimento de letras e ritmo — ideal para crianças dos 4 aos 5 anos que ainda estão a dar os primeiros passos como «pré-leitores».\n\n' +
+                    'Por onde começar: Lê o guia completo e escolhe uma actividade de cada vez, com calma e sem pressão.'
                 ),
             };
         }
