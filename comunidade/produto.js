@@ -421,8 +421,24 @@
         return true;
     }
 
+    function isOfertasModule(moduleItem) {
+        if (!moduleItem) {
+            return false;
+        }
+
+        if (productId === 'onda-prodigio' && moduleItem.sort_order === 4) {
+            return true;
+        }
+
+        if (productId === 'clube-super-cerebros' && moduleItem.sort_order === 3) {
+            return true;
+        }
+
+        return false;
+    }
+
     function renderOfertasLessonChrome(aulaItem, moduleItem) {
-        if (!moduleItem || moduleItem.sort_order !== 4) {
+        if (!isOfertasModule(moduleItem)) {
             return false;
         }
 
@@ -526,7 +542,7 @@
             return SONO_AULA_SHORT_LABELS[index];
         }
 
-        if (moduleItem && moduleItem.sort_order === 4 && OFERTAS_AULA_SHORT_LABELS[index]) {
+        if (moduleItem && isOfertasModule(moduleItem) && OFERTAS_AULA_SHORT_LABELS[index]) {
             return OFERTAS_AULA_SHORT_LABELS[index];
         }
 
