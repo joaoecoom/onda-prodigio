@@ -462,10 +462,45 @@
         return false;
     }
 
+    function getSurpresaLessonMeta(aulaItem, moduleItem) {
+        if (productId !== 'clube-super-cerebros' || !moduleItem || !isSurpresaModule(moduleItem) || !aulaItem) {
+            return null;
+        }
+
+        if (aulaItem.sort_order === 1) {
+            return {
+                infoTitle: 'Guia de Inteligência Financeira para Crianças',
+                materialsHint: 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as páginas que precisares e usa-as em conversas sobre dinheiro com os teus filhos.\n\n' +
+                    'Por onde começar: Lê o guia completo e escolhe uma actividade de cada vez — poupança, consumo consciente e metas simples.'
+                ),
+            };
+        }
+
+        if (aulaItem.sort_order === 2) {
+            return {
+                infoTitle: 'Áudio de Sono Profundo',
+                materialsHint: 'Se quiseres descarregar o áudio, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Ouve este áudio com o teu filho antes de dormir, num quarto calmo, com luzes suaves e sem ecrãs.\n\n' +
+                    'Quando usar: Ideal para a rotina da hora de deitar — ajuda a acalmar o corpo e a mente para um sono profundo e reparador.\n\n' +
+                    'Dica: Se quiseres ouvir offline, descarrega o áudio no material adjunto abaixo.'
+                ),
+            };
+        }
+
+        return null;
+    }
+
     function renderSurpresaLessonChrome(aulaItem, moduleItem) {
         if (!isSurpresaModule(moduleItem)) {
             return false;
         }
+
+        var surpresaMeta = getSurpresaLessonMeta(aulaItem, moduleItem);
 
         if (lessonHeader) {
             lessonHeader.hidden = false;
@@ -487,7 +522,9 @@
             lessonInfoLabel.classList.add('is-tab');
         }
 
-        lessonTitle.textContent = aulaItem.title;
+        lessonTitle.textContent = surpresaMeta && surpresaMeta.infoTitle ?
+            surpresaMeta.infoTitle :
+            aulaItem.title;
         lessonDescription.textContent = aulaItem.description || '';
         updateCompleteButton(aulaItem);
 
@@ -787,8 +824,11 @@
                 materialsHint.textContent = orderBumpHint.materialsHint;
             } else {
                 var clubeMeta = getClubeLessonMeta(aulaItem, getActiveModule());
+                var surpresaMeta = getSurpresaLessonMeta(aulaItem, getActiveModule());
 
-                if (clubeMeta && clubeMeta.materialsHint) {
+                if (surpresaMeta && surpresaMeta.materialsHint) {
+                    materialsHint.textContent = surpresaMeta.materialsHint;
+                } else if (clubeMeta && clubeMeta.materialsHint) {
                     materialsHint.textContent = clubeMeta.materialsHint;
                 } else if (aulaItem.audio_path && !aulaItem.pdf_path) {
                     materialsHint.textContent = 'Se quiseres descarregar o áudio, vai ao material adjunto 👇👇';
@@ -1345,7 +1385,11 @@
             lessonTitle.textContent = aulaItem.title;
         }
 
-        if (aulaItem.audio_path && aulaItem.description) {
+        var surpresaMeta = getSurpresaLessonMeta(aulaItem, moduleItem);
+
+        if (surpresaMeta && surpresaMeta.intro) {
+            renderInstructions(surpresaMeta.intro);
+        } else if (aulaItem.audio_path && aulaItem.description) {
             renderInstructions(aulaItem.description);
             if (!isLessonChromeLayout) {
                 lessonDescription.textContent = 'Ouve o áudio completo e segue as instruções acima.';
