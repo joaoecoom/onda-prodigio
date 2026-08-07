@@ -262,8 +262,24 @@
         });
     }
 
+    function isSonoModule(moduleItem) {
+        if (!moduleItem) {
+            return false;
+        }
+
+        if (productId === 'onda-prodigio' && moduleItem.sort_order === 3) {
+            return true;
+        }
+
+        if (productId === 'clube-super-cerebros' && moduleItem.sort_order === 2) {
+            return true;
+        }
+
+        return false;
+    }
+
     function getSonoAulaMeta(aulaItem, moduleItem) {
-        if (!moduleItem || moduleItem.sort_order !== 3 || !aulaItem) {
+        if (!isSonoModule(moduleItem) || !aulaItem) {
             return null;
         }
 
@@ -490,7 +506,7 @@
             return AULA_THUMB_LABELS[index];
         }
 
-        if (moduleItem && moduleItem.sort_order === 3 && SONO_AULA_SHORT_LABELS[index]) {
+        if (moduleItem && isSonoModule(moduleItem) && SONO_AULA_SHORT_LABELS[index]) {
             return SONO_AULA_SHORT_LABELS[index];
         }
 
