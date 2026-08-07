@@ -5,6 +5,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/checkout9",
+      "destination": "/checkout9/index.html"
+    },
+    {
+      "source": "/checkout9-test",
+      "destination": "/checkout9-test/index.html"
+    },
+    {
       "source": "/obgd",
       "destination": "/obgd/index.html"
     },
