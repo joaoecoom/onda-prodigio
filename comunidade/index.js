@@ -12,6 +12,23 @@
             .replace(/"/g, '&quot;');
     }
 
+    function resolveProductImage(product) {
+        var fallback = {
+            'onda-prodigio': '/comunidade/assets/products/onda-prodigio.png',
+            'tardes-sem-brigas': '/checkout9/assets/order-bump-tardes.png',
+            'caixa-super-truques': '/checkout9/assets/order-bump-truques.png',
+            'grandes-mentes': '/checkout9/assets/order-bump-mentes.png',
+            'clube-super-cerebros': '/comunidade/assets/products/clube-super-cerebros.png',
+            'codigo-autoridade': '/comunidade/assets/products/codigo-autoridade.png',
+        };
+
+        if (product.image_url) {
+            return '/' + String(product.image_url).replace(/^\//, '');
+        }
+
+        return fallback[product.id] || '';
+    }
+
     function renderProducts(products) {
         if (!products.length) {
             productGrid.innerHTML = (
@@ -23,7 +40,7 @@
         }
 
         productGrid.innerHTML = products.map(function (product) {
-            var image = product.image_url ? '/' + product.image_url.replace(/^\//, '') : '';
+            var image = resolveProductImage(product);
             var moduleCount = (product.modules || []).length;
 
             return (
