@@ -62,6 +62,16 @@
         'Sono',
     ];
 
+    var LEITURA_RAPIDA_AULA_SHORT_LABELS = [
+        'Boas-vindas',
+        'Semente',
+        'Foguete',
+        'Júnior',
+        'Starter',
+        'Pro',
+        'Máster',
+    ];
+
     var CONCLUIDO_AULA_SHORT_LABELS = [
         'Inquérito',
         'Presente',
@@ -531,6 +541,50 @@
         return true;
     }
 
+    function isLeituraRapidaModule(moduleItem) {
+        if (!moduleItem) {
+            return false;
+        }
+
+        if (productId === 'clube-super-cerebros' && moduleItem.sort_order === 5) {
+            return true;
+        }
+
+        return false;
+    }
+
+    function renderLeituraRapidaLessonChrome(aulaItem, moduleItem) {
+        if (!isLeituraRapidaModule(moduleItem)) {
+            return false;
+        }
+
+        if (lessonHeader) {
+            lessonHeader.hidden = false;
+        }
+
+        if (document.getElementById('lesson-header-gift')) {
+            document.getElementById('lesson-header-gift').textContent = 'Leitura Rápida 📚';
+        }
+
+        if (lessonHeaderTitle) {
+            lessonHeaderTitle.textContent = aulaItem.title;
+        }
+
+        if (lessonInfo) {
+            lessonInfo.classList.add('is-sono');
+        }
+
+        if (lessonInfoLabel) {
+            lessonInfoLabel.classList.add('is-tab');
+        }
+
+        lessonTitle.textContent = aulaItem.title;
+        lessonDescription.textContent = aulaItem.description || '';
+        updateCompleteButton(aulaItem);
+
+        return true;
+    }
+
     function renderOfertasLessonChrome(aulaItem, moduleItem) {
         if (!isOfertasModule(moduleItem)) {
             return false;
@@ -612,6 +666,10 @@
             return true;
         }
 
+        if (renderLeituraRapidaLessonChrome(aulaItem, moduleItem)) {
+            return true;
+        }
+
         if (renderOrderBumpLessonChrome(aulaItem)) {
             return true;
         }
@@ -648,7 +706,11 @@
             return SURPRESA_AULA_SHORT_LABELS[index];
         }
 
-        if (moduleItem && moduleItem.sort_order === 5 && CONCLUIDO_AULA_SHORT_LABELS[index]) {
+        if (moduleItem && isLeituraRapidaModule(moduleItem) && LEITURA_RAPIDA_AULA_SHORT_LABELS[index]) {
+            return LEITURA_RAPIDA_AULA_SHORT_LABELS[index];
+        }
+
+        if (productId === 'onda-prodigio' && moduleItem && moduleItem.sort_order === 5 && CONCLUIDO_AULA_SHORT_LABELS[index]) {
             return CONCLUIDO_AULA_SHORT_LABELS[index];
         }
 
