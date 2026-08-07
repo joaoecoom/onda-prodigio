@@ -57,6 +57,11 @@
         '13-18 anos',
     ];
 
+    var SURPRESA_AULA_SHORT_LABELS = [
+        'Financeira',
+        'Sono',
+    ];
+
     var CONCLUIDO_AULA_SHORT_LABELS = [
         'Inquérito',
         'Presente',
@@ -82,6 +87,10 @@
         '/comunidade/assets/ebooks/clube-instrucoes.pdf': {
             name: 'Instruções Clube dos Super Cérebros.pdf',
             size: '3,2 MB',
+        },
+        '/comunidade/assets/ebooks/guia-inteligencia-financeira-criancas.pdf': {
+            name: 'Guia de Inteligência Financeira para Crianças.pdf',
+            size: '17 MB',
         },
     };
 
@@ -112,6 +121,10 @@
         '/comunidade/assets/audio/metodo-onda-prodigio.mp3': {
             name: 'Onda Prodígio Áudio.mp3',
             size: '15,4 MB',
+        },
+        '/comunidade/assets/audio/sono-profundo.mp3': {
+            name: 'Áudio de Sono Profundo.mp3',
+            size: '41 MB',
         },
     };
 
@@ -437,6 +450,50 @@
         return false;
     }
 
+    function isSurpresaModule(moduleItem) {
+        if (!moduleItem) {
+            return false;
+        }
+
+        if (productId === 'clube-super-cerebros' && moduleItem.sort_order === 4) {
+            return true;
+        }
+
+        return false;
+    }
+
+    function renderSurpresaLessonChrome(aulaItem, moduleItem) {
+        if (!isSurpresaModule(moduleItem)) {
+            return false;
+        }
+
+        if (lessonHeader) {
+            lessonHeader.hidden = false;
+        }
+
+        if (document.getElementById('lesson-header-gift')) {
+            document.getElementById('lesson-header-gift').textContent = '🎁 Ofertas Surpresa';
+        }
+
+        if (lessonHeaderTitle) {
+            lessonHeaderTitle.textContent = aulaItem.title;
+        }
+
+        if (lessonInfo) {
+            lessonInfo.classList.add('is-sono');
+        }
+
+        if (lessonInfoLabel) {
+            lessonInfoLabel.classList.add('is-tab');
+        }
+
+        lessonTitle.textContent = aulaItem.title;
+        lessonDescription.textContent = aulaItem.description || '';
+        updateCompleteButton(aulaItem);
+
+        return true;
+    }
+
     function renderOfertasLessonChrome(aulaItem, moduleItem) {
         if (!isOfertasModule(moduleItem)) {
             return false;
@@ -514,6 +571,10 @@
             return true;
         }
 
+        if (renderSurpresaLessonChrome(aulaItem, moduleItem)) {
+            return true;
+        }
+
         if (renderOrderBumpLessonChrome(aulaItem)) {
             return true;
         }
@@ -544,6 +605,10 @@
 
         if (moduleItem && isOfertasModule(moduleItem) && OFERTAS_AULA_SHORT_LABELS[index]) {
             return OFERTAS_AULA_SHORT_LABELS[index];
+        }
+
+        if (moduleItem && isSurpresaModule(moduleItem) && SURPRESA_AULA_SHORT_LABELS[index]) {
+            return SURPRESA_AULA_SHORT_LABELS[index];
         }
 
         if (moduleItem && moduleItem.sort_order === 5 && CONCLUIDO_AULA_SHORT_LABELS[index]) {
