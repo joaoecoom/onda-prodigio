@@ -553,10 +553,49 @@
         return false;
     }
 
+    function getLeituraRapidaLessonMeta(aulaItem, moduleItem) {
+        if (productId !== 'clube-super-cerebros' || !moduleItem || !isLeituraRapidaModule(moduleItem) || !aulaItem) {
+            return null;
+        }
+
+        if (aulaItem.sort_order === 3) {
+            return {
+                infoTitle: 'Nível Foguete (6 a 7 anos) – «Leitores a caminho»',
+                materialsHint: 'Se quiseres descarregar os ficheiros, vê abaixo 👇👇',
+                intro: (
+                    'Objectivo do nível: Potenciar o ritmo de leitura, automatização de palavras comuns e consolidação da compreensão literal.\n\n' +
+                    'Nesta fase a criança já conhece as letras e está a desenvolver a leitura mecânica — expandimos a agilidade visual e a ligação ao contexto.\n\n' +
+                    'Imprime as três fichas abaixo e pratica uma de cada vez, de acordo com o guia (PDF em breve).'
+                ),
+                worksheets: [
+                    {
+                        path: '/comunidade/assets/leitura-rapida/foguete/modulo-1-piramides-palavras.png',
+                        name: 'Módulo 1 — Pirâmides de Palavras.png',
+                        size: '122 KB',
+                    },
+                    {
+                        path: '/comunidade/assets/leitura-rapida/foguete/modulo-2-mini-chunking.png',
+                        name: 'Módulo 2 — Mini-Chunking.png',
+                        size: '160 KB',
+                    },
+                    {
+                        path: '/comunidade/assets/leitura-rapida/foguete/modulo-3-cronometro-espiao.png',
+                        name: 'Módulo 3 — O Cronómetro Espião.png',
+                        size: '222 KB',
+                    },
+                ],
+            };
+        }
+
+        return null;
+    }
+
     function renderLeituraRapidaLessonChrome(aulaItem, moduleItem) {
         if (!isLeituraRapidaModule(moduleItem)) {
             return false;
         }
+
+        var leituraMeta = getLeituraRapidaLessonMeta(aulaItem, moduleItem);
 
         if (lessonHeader) {
             lessonHeader.hidden = false;
@@ -578,7 +617,9 @@
             lessonInfoLabel.classList.add('is-tab');
         }
 
-        lessonTitle.textContent = aulaItem.title;
+        lessonTitle.textContent = leituraMeta && leituraMeta.infoTitle ?
+            leituraMeta.infoTitle :
+            aulaItem.title;
         lessonDescription.textContent = aulaItem.description || '';
         updateCompleteButton(aulaItem);
 
@@ -804,8 +845,10 @@
     function renderMaterialFile(url, meta, kind) {
         var icon = kind === 'audio'
             ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
-            : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>';
-        var typeLabel = kind === 'audio' ? 'MP3' : 'PDF';
+            : kind === 'image'
+                ? '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>'
+                : '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>';
+        var typeLabel = kind === 'audio' ? 'MP3' : kind === 'image' ? 'Imagem' : 'PDF';
 
         return (
             '<a class="comunidade-materials__file" href="' + url + '" download="' + escapeHtml(meta.name) + '" target="_blank" rel="noopener">' +
@@ -873,6 +916,18 @@
             ));
         }
 
+        var leituraMeta = getLeituraRapidaLessonMeta(aulaItem, getActiveModule());
+
+        if (leituraMeta && leituraMeta.worksheets) {
+            leituraMeta.worksheets.forEach(function (worksheet) {
+                items.push(renderMaterialFile(
+                    resolveAssetUrl(worksheet.path),
+                    worksheet,
+                    'image'
+                ));
+            });
+        }
+
         if (!items.length) {
             lessonMaterials.hidden = true;
             materialsList.innerHTML = '';
@@ -887,8 +942,11 @@
             } else {
                 var clubeMeta = getClubeLessonMeta(aulaItem, getActiveModule());
                 var surpresaMeta = getSurpresaLessonMeta(aulaItem, getActiveModule());
+                var leituraMaterialsMeta = getLeituraRapidaLessonMeta(aulaItem, getActiveModule());
 
-                if (surpresaMeta && surpresaMeta.materialsHint) {
+                if (leituraMaterialsMeta && leituraMaterialsMeta.materialsHint) {
+                    materialsHint.textContent = leituraMaterialsMeta.materialsHint;
+                } else if (surpresaMeta && surpresaMeta.materialsHint) {
                     materialsHint.textContent = surpresaMeta.materialsHint;
                 } else if (clubeMeta && clubeMeta.materialsHint) {
                     materialsHint.textContent = clubeMeta.materialsHint;
@@ -939,6 +997,19 @@
                 aulaItem.title
             );
         }
+    }
+
+    function renderLeituraRapidaWorksheets(worksheets) {
+        contentPlayer.className = 'comunidade-player comunidade-player--worksheets';
+        contentPlayer.innerHTML = worksheets.map(function (worksheet) {
+            var url = resolveAssetUrl(worksheet.path);
+
+            return (
+                '<figure class="comunidade-worksheet">' +
+                    '<img src="' + url + '" alt="' + escapeHtml(worksheet.name) + '" loading="lazy">' +
+                '</figure>'
+            );
+        }).join('');
     }
 
     function renderVideoPlayer(aulaItem) {
@@ -1448,9 +1519,12 @@
         }
 
         var surpresaMeta = getSurpresaLessonMeta(aulaItem, moduleItem);
+        var leituraMeta = getLeituraRapidaLessonMeta(aulaItem, moduleItem);
 
         if (surpresaMeta && surpresaMeta.intro) {
             renderInstructions(surpresaMeta.intro);
+        } else if (leituraMeta && leituraMeta.intro) {
+            renderInstructions(leituraMeta.intro);
         } else if (aulaItem.audio_path && aulaItem.description) {
             renderInstructions(aulaItem.description);
             if (!isLessonChromeLayout) {
@@ -1555,6 +1629,12 @@
 
         if (aulaItem.pdf_path) {
             renderPdfViewer(aulaItem);
+            markContentViewed(aulaItem.id);
+            return;
+        }
+
+        if (leituraMeta && leituraMeta.worksheets && leituraMeta.worksheets.length) {
+            renderLeituraRapidaWorksheets(leituraMeta.worksheets);
             markContentViewed(aulaItem.id);
             return;
         }

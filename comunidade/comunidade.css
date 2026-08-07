@@ -872,6 +872,31 @@ html[data-theme="light"] .comunidade-sidebar-lesson.is-active {
     background: var(--player-bg);
 }
 
+.comunidade-player--worksheets {
+    aspect-ratio: auto;
+    min-height: 0;
+    height: auto;
+    overflow: visible;
+    background: var(--surface);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.comunidade-worksheet {
+    margin: 0;
+}
+
+.comunidade-worksheet img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: #fff;
+}
+
 .comunidade-audio-player {
     display: flex;
     flex-direction: column;
