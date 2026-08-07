@@ -79,6 +79,10 @@
             name: 'A Fábrica das Tardes Tranquilas.pdf',
             size: '25,1 MB',
         },
+        '/comunidade/assets/ebooks/caixa-super-truques-genio.pdf': {
+            name: 'A Caixa dos Super Truques do Génio.pdf',
+            size: '44 MB',
+        },
     };
 
     var ORDER_BUMP_LESSON_CHROME = {
@@ -90,6 +94,16 @@
                 'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as páginas que precisares — acordos, checklists e ferramentas — e usa-as em casa no dia a dia.\n\n' +
                 'Onde colocar: Deixa os impressos visíveis no quarto ou na cozinha, para toda a família saber o que foi combinado.\n\n' +
                 'Por onde começar: Lê o sistema completo, escolhe um passo de cada vez e aplica com calma. O objectivo são tardes mais tranquilas, com menos discussão.'
+            ),
+        },
+        'caixa-super-truques': {
+            headerGift: '🎁 A Caixa dos Super Truques do Génio',
+            materialsHint: 'Descarrega o PDF para imprimir e usar em casa 👇👇',
+            intro: (
+                'INSTRUÇÕES\n\n' +
+                'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as ferramentas, jogos e truques que fizerem sentido para o teu filho e usa-os no dia a dia.\n\n' +
+                'Onde aplicar: Usa em momentos de estudo, tarefas ou quando precisares de mais concentração, autonomia ou motivação.\n\n' +
+                'Por onde começar: Explora a caixa completa, escolhe um truque de cada vez e experimenta com calma. Pequenas acções consistentes criam grandes resultados.'
             ),
         },
     };
