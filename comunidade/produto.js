@@ -75,6 +75,17 @@
             name: '20 Receitas para alimentar um Génio.pdf',
             size: '81 MB',
         },
+        '/comunidade/assets/ebooks/tardes-sem-discussoes.pdf': {
+            name: 'A Fábrica das Tardes Tranquilas.pdf',
+            size: '25,1 MB',
+        },
+    };
+
+    var ORDER_BUMP_LESSON_CHROME = {
+        'tardes-sem-brigas': {
+            headerGift: '🎁 A Fábrica das Tardes Tranquilas',
+            materialsHint: 'Descarrega o PDF para imprimir e usar em casa 👇👇',
+        },
     };
 
     var AUDIO_MATERIALS = {
@@ -349,6 +360,40 @@
         return true;
     }
 
+    function renderOrderBumpLessonChrome(aulaItem) {
+        var config = ORDER_BUMP_LESSON_CHROME[productId];
+
+        if (!config) {
+            return false;
+        }
+
+        if (lessonHeader) {
+            lessonHeader.hidden = false;
+        }
+
+        if (document.getElementById('lesson-header-gift')) {
+            document.getElementById('lesson-header-gift').textContent = config.headerGift;
+        }
+
+        if (lessonHeaderTitle) {
+            lessonHeaderTitle.textContent = aulaItem.title;
+        }
+
+        if (lessonInfo) {
+            lessonInfo.classList.add('is-sono');
+        }
+
+        if (lessonInfoLabel) {
+            lessonInfoLabel.classList.add('is-tab');
+        }
+
+        lessonTitle.textContent = aulaItem.title;
+        lessonDescription.textContent = aulaItem.description || '';
+        updateCompleteButton(aulaItem);
+
+        return true;
+    }
+
     function renderLessonHeaderChrome(aulaItem, moduleItem) {
         hideLessonHeaderChrome();
 
@@ -357,6 +402,10 @@
         }
 
         if (renderOfertasLessonChrome(aulaItem, moduleItem)) {
+            return true;
+        }
+
+        if (renderOrderBumpLessonChrome(aulaItem)) {
             return true;
         }
 
@@ -546,7 +595,11 @@
         }
 
         if (materialsHint) {
-            if (aulaItem.audio_path && !aulaItem.pdf_path) {
+            var orderBumpHint = ORDER_BUMP_LESSON_CHROME[productId];
+
+            if (orderBumpHint && orderBumpHint.materialsHint) {
+                materialsHint.textContent = orderBumpHint.materialsHint;
+            } else if (aulaItem.audio_path && !aulaItem.pdf_path) {
                 materialsHint.textContent = 'Se quiseres descarregar o áudio, vai ao material adjunto 👇👇';
             } else if (aulaItem.audio_path && aulaItem.pdf_path) {
                 materialsHint.textContent = 'Se quiseres descarregar os materiais, vê abaixo 👇👇';
