@@ -928,7 +928,7 @@
     function showModuleAulasView(moduleId) {
         var moduleItem = getModuleById(moduleId);
 
-        if (!moduleItem || !moduleHasAulas(moduleItem)) {
+        if (!moduleItem) {
             return;
         }
 
@@ -950,7 +950,12 @@
         moduleHeaderProgress.style.width = moduleProgress + '%';
         moduleHeaderProgressText.textContent = moduleProgress + '%';
 
-        renderAulaList(moduleItem.aulas);
+        if (moduleHasAulas(moduleItem)) {
+            renderAulaList(moduleItem.aulas);
+            return;
+        }
+
+        aulaList.innerHTML = '<p class="comunidade-panel__subtitle">Conteúdo em breve — estamos a preparar este módulo.</p>';
     }
 
     function showLessonView(moduleId, aulaId) {
@@ -1231,18 +1236,7 @@
     }
 
     function openModule(moduleId) {
-        var moduleItem = getModuleById(moduleId);
-
-        if (!moduleItem) {
-            return;
-        }
-
-        if (moduleHasAulas(moduleItem)) {
-            showModuleAulasView(moduleId);
-            return;
-        }
-
-        showLessonView(moduleId, moduleItem.id);
+        showModuleAulasView(moduleId);
     }
 
     function openAula(aulaId) {
@@ -1258,11 +1252,16 @@
             syncUrl = true;
         }
 
-        var aulaItem = getActiveAulas().find(function (item) {
+        var aulas = getActiveAulas();
+        var aulaItem = aulas.find(function (item) {
             return item.id === aulaId;
         });
 
         if (!aulaItem) {
+            if (aulas.length) {
+                selectAula(aulas[0].id, syncUrl);
+            }
+
             return;
         }
 
@@ -1554,12 +1553,7 @@
                 return;
             }
 
-            if (moduleHasAulas(moduleItem)) {
-                showModuleAulasView(moduleParam);
-                return;
-            }
-
-            showLessonView(moduleParam, moduleItem.id);
+            showModuleAulasView(moduleParam);
             return;
         }
 
@@ -1571,11 +1565,7 @@
         var onlyModule = state.modules[0];
 
         if (onlyModule) {
-            if (moduleHasAulas(onlyModule)) {
-                showModuleAulasView(onlyModule.id);
-            } else {
-                showLessonView(onlyModule.id, onlyModule.id);
-            }
+            showModuleAulasView(onlyModule.id);
         }
     }
 
