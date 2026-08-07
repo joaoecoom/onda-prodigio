@@ -726,11 +726,12 @@
                 if (clubeMeta && clubeMeta.materialsHint) {
                     materialsHint.textContent = clubeMeta.materialsHint;
                 } else if (aulaItem.audio_path && !aulaItem.pdf_path) {
-                materialsHint.textContent = 'Se quiseres descarregar o áudio, vai ao material adjunto 👇👇';
-            } else if (aulaItem.audio_path && aulaItem.pdf_path) {
-                materialsHint.textContent = 'Se quiseres descarregar os materiais, vê abaixo 👇👇';
-            } else {
-                materialsHint.textContent = 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇';
+                    materialsHint.textContent = 'Se quiseres descarregar o áudio, vai ao material adjunto 👇👇';
+                } else if (aulaItem.audio_path && aulaItem.pdf_path) {
+                    materialsHint.textContent = 'Se quiseres descarregar os materiais, vê abaixo 👇👇';
+                } else {
+                    materialsHint.textContent = 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇';
+                }
             }
         }
 
