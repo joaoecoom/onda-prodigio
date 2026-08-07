@@ -79,9 +79,9 @@
             name: 'A Fábrica das Tardes Tranquilas.pdf',
             size: '25,1 MB',
         },
-        '/comunidade/assets/ebooks/caixa-super-truques-genio.pdf': {
-            name: 'A Caixa dos Super Truques do Génio.pdf',
-            size: '44 MB',
+        '/comunidade/assets/ebooks/clube-instrucoes.pdf': {
+            name: 'Instruções Clube dos Super Cérebros.pdf',
+            size: '3,2 MB',
         },
     };
 
@@ -335,14 +335,22 @@
             return null;
         }
 
-        if (aulaItem.sort_order !== 1) {
-            return null;
+        if (aulaItem.sort_order === 1) {
+            return {
+                headerGift: '👉 Começa aqui',
+                infoTitle: 'Bem-vindos ao Clube!',
+            };
         }
 
-        return {
-            headerGift: '👉 Começa aqui',
-            infoTitle: 'Bem-vindos ao Clube!',
-        };
+        if (aulaItem.sort_order === 2) {
+            return {
+                headerGift: '👉 Começa aqui',
+                infoTitle: 'Instruções',
+                materialsHint: 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇',
+            };
+        }
+
+        return null;
     }
 
     function renderClubeLessonChrome(aulaItem, moduleItem) {
@@ -502,7 +510,15 @@
     }
 
     function getAulaThumbLabel(aulaItem, index, moduleItem) {
-        if (moduleItem && moduleItem.sort_order === 1 && AULA_THUMB_LABELS[index]) {
+        if (productId === 'clube-super-cerebros' && moduleItem && moduleItem.sort_order === 1) {
+            var clubeAulaLabels = ['Bem-vinda', 'Instruções'];
+
+            if (clubeAulaLabels[index]) {
+                return clubeAulaLabels[index];
+            }
+        }
+
+        if (productId === 'onda-prodigio' && moduleItem && moduleItem.sort_order === 1 && AULA_THUMB_LABELS[index]) {
             return AULA_THUMB_LABELS[index];
         }
 
@@ -688,7 +704,12 @@
 
             if (orderBumpHint && orderBumpHint.materialsHint) {
                 materialsHint.textContent = orderBumpHint.materialsHint;
-            } else if (aulaItem.audio_path && !aulaItem.pdf_path) {
+            } else {
+                var clubeMeta = getClubeLessonMeta(aulaItem, getActiveModule());
+
+                if (clubeMeta && clubeMeta.materialsHint) {
+                    materialsHint.textContent = clubeMeta.materialsHint;
+                } else if (aulaItem.audio_path && !aulaItem.pdf_path) {
                 materialsHint.textContent = 'Se quiseres descarregar o áudio, vai ao material adjunto 👇👇';
             } else if (aulaItem.audio_path && aulaItem.pdf_path) {
                 materialsHint.textContent = 'Se quiseres descarregar os materiais, vê abaixo 👇👇';
