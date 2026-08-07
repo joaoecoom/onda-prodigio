@@ -742,10 +742,24 @@
 
             contentPlayer.className = 'comunidade-player';
             contentPlayer.innerHTML = (
-                '<video class="comunidade-video-player" controls playsinline preload="metadata" src="' + videoUrl + '">' +
+                '<video class="comunidade-video-player" controls playsinline preload="metadata" ' +
+                'controlsList="nodownload noplaybackrate noremoteplayback" ' +
+                'disablePictureInPicture disableRemotePlayback src="' + videoUrl + '">' +
                     'O teu browser não suporta vídeo.' +
                 '</video>'
             );
+
+            var videoEl = contentPlayer.querySelector('.comunidade-video-player');
+
+            if (videoEl) {
+                videoEl.setAttribute('controlsList', 'nodownload noplaybackrate noremoteplayback');
+                videoEl.disablePictureInPicture = true;
+                videoEl.disableRemotePlayback = true;
+                videoEl.addEventListener('contextmenu', function (event) {
+                    event.preventDefault();
+                });
+            }
+
             return;
         }
 
