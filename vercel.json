@@ -17,6 +17,14 @@
       "destination": "/obgd/index.html"
     },
     {
+      "source": "/obgd/upsell1",
+      "destination": "/obgd/upsell1.html"
+    },
+    {
+      "source": "/obgd/upsell2",
+      "destination": "/obgd/upsell2.html"
+    },
+    {
       "source": "/obgd-test",
       "destination": "/obgd-test/index.html"
     },

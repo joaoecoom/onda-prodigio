@@ -142,6 +142,14 @@
 
                 if (result.verified) {
                     trackVerifiedPurchase(result, paymentIntentId);
+
+                    var params = new URLSearchParams(window.location.search);
+
+                    if (!params.get('upsells')) {
+                        window.location.replace('/obgd/upsell1' + window.location.search);
+                        return;
+                    }
+
                     showThankYouPage();
                     return;
                 }

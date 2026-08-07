@@ -63,6 +63,28 @@ module.exports = async function handler(req, res) {
             }
         }
 
+        if (event.type === 'checkout.session.completed') {
+            try {
+                var grantAccessCheckout = require('../lib/comunidade/grant-access');
+                var checkoutResult = await grantAccessCheckout.grantAccessFromCheckoutSession(stripe, event.data.object);
+
+                console.log('Upsell access:', event.data.object.id, JSON.stringify(checkoutResult));
+            } catch (checkoutAccessError) {
+                console.error('Erro ao criar acesso de upsell:', checkoutAccessError);
+            }
+        }
+
+        if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+            try {
+                var grantAccessSubscription = require('../lib/comunidade/grant-access');
+                var subscriptionResult = await grantAccessSubscription.updateSubscriptionAccess(stripe, event.data.object);
+
+                console.log('Subscription access:', event.data.object.id, JSON.stringify(subscriptionResult));
+            } catch (subscriptionAccessError) {
+                console.error('Erro ao actualizar subscrição:', subscriptionAccessError);
+            }
+        }
+
         if (event.type === 'payment_intent.payment_failed') {
             var failedMetadata = event.data.object.metadata || {};
 
