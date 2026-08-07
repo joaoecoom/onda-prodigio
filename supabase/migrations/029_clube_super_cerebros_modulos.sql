@@ -78,7 +78,7 @@ VALUES
     ),
     (
         'clube-super-cerebros',
-        'Mês 5 — Pensamento Criativo e Resolução de Problemas',
+        'Mês 5 — Pensamento Criativo e Resolução de Problemas 🎨',
         'Quinto mês: criatividade, imaginação e resolução de problemas no dia a dia.',
         'video',
         10,
@@ -102,7 +102,7 @@ VALUES
     ),
     (
         'clube-super-cerebros',
-        'Mês 8 — A Curiosidade do Génio 🔥',
+        'Mês 8 — A Curiosidade do Génio 🕵️',
         'Oitavo mês: despertar curiosidade, vontade de aprender e explorar.',
         'video',
         13,
@@ -134,7 +134,7 @@ VALUES
     ),
     (
         'clube-super-cerebros',
-        'Questionário interactivo de conhecimento e satisfação',
+        'Questionário interactivo de conhecimento e satisfação 🧠',
         'Partilha a tua experiência no clube e avalia o teu progresso.',
         'video',
         17,
