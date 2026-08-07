@@ -90,7 +90,7 @@
         },
         '/comunidade/assets/ebooks/guia-inteligencia-financeira-criancas.pdf': {
             name: 'Guia de Inteligência Financeira para Crianças.pdf',
-            size: '17 MB',
+            size: '44 MB',
         },
     };
 
