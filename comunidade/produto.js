@@ -314,6 +314,55 @@
         }
     }
 
+    function getClubeLessonMeta(aulaItem, moduleItem) {
+        if (productId !== 'clube-super-cerebros' || !moduleItem || moduleItem.sort_order !== 1) {
+            return null;
+        }
+
+        if (aulaItem.sort_order !== 1) {
+            return null;
+        }
+
+        return {
+            headerGift: '👉 Começa aqui',
+            infoTitle: 'Bem-vindos ao Clube!',
+        };
+    }
+
+    function renderClubeLessonChrome(aulaItem, moduleItem) {
+        var clubeMeta = getClubeLessonMeta(aulaItem, moduleItem);
+
+        if (!clubeMeta) {
+            return false;
+        }
+
+        if (lessonHeader) {
+            lessonHeader.hidden = false;
+        }
+
+        if (document.getElementById('lesson-header-gift')) {
+            document.getElementById('lesson-header-gift').textContent = clubeMeta.headerGift;
+        }
+
+        if (lessonHeaderTitle) {
+            lessonHeaderTitle.textContent = aulaItem.title;
+        }
+
+        if (lessonInfo) {
+            lessonInfo.classList.add('is-sono');
+        }
+
+        if (lessonInfoLabel) {
+            lessonInfoLabel.classList.add('is-tab');
+        }
+
+        lessonTitle.textContent = clubeMeta.infoTitle;
+        lessonDescription.textContent = aulaItem.description || '';
+        updateCompleteButton(aulaItem);
+
+        return true;
+    }
+
     function renderSonoLessonChrome(aulaItem, moduleItem) {
         var sonoMeta = getSonoAulaMeta(aulaItem, moduleItem);
 
@@ -426,6 +475,10 @@
         }
 
         if (renderOrderBumpLessonChrome(aulaItem)) {
+            return true;
+        }
+
+        if (renderClubeLessonChrome(aulaItem, moduleItem)) {
             return true;
         }
 
@@ -668,6 +721,18 @@
     }
 
     function renderVideoPlayer(aulaItem) {
+        if (aulaItem.video_path) {
+            var videoUrl = resolveAssetUrl(aulaItem.video_path);
+
+            contentPlayer.className = 'comunidade-player';
+            contentPlayer.innerHTML = (
+                '<video class="comunidade-video-player" controls playsinline preload="metadata" src="' + videoUrl + '">' +
+                    'O teu browser não suporta vídeo.' +
+                '</video>'
+            );
+            return;
+        }
+
         contentPlayer.className = 'comunidade-player';
         contentPlayer.innerHTML = (
             '<iframe src="https://www.youtube.com/embed/' + encodeURIComponent(aulaItem.youtube_id) + '" ' +
@@ -1238,7 +1303,7 @@
 
         renderMaterials(aulaItem);
 
-        if (aulaItem.youtube_id) {
+        if (aulaItem.youtube_id || aulaItem.video_path) {
             renderVideoPlayer(aulaItem);
             markContentViewed(aulaItem.id);
             return;
