@@ -102,6 +102,10 @@
             name: 'Guia de Inteligência Financeira para Crianças.pdf',
             size: '44 MB',
         },
+        '/comunidade/assets/ebooks/leitura-rapida-bem-vindos.pdf': {
+            name: 'Boas-vindas — Leitura Rápida.pdf',
+            size: '53 MB',
+        },
     };
 
     var ORDER_BUMP_LESSON_CHROME = {
@@ -558,6 +562,18 @@
             return null;
         }
 
+        if (aulaItem.sort_order === 1) {
+            return {
+                infoTitle: 'Boas-vindas ao Leitura Rápida',
+                materialsHint: 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Descarrega o PDF abaixo ou lê online. Este guia apresenta o módulo de Leitura Rápida e explica o percurso por níveis etários.\n\n' +
+                    'Por onde começar: Lê a introdução completa e identifica o nível mais adequado à idade do teu filho — depois avança aula a aula no teu ritmo.'
+                ),
+            };
+        }
+
         if (aulaItem.sort_order === 3) {
             return {
                 infoTitle: 'Nível Foguete (6 a 7 anos) – «Leitores a caminho»',
@@ -565,7 +581,7 @@
                 intro: (
                     'Objectivo do nível: Potenciar o ritmo de leitura, automatização de palavras comuns e consolidação da compreensão literal.\n\n' +
                     'Nesta fase a criança já conhece as letras e está a desenvolver a leitura mecânica — expandimos a agilidade visual e a ligação ao contexto.\n\n' +
-                    'Imprime as três fichas abaixo e pratica uma de cada vez, de acordo com o guia (PDF em breve).'
+                    'Imprime as três fichas abaixo e pratica uma de cada vez, de acordo com o guia em PDF.'
                 ),
                 worksheets: [
                     {
