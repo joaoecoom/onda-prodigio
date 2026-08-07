@@ -110,6 +110,10 @@
             name: 'Nível Semente (4 a 5 anos) — Pré-leitores.pdf',
             size: '14 MB',
         },
+        '/comunidade/assets/ebooks/leitura-rapida-nivel-foguete.pdf': {
+            name: 'Nível Foguete (6 a 7 anos) — Leitores a caminho.pdf',
+            size: '57 MB',
+        },
     };
 
     var ORDER_BUMP_LESSON_CHROME = {
@@ -596,9 +600,10 @@
                 infoTitle: 'Nível Foguete (6 a 7 anos) – «Leitores a caminho»',
                 materialsHint: 'Se quiseres descarregar os ficheiros, vê abaixo 👇👇',
                 intro: (
-                    'Objectivo do nível: Potenciar o ritmo de leitura, automatização de palavras comuns e consolidação da compreensão literal.\n\n' +
-                    'Nesta fase a criança já conhece as letras e está a desenvolver a leitura mecânica — expandimos a agilidade visual e a ligação ao contexto.\n\n' +
-                    'Imprime as três fichas abaixo e pratica uma de cada vez, de acordo com o guia em PDF.'
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as três fichas de exercício e pratica uma de cada vez com o teu filho.\n\n' +
+                    'Objectivo do nível: Potenciar o ritmo de leitura, automatização de palavras comuns e consolidação da compreensão literal — para crianças dos 6 aos 7 anos.\n\n' +
+                    'Por onde começar: Lê o guia completo e segue as actividades na ordem sugerida, com calma e sem pressão.'
                 ),
                 worksheets: [
                     {
