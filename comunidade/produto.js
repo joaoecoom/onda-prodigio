@@ -85,6 +85,12 @@
         'tardes-sem-brigas': {
             headerGift: '🎁 A Fábrica das Tardes Tranquilas',
             materialsHint: 'Descarrega o PDF para imprimir e usar em casa 👇👇',
+            intro: (
+                'INSTRUÇÕES\n\n' +
+                'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as páginas que precisares — acordos, checklists e ferramentas — e usa-as em casa no dia a dia.\n\n' +
+                'Onde colocar: Deixa os impressos visíveis no quarto ou na cozinha, para toda a família saber o que foi combinado.\n\n' +
+                'Por onde começar: Lê o sistema completo, escolhe um passo de cada vez e aplica com calma. O objectivo são tardes mais tranquilas, com menos discussão.'
+            ),
         },
     };
 
@@ -1139,7 +1145,13 @@
                 ? 'Assiste a esta aula em vídeo.'
                 : 'Descarrega o material em PDF.');
         } else {
-            renderInstructions('');
+            var orderBumpConfig = ORDER_BUMP_LESSON_CHROME[productId];
+
+            if (orderBumpConfig && orderBumpConfig.intro) {
+                renderInstructions(orderBumpConfig.intro);
+            } else {
+                renderInstructions('');
+            }
         }
 
         if (window.ComunidadeWelcomeSurvey && window.ComunidadeWelcomeSurvey.isSurveyLesson(aulaItem)) {
