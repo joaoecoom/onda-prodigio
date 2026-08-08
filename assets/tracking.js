@@ -28,7 +28,7 @@
     };
 
     var config = null;
-    var initialized = false;
+    var bootstrapPromise = null;
     var purchaseEventId = null;
     var ATTRIBUTION_STORAGE_KEY = 'onda-attribution';
 
@@ -466,7 +466,11 @@
 
     function trackPurchase(payload) {
         if (wasTrackedOnce('onda-track-purchase')) {
-            return;
+            return false;
+        }
+
+        if (!window.fbq) {
+            return false;
         }
 
         markTrackedOnce('onda-track-purchase');
@@ -478,11 +482,53 @@
             event_id: eventId,
             transaction_id: payload && payload.transactionId ? payload.transactionId : '',
         }));
+
+        return true;
+    }
+
+    function waitForFbq(maxMs) {
+        var timeout = typeof maxMs === 'number' ? maxMs : 5000;
+
+        return new Promise(function (resolve) {
+            if (window.fbq) {
+                resolve(true);
+                return;
+            }
+
+            var elapsed = 0;
+
+            var timer = window.setInterval(function () {
+                elapsed += 100;
+
+                if (window.fbq) {
+                    window.clearInterval(timer);
+                    resolve(true);
+                    return;
+                }
+
+                if (elapsed >= timeout) {
+                    window.clearInterval(timer);
+                    resolve(false);
+                }
+            }, 100);
+        });
     }
 
     function trackPurchaseAsync(payload) {
-        trackPurchase(payload);
-        return waitForTrackingFlush(450);
+        return bootstrap()
+            .then(function () {
+                return waitForFbq(5000);
+            })
+            .then(function () {
+                if (trackPurchase(payload)) {
+                    return waitForTrackingFlush(450);
+                }
+
+                return waitForFbq(3000).then(function () {
+                    trackPurchase(payload);
+                    return waitForTrackingFlush(450);
+                });
+            });
     }
 
     function trackCtaClick(payload) {
@@ -662,15 +708,14 @@
     }
 
     function bootstrap() {
-        if (initialized) {
-            return Promise.resolve(config);
+        if (bootstrapPromise) {
+            return bootstrapPromise;
         }
 
-        initialized = true;
         captureAttribution();
         ensureFbcCookie();
 
-        return fetch(window.location.origin + '/api/tracking-config')
+        bootstrapPromise = fetch(window.location.origin + '/api/tracking-config')
             .then(function (response) {
                 return response.json();
             })
@@ -690,6 +735,8 @@
                 initPageTracking();
                 return null;
             });
+
+        return bootstrapPromise;
     }
 
     window.OndaTracking = {

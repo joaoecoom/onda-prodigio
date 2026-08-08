@@ -5,6 +5,7 @@
     var POLL_MS = 2000;
     var MAX_ATTEMPTS = 30;
     var ENABLE_POST_CHECKOUT_UPSELLS = false;
+    var PAYMENT_INTENT_STORAGE_KEY = 'onda-obgd-payment-intent';
 
     var content = document.getElementById('obgd-content');
     var loading = document.getElementById('obgd-loading');
@@ -17,6 +18,20 @@
         return params.get('preview') === '1';
     }
 
+    function rememberPaymentIntentId(paymentIntentId) {
+        if (window.sessionStorage && paymentIntentId) {
+            window.sessionStorage.setItem(PAYMENT_INTENT_STORAGE_KEY, paymentIntentId);
+        }
+    }
+
+    function getStoredPaymentIntentId() {
+        if (!window.sessionStorage) {
+            return '';
+        }
+
+        return window.sessionStorage.getItem(PAYMENT_INTENT_STORAGE_KEY) || '';
+    }
+
     function getPaymentIntentId() {
         var params = new URLSearchParams(window.location.search);
         var paymentIntentId = params.get('payment_intent') || '';
@@ -26,7 +41,12 @@
             paymentIntentId = clientSecret.split('_secret')[0];
         }
 
-        return paymentIntentId;
+        if (paymentIntentId) {
+            rememberPaymentIntentId(paymentIntentId);
+            return paymentIntentId;
+        }
+
+        return getStoredPaymentIntentId();
     }
 
     function setLoadingMessage(text) {
@@ -56,7 +76,7 @@
         }
 
         if (successBar) {
-            successBar.hidden = false;
+            successBar.hidden = options.showSuccessBar !== true;
         }
 
         if (content) {
@@ -75,11 +95,7 @@
     }
 
     function showPreviewPage() {
-        if (successBar) {
-            successBar.hidden = false;
-        }
-
-        showThankYouPage({ keepPreviewParam: true });
+        showThankYouPage({ keepPreviewParam: true, showSuccessBar: true });
     }
 
     async function completeVerifiedPurchase(result, paymentIntentId) {
@@ -94,7 +110,7 @@
             }
         }
 
-        showThankYouPage();
+        showThankYouPage({ showSuccessBar: true });
     }
 
     async function verifyPurchaseOnce(paymentIntentId) {
@@ -159,11 +175,7 @@
         var redirectStatus = new URLSearchParams(window.location.search).get('redirect_status') || '';
 
         if (!paymentIntentId || paymentIntentId.indexOf('pi_') !== 0) {
-            if (successBar) {
-                successBar.hidden = true;
-            }
-
-            showThankYouPage();
+            showThankYouPage({ showSuccessBar: false });
             return;
         }
 
