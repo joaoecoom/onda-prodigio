@@ -122,6 +122,10 @@
             name: 'Nível Élite Starter (10 a 11 anos) — Pré-secundário.pdf',
             size: '78 MB',
         },
+        '/comunidade/assets/ebooks/leitura-rapida-nivel-elite-pro.pdf': {
+            name: 'Nível Élite Pro (12 a 13 anos) — Secundário activo.pdf',
+            size: '54 MB',
+        },
     };
 
     var ORDER_BUMP_LESSON_CHROME = {
@@ -599,6 +603,19 @@
                     'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as actividades que precisares e pratica com o teu filho em momentos calmos do dia.\n\n' +
                     'Objectivo do nível: Despertar a curiosidade pela leitura, reconhecimento de letras e ritmo — ideal para crianças dos 4 aos 5 anos que ainda estão a dar os primeiros passos como «pré-leitores».\n\n' +
                     'Por onde começar: Lê o guia completo e escolhe uma actividade de cada vez, com calma e sem pressão.'
+                ),
+            };
+        }
+
+        if (aulaItem.sort_order === 6) {
+            return {
+                infoTitle: 'Nível Élite Pro (12 a 13 anos) – «Secundário activo»',
+                materialsHint: 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as actividades que precisares e pratica com o teu filho em momentos de estudo focados.\n\n' +
+                    'Objectivo do nível: Aprofundar técnicas de leitura rápida e compreensão — ideal para adolescentes dos 12 aos 13 anos em plena fase de secundário activo.\n\n' +
+                    'Por onde começar: Lê o guia completo e escolhe uma actividade de cada vez, reforçando velocidade, foco e autonomia na leitura.'
                 ),
             };
         }
