@@ -364,18 +364,22 @@
         return payload;
     }
 
-    function trackPageView() {
-        var pageType = getPageType();
-
-        if (pageType !== 'thank_you') {
-            var onceKey = getTrackingOnceKey('onda-track-page-view');
-
-            if (wasTrackedOnce(onceKey)) {
-                return;
-            }
-
-            markTrackedOnce(onceKey);
+    function getPageLoadOnceKey(name) {
+        if (!window.__ondaPageLoadId) {
+            window.__ondaPageLoadId = String(Date.now()) + '_' + randomSuffix();
         }
+
+        return name + ':' + getPagePath() + ':' + window.__ondaPageLoadId;
+    }
+
+    function trackPageView() {
+        var onceKey = getPageLoadOnceKey('onda-track-page-view');
+
+        if (wasTrackedOnce(onceKey)) {
+            return;
+        }
+
+        markTrackedOnce(onceKey);
 
         pushEvent('page_view', {
             page_title: document.title,
