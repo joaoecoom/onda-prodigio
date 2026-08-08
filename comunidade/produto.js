@@ -118,6 +118,10 @@
             name: 'Nível Supercérebro Júnior (8 a 9 anos) — Leitores avançados.pdf',
             size: '73 MB',
         },
+        '/comunidade/assets/ebooks/leitura-rapida-nivel-elite-starter.pdf': {
+            name: 'Nível Élite Starter (10 a 11 anos) — Pré-secundário.pdf',
+            size: '78 MB',
+        },
     };
 
     var ORDER_BUMP_LESSON_CHROME = {
@@ -595,6 +599,19 @@
                     'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as actividades que precisares e pratica com o teu filho em momentos calmos do dia.\n\n' +
                     'Objectivo do nível: Despertar a curiosidade pela leitura, reconhecimento de letras e ritmo — ideal para crianças dos 4 aos 5 anos que ainda estão a dar os primeiros passos como «pré-leitores».\n\n' +
                     'Por onde começar: Lê o guia completo e escolhe uma actividade de cada vez, com calma e sem pressão.'
+                ),
+            };
+        }
+
+        if (aulaItem.sort_order === 5) {
+            return {
+                infoTitle: 'Nível Élite Starter (10 a 11 anos) – «Pré-secundário»',
+                materialsHint: 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as actividades que precisares e pratica com o teu filho em momentos de estudo focados.\n\n' +
+                    'Objectivo do nível: Desenvolver leitura rápida e compreensão avançada — ideal para crianças dos 10 aos 11 anos a prepararem o salto para o secundário.\n\n' +
+                    'Por onde começar: Lê o guia completo e escolhe uma actividade de cada vez, reforçando autonomia e confiança na leitura.'
                 ),
             };
         }
