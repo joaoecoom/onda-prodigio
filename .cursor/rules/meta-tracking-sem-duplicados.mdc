@@ -1,0 +1,28 @@
+# Meta tracking — sem eventos duplicados
+
+## Arquitectura Onda Prodígio
+
+**Facebook Ads recebe eventos Meta por duas vias deduplicadas:**
+
+| Evento | Browser (Pixel) | Servidor (CAPI) | Dedup |
+|--------|-----------------|-----------------|-------|
+| PageView | `assets/tracking.js` | — | — |
+| ViewContent | `assets/tracking.js` | — | — |
+| InitiateCheckout | `assets/tracking.js` | — | — |
+| Lead | `assets/tracking.js` | — | — |
+| Purchase | `obgd/obgd.js` (1×) | `api/stripe-webhook.js` | `event_id` = `purchase_event_id` |
+
+**Não duplicar Meta:**
+- GTM Web (`GTM-KMMX6RRB`): **sem tag Meta Pixel / Facebook** — o pixel vive só em `tracking.js`
+- Stape sGTM: **sem tag Meta CAPI para Purchase** enquanto o webhook envia CAPI directo
+- Custom events (`checkout_started`, `payment_succeeded`, etc.): **GA4/dataLayer only**, não vão para `fbq`
+
+## GTM Web — o que pode ter
+
+- GA4 / Data Tag → Stape (analytics)
+- Triggers em `initiate_checkout`, `purchase` para GA4 **apenas**
+
+## Ao alterar tracking
+
+- Manter `eventID` igual entre browser Purchase e CAPI Purchase
+- Nunca disparar Purchase no checkout **e** no obgd — só no obgd + webhook

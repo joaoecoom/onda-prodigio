@@ -270,7 +270,15 @@
         }
     }
 
-    function pushEvent(eventName, payload) {
+    function getTrackingOnceKey(name) {
+        return name + ':' + getPagePath();
+    }
+
+    function pushEvent(eventName, payload, options) {
+        options = options || {};
+
+        var sendToMeta = options.meta !== false && Boolean(META_STANDARD_EVENTS[eventName]);
+        var sendToAnalytics = options.analytics !== false;
         var eventId = (payload && payload.event_id) || (eventName + '_' + Date.now() + '_' + randomSuffix());
         var eventPayload = {
             event: eventName,
@@ -290,41 +298,30 @@
             });
         }
 
-        window.dataLayer.push(eventPayload);
+        if (sendToAnalytics) {
+            window.dataLayer.push(eventPayload);
 
-        var metaStandardEventName = META_STANDARD_EVENTS[eventName];
-
-        if (metaStandardEventName && metaStandardEventName !== eventName) {
-            window.dataLayer.push(Object.assign({}, eventPayload, {
-                event: metaStandardEventName,
-            }));
-        }
-
-        if (window.gtag && config && config.ga4MeasurementId) {
-            window.gtag('event', eventName, {
-                send_to: config.ga4MeasurementId,
-                event_id: eventId,
-                currency: eventPayload.currency,
-                value: eventPayload.value,
-                transaction_id: eventPayload.transaction_id,
-                items: eventPayload.items,
-            });
-        }
-
-        if (window.fbq) {
-            var metaEventName = META_STANDARD_EVENTS[eventName];
-            var metaOptions = { eventID: eventId };
-
-            if (metaEventName) {
-                window.fbq('track', metaEventName, {
+            if (window.gtag && config && config.ga4MeasurementId) {
+                window.gtag('event', eventName, {
+                    send_to: config.ga4MeasurementId,
+                    event_id: eventId,
                     currency: eventPayload.currency,
                     value: eventPayload.value,
-                    content_ids: eventPayload.content_ids,
-                    contents: eventPayload.contents,
-                }, metaOptions);
-            } else {
-                window.fbq('trackCustom', eventName, eventPayload, metaOptions);
+                    transaction_id: eventPayload.transaction_id,
+                    items: eventPayload.items,
+                });
             }
+        }
+
+        if (sendToMeta && window.fbq) {
+            var metaEventName = META_STANDARD_EVENTS[eventName];
+
+            window.fbq('track', metaEventName, {
+                currency: eventPayload.currency,
+                value: eventPayload.value,
+                content_ids: eventPayload.content_ids,
+                contents: eventPayload.contents,
+            }, { eventID: eventId });
         }
 
         return eventId;
@@ -368,11 +365,13 @@
     }
 
     function trackPageView() {
-        if (wasTrackedOnce('onda-track-page-view')) {
+        var onceKey = getTrackingOnceKey('onda-track-page-view');
+
+        if (wasTrackedOnce(onceKey)) {
             return;
         }
 
-        markTrackedOnce('onda-track-page-view');
+        markTrackedOnce(onceKey);
 
         pushEvent('page_view', {
             page_title: document.title,
@@ -415,11 +414,13 @@
     }
 
     function trackInitiateCheckout(payload) {
-        if (wasTrackedOnce('onda-track-initiate-checkout')) {
+        var onceKey = getTrackingOnceKey('onda-track-initiate-checkout');
+
+        if (wasTrackedOnce(onceKey)) {
             return;
         }
 
-        markTrackedOnce('onda-track-initiate-checkout');
+        markTrackedOnce(onceKey);
 
         var checkoutPayload = buildCheckoutPayload(payload);
         pushEvent('initiate_checkout', checkoutPayload);
@@ -433,26 +434,26 @@
         markTrackedOnce('onda-track-checkout-started');
 
         var checkoutPayload = buildCheckoutPayload(payload);
-        pushEvent('checkout_started', checkoutPayload);
+        pushEvent('checkout_started', checkoutPayload, { meta: false });
     }
 
     function trackCheckoutValueUpdate(payload) {
         var checkoutPayload = buildCheckoutPayload(payload);
-        pushEvent('checkout_value_update', checkoutPayload);
+        pushEvent('checkout_value_update', checkoutPayload, { meta: false });
     }
 
     function trackPaymentSubmitted(payload) {
         var checkoutPayload = buildCheckoutPayload(payload);
-        pushEvent('payment_submitted', checkoutPayload);
+        pushEvent('payment_submitted', checkoutPayload, { meta: false });
     }
 
     function trackPaymentFailed(payload) {
-        pushEvent('payment_failed', payload || {});
+        pushEvent('payment_failed', payload || {}, { meta: false });
     }
 
     function trackPaymentSucceeded(payload) {
         var checkoutPayload = buildCheckoutPayload(payload);
-        pushEvent('payment_succeeded', checkoutPayload);
+        pushEvent('payment_succeeded', checkoutPayload, { meta: false });
     }
 
     function waitForTrackingFlush(ms) {
@@ -485,11 +486,11 @@
     }
 
     function trackCtaClick(payload) {
-        pushEvent('cta_click', payload || {});
+        pushEvent('cta_click', payload || {}, { meta: false });
     }
 
     function trackVslEvent(eventName, payload) {
-        pushEvent(eventName, payload || {});
+        pushEvent(eventName, payload || {}, { meta: false });
     }
 
     function getStripeTrackingMetadata() {
