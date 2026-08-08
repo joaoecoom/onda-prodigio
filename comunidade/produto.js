@@ -126,6 +126,10 @@
             name: 'Nível Élite Pro (12 a 13 anos) — Secundário activo.pdf',
             size: '54 MB',
         },
+        '/comunidade/assets/ebooks/leitura-rapida-nivel-elite-master.pdf': {
+            name: 'Nível Élite Máster (14 a 16 anos) — Alto desempenho.pdf',
+            size: '57 MB',
+        },
     };
 
     var ORDER_BUMP_LESSON_CHROME = {
@@ -603,6 +607,19 @@
                     'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as actividades que precisares e pratica com o teu filho em momentos calmos do dia.\n\n' +
                     'Objectivo do nível: Despertar a curiosidade pela leitura, reconhecimento de letras e ritmo — ideal para crianças dos 4 aos 5 anos que ainda estão a dar os primeiros passos como «pré-leitores».\n\n' +
                     'Por onde começar: Lê o guia completo e escolhe uma actividade de cada vez, com calma e sem pressão.'
+                ),
+            };
+        }
+
+        if (aulaItem.sort_order === 7) {
+            return {
+                infoTitle: 'Nível Élite Máster (14 a 16 anos) – «Alto desempenho»',
+                materialsHint: 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as actividades que precisares e pratica com o teu filho em momentos de estudo focados.\n\n' +
+                    'Objectivo do nível: Dominar métodos de leitura rápida com foco em rendimento escolar e autonomia — ideal para jovens dos 14 aos 16 anos em fase de alto desempenho.\n\n' +
+                    'Por onde começar: Lê o guia completo e escolhe uma actividade de cada vez, reforçando velocidade, compreensão e independência na leitura.'
                 ),
             };
         }
