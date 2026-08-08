@@ -114,6 +114,10 @@
             name: 'Nível Foguete (6 a 7 anos) — Leitores a caminho.pdf',
             size: '57 MB',
         },
+        '/comunidade/assets/ebooks/leitura-rapida-nivel-supercerebro-junior.pdf': {
+            name: 'Nível Supercérebro Júnior (8 a 9 anos) — Leitores avançados.pdf',
+            size: '73 MB',
+        },
     };
 
     var ORDER_BUMP_LESSON_CHROME = {
@@ -591,6 +595,19 @@
                     'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as actividades que precisares e pratica com o teu filho em momentos calmos do dia.\n\n' +
                     'Objectivo do nível: Despertar a curiosidade pela leitura, reconhecimento de letras e ritmo — ideal para crianças dos 4 aos 5 anos que ainda estão a dar os primeiros passos como «pré-leitores».\n\n' +
                     'Por onde começar: Lê o guia completo e escolhe uma actividade de cada vez, com calma e sem pressão.'
+                ),
+            };
+        }
+
+        if (aulaItem.sort_order === 4) {
+            return {
+                infoTitle: 'Nível Supercérebro Júnior (8 a 9 anos) – «Leitores avançados»',
+                materialsHint: 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Descarrega o PDF abaixo ou lê online. Imprime as actividades que precisares e pratica com o teu filho em momentos de estudo calmos.\n\n' +
+                    'Objectivo do nível: Consolidar fluência, compreensão e velocidade de leitura — ideal para crianças dos 8 aos 9 anos que já leem com mais autonomia.\n\n' +
+                    'Por onde começar: Lê o guia completo e escolhe uma actividade de cada vez, reforçando a confiança do teu filho como «leitor avançado».'
                 ),
             };
         }
