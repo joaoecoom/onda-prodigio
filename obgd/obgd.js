@@ -159,7 +159,11 @@
         var redirectStatus = new URLSearchParams(window.location.search).get('redirect_status') || '';
 
         if (!paymentIntentId || paymentIntentId.indexOf('pi_') !== 0) {
-            redirectToCheckout();
+            if (successBar) {
+                successBar.hidden = true;
+            }
+
+            showThankYouPage();
             return;
         }
 
