@@ -1,0 +1,5 @@
+.env*
+.env.vercel.prod
+.git
+.cursor
+node_modules/.cache
