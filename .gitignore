@@ -10,3 +10,4 @@ node_modules/
 stripe-config.env
 .cursor/mcp.json
 .env.prod.tmp
+env.vercel.prod
