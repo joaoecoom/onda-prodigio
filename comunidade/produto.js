@@ -72,6 +72,14 @@
         'Máster',
     ];
 
+    var MEMORIA_TRABALHO_AULA_SHORT_LABELS = [
+        'Guia',
+        'Onda',
+        'Desafio',
+        'Activa',
+        'Meditação',
+    ];
+
     var CONCLUIDO_AULA_SHORT_LABELS = [
         'Inquérito',
         'Presente',
@@ -581,6 +589,126 @@
         return false;
     }
 
+    function isMemoriaTrabalhoModule(moduleItem) {
+        if (!moduleItem) {
+            return false;
+        }
+
+        if (productId === 'clube-super-cerebros' && moduleItem.sort_order === 6) {
+            return true;
+        }
+
+        return false;
+    }
+
+    function getMemoriaTrabalhoLessonMeta(aulaItem, moduleItem) {
+        if (productId !== 'clube-super-cerebros' || !moduleItem || !isMemoriaTrabalhoModule(moduleItem) || !aulaItem) {
+            return null;
+        }
+
+        if (aulaItem.sort_order === 1) {
+            return {
+                infoTitle: 'Guia estratégica — Memória de trabalho',
+                materialsHint: 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Descarrega o PDF abaixo ou lê online. Este guia explica o funcionamento da memória de trabalho e o calendário de actividades deste mês.\n\n' +
+                    'Por onde começar: Lê o guia completo antes das restantes aulas — é a base para aplicares a Onda Relâmpago, o Desafio e as actividades complementares.'
+                ),
+            };
+        }
+
+        if (aulaItem.sort_order === 2) {
+            return {
+                infoTitle: 'Onda Relâmpago',
+                materialsHint: 'Se quiseres descarregar o áudio, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Ouve esta onda num ambiente calmo, de preferência com auscultadores e sem distracções.\n\n' +
+                    'Quando usar: Segue a frequência indicada no guia estratégico — normalmente antes ou depois das actividades de memória de trabalho.\n\n' +
+                    'Dica: Mantém uma rotina consistente para obteres melhores resultados ao longo do mês.'
+                ),
+            };
+        }
+
+        if (aulaItem.sort_order === 3) {
+            return {
+                infoTitle: 'Desafio Relâmpago',
+                materialsHint: 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Descarrega o PDF abaixo ou lê online. Imprime o que precisares e realiza os desafios com o teu filho.\n\n' +
+                    'Objectivo: Treinar a memória de trabalho com actividades práticas, rápidas e divertidas.\n\n' +
+                    'Por onde começar: Escolhe um desafio de cada vez e celebra cada pequena vitória.'
+                ),
+            };
+        }
+
+        if (aulaItem.sort_order === 4) {
+            return {
+                infoTitle: 'Ativa o teu cérebro',
+                materialsHint: 'Se quiseres descarregar o ficheiro, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Descarrega o PDF abaixo ou lê online. Usa estas dinâmicas para «acordar» o cérebro antes das actividades principais.\n\n' +
+                    'Quando usar: Ideal antes do Desafio Relâmpago ou de momentos de estudo mais exigentes.\n\n' +
+                    'Dica: Mantém as sessões curtas e energéticas — o objectivo é activar, não cansar.'
+                ),
+            };
+        }
+
+        if (aulaItem.sort_order === 5) {
+            return {
+                infoTitle: 'Meditação reencontro',
+                materialsHint: 'Se quiseres descarregar o áudio, vai ao material adjunto 👇👇',
+                intro: (
+                    'INSTRUÇÕES\n\n' +
+                    'Como usar: Ouve esta meditação num espaço calmo, sentados confortavelmente ou deitados.\n\n' +
+                    'Quando usar: No final de uma sessão de actividades ou antes de dormir, para consolidar o que foi aprendido.\n\n' +
+                    'Objectivo: Reencontrar a calma interior e fechar o ciclo deste mês com serenidade.'
+                ),
+            };
+        }
+
+        return null;
+    }
+
+    function renderMemoriaTrabalhoLessonChrome(aulaItem, moduleItem) {
+        if (!isMemoriaTrabalhoModule(moduleItem)) {
+            return false;
+        }
+
+        var memoriaMeta = getMemoriaTrabalhoLessonMeta(aulaItem, moduleItem);
+
+        if (lessonHeader) {
+            lessonHeader.hidden = false;
+        }
+
+        if (document.getElementById('lesson-header-gift')) {
+            document.getElementById('lesson-header-gift').textContent = 'Mês 1 - Memória de trabalho ⚡';
+        }
+
+        if (lessonHeaderTitle) {
+            lessonHeaderTitle.textContent = aulaItem.title;
+        }
+
+        if (lessonInfo) {
+            lessonInfo.classList.add('is-sono');
+        }
+
+        if (lessonInfoLabel) {
+            lessonInfoLabel.classList.add('is-tab');
+        }
+
+        lessonTitle.textContent = memoriaMeta && memoriaMeta.infoTitle ?
+            memoriaMeta.infoTitle :
+            aulaItem.title;
+        lessonDescription.textContent = aulaItem.description || '';
+        updateCompleteButton(aulaItem);
+
+        return true;
+    }
+
     function getLeituraRapidaLessonMeta(aulaItem, moduleItem) {
         if (productId !== 'clube-super-cerebros' || !moduleItem || !isLeituraRapidaModule(moduleItem) || !aulaItem) {
             return null;
@@ -817,6 +945,10 @@
             return true;
         }
 
+        if (renderMemoriaTrabalhoLessonChrome(aulaItem, moduleItem)) {
+            return true;
+        }
+
         if (renderOrderBumpLessonChrome(aulaItem)) {
             return true;
         }
@@ -855,6 +987,10 @@
 
         if (moduleItem && isLeituraRapidaModule(moduleItem) && LEITURA_RAPIDA_AULA_SHORT_LABELS[index]) {
             return LEITURA_RAPIDA_AULA_SHORT_LABELS[index];
+        }
+
+        if (moduleItem && isMemoriaTrabalhoModule(moduleItem) && MEMORIA_TRABALHO_AULA_SHORT_LABELS[index]) {
+            return MEMORIA_TRABALHO_AULA_SHORT_LABELS[index];
         }
 
         if (productId === 'onda-prodigio' && moduleItem && moduleItem.sort_order === 5 && CONCLUIDO_AULA_SHORT_LABELS[index]) {
@@ -1049,9 +1185,12 @@
                 var clubeMeta = getClubeLessonMeta(aulaItem, getActiveModule());
                 var surpresaMeta = getSurpresaLessonMeta(aulaItem, getActiveModule());
                 var leituraMaterialsMeta = getLeituraRapidaLessonMeta(aulaItem, getActiveModule());
+                var memoriaMaterialsMeta = getMemoriaTrabalhoLessonMeta(aulaItem, getActiveModule());
 
                 if (leituraMaterialsMeta && leituraMaterialsMeta.materialsHint) {
                     materialsHint.textContent = leituraMaterialsMeta.materialsHint;
+                } else if (memoriaMaterialsMeta && memoriaMaterialsMeta.materialsHint) {
+                    materialsHint.textContent = memoriaMaterialsMeta.materialsHint;
                 } else if (surpresaMeta && surpresaMeta.materialsHint) {
                     materialsHint.textContent = surpresaMeta.materialsHint;
                 } else if (clubeMeta && clubeMeta.materialsHint) {
@@ -1626,11 +1765,14 @@
 
         var surpresaMeta = getSurpresaLessonMeta(aulaItem, moduleItem);
         var leituraMeta = getLeituraRapidaLessonMeta(aulaItem, moduleItem);
+        var memoriaMeta = getMemoriaTrabalhoLessonMeta(aulaItem, moduleItem);
 
         if (surpresaMeta && surpresaMeta.intro) {
             renderInstructions(surpresaMeta.intro);
         } else if (leituraMeta && leituraMeta.intro) {
             renderInstructions(leituraMeta.intro);
+        } else if (memoriaMeta && memoriaMeta.intro) {
+            renderInstructions(memoriaMeta.intro);
         } else if (aulaItem.audio_path && aulaItem.description) {
             renderInstructions(aulaItem.description);
             if (!isLessonChromeLayout) {
