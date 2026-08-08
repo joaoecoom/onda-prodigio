@@ -365,13 +365,17 @@
     }
 
     function trackPageView() {
-        var onceKey = getTrackingOnceKey('onda-track-page-view');
+        var pageType = getPageType();
 
-        if (wasTrackedOnce(onceKey)) {
-            return;
+        if (pageType !== 'thank_you') {
+            var onceKey = getTrackingOnceKey('onda-track-page-view');
+
+            if (wasTrackedOnce(onceKey)) {
+                return;
+            }
+
+            markTrackedOnce(onceKey);
         }
-
-        markTrackedOnce(onceKey);
 
         pushEvent('page_view', {
             page_title: document.title,
@@ -464,8 +468,14 @@
         });
     }
 
+    function getPurchaseOnceKey(transactionId) {
+        return 'onda-track-purchase:' + (transactionId || 'unknown');
+    }
+
     function trackPurchase(payload) {
-        if (wasTrackedOnce('onda-track-purchase')) {
+        var onceKey = getPurchaseOnceKey(payload && payload.transactionId);
+
+        if (wasTrackedOnce(onceKey)) {
             return false;
         }
 
@@ -473,7 +483,7 @@
             return false;
         }
 
-        markTrackedOnce('onda-track-purchase');
+        markTrackedOnce(onceKey);
 
         var checkoutPayload = buildCheckoutPayload(payload);
         var eventId = getPurchaseEventId();
@@ -722,12 +732,14 @@
             .then(function (trackingConfig) {
                 config = trackingConfig || {};
 
-                return Promise.all([
-                    loadGtm(config.gtmContainerId, config.stapeGtmUrl || config.serverContainerUrl),
-                    loadGa4(config.ga4MeasurementId),
-                    loadMetaPixel(config.metaPixelId),
-                ]).then(function () {
+                return loadMetaPixel(config.metaPixelId).then(function () {
                     initPageTracking();
+
+                    Promise.allSettled([
+                        loadGtm(config.gtmContainerId, config.stapeGtmUrl || config.serverContainerUrl),
+                        loadGa4(config.ga4MeasurementId),
+                    ]);
+
                     return config;
                 });
             })
