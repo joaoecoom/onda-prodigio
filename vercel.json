@@ -13,6 +13,10 @@
       "destination": "/checkout9-test/index.html"
     },
     {
+      "source": "/obgd/",
+      "destination": "/obgd/index.html"
+    },
+    {
       "source": "/obgd",
       "destination": "/obgd/index.html"
     },
