@@ -97,23 +97,38 @@
 
     function trackVerifiedPurchase(result, paymentIntentId) {
         function fire() {
-            if (!window.OndaTracking || typeof window.OndaTracking.trackPurchase !== 'function') {
-                return;
+            if (!window.OndaTracking) {
+                return Promise.resolve();
             }
 
-            window.OndaTracking.trackPurchase({
-                transactionId: paymentIntentId,
-                amountCents: result.amountCents,
-                orderBumps: result.orderBumps,
-            });
+            if (typeof window.OndaTracking.trackPurchaseAsync === 'function') {
+                return window.OndaTracking.trackPurchaseAsync({
+                    transactionId: paymentIntentId,
+                    amountCents: result.amountCents,
+                    orderBumps: result.orderBumps,
+                });
+            }
+
+            if (typeof window.OndaTracking.trackPurchase === 'function') {
+                window.OndaTracking.trackPurchase({
+                    transactionId: paymentIntentId,
+                    amountCents: result.amountCents,
+                    orderBumps: result.orderBumps,
+                });
+
+                if (typeof window.OndaTracking.waitForTrackingFlush === 'function') {
+                    return window.OndaTracking.waitForTrackingFlush(450);
+                }
+            }
+
+            return Promise.resolve();
         }
 
         if (window.OndaTracking && typeof window.OndaTracking.bootstrap === 'function') {
-            window.OndaTracking.bootstrap().then(fire).catch(fire);
-            return;
+            return window.OndaTracking.bootstrap().then(fire).catch(fire);
         }
 
-        fire();
+        return fire();
     }
 
     async function verifyPurchase() {
@@ -141,7 +156,7 @@
                 var result = await verifyPurchaseOnce(paymentIntentId);
 
                 if (result.verified) {
-                    trackVerifiedPurchase(result, paymentIntentId);
+                    await trackVerifiedPurchase(result, paymentIntentId);
 
                     var params = new URLSearchParams(window.location.search);
 

@@ -399,7 +399,24 @@
             url += '?payment_intent=' + encodeURIComponent(paymentIntentId);
         }
 
-        window.location.href = url;
+        function go() {
+            window.location.href = url;
+        }
+
+        if (
+            window.OndaTracking &&
+            typeof window.OndaTracking.trackPurchaseAsync === 'function' &&
+            paymentIntentId
+        ) {
+            window.OndaTracking.trackPurchaseAsync({
+                transactionId: paymentIntentId,
+                amountCents: window.CheckoutOrderBumps ? window.CheckoutOrderBumps.getTotalCents() : 900,
+                orderBumps: window.CheckoutOrderBumps ? window.CheckoutOrderBumps.getSelectedBumpIds() : [],
+            }).then(go).catch(go);
+            return;
+        }
+
+        go();
     }
 
     async function waitForMbWayConfirmation() {

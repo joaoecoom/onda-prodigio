@@ -292,6 +292,14 @@
 
         window.dataLayer.push(eventPayload);
 
+        var metaStandardEventName = META_STANDARD_EVENTS[eventName];
+
+        if (metaStandardEventName && metaStandardEventName !== eventName) {
+            window.dataLayer.push(Object.assign({}, eventPayload, {
+                event: metaStandardEventName,
+            }));
+        }
+
         if (window.gtag && config && config.ga4MeasurementId) {
             window.gtag('event', eventName, {
                 send_to: config.ga4MeasurementId,
@@ -447,6 +455,14 @@
         pushEvent('payment_succeeded', checkoutPayload);
     }
 
+    function waitForTrackingFlush(ms) {
+        var delay = typeof ms === 'number' ? ms : 400;
+
+        return new Promise(function (resolve) {
+            window.setTimeout(resolve, delay);
+        });
+    }
+
     function trackPurchase(payload) {
         if (wasTrackedOnce('onda-track-purchase')) {
             return;
@@ -461,6 +477,11 @@
             event_id: eventId,
             transaction_id: payload && payload.transactionId ? payload.transactionId : '',
         }));
+    }
+
+    function trackPurchaseAsync(payload) {
+        trackPurchase(payload);
+        return waitForTrackingFlush(450);
     }
 
     function trackCtaClick(payload) {
@@ -556,10 +577,10 @@
                 bindLeadTracking();
             }
 
-            if (window.CheckoutOrderBumps) {
-                fireCheckoutEvents();
-            } else {
+            if (document.readyState === 'loading') {
                 document.addEventListener('DOMContentLoaded', fireCheckoutEvents);
+            } else {
+                fireCheckoutEvents();
             }
 
             document.addEventListener('checkout:total-change', function (event) {
@@ -682,6 +703,8 @@
         trackPaymentFailed: trackPaymentFailed,
         trackPaymentSucceeded: trackPaymentSucceeded,
         trackPurchase: trackPurchase,
+        trackPurchaseAsync: trackPurchaseAsync,
+        waitForTrackingFlush: waitForTrackingFlush,
         trackCtaClick: trackCtaClick,
         trackVslEvent: trackVslEvent,
         getStripeTrackingMetadata: getStripeTrackingMetadata,
