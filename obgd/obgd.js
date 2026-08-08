@@ -129,40 +129,40 @@
         };
     }
 
-    function trackVerifiedPurchase(result, paymentIntentId) {
-        function fire() {
-            if (!window.OndaTracking) {
-                return Promise.resolve();
+    async function trackVerifiedPurchase(result, paymentIntentId) {
+        if (!window.OndaTracking) {
+            return;
+        }
+
+        if (typeof window.OndaTracking.bootstrap === 'function') {
+            await window.OndaTracking.bootstrap().catch(function () {});
+        }
+
+        var payload = {
+            transactionId: paymentIntentId,
+            amountCents: result.amountCents,
+            orderBumps: result.orderBumps,
+        };
+
+        for (var attempt = 0; attempt < 6; attempt += 1) {
+            if (typeof window.OndaTracking.wasPurchaseTracked === 'function' &&
+                window.OndaTracking.wasPurchaseTracked(paymentIntentId)) {
+                return;
             }
 
             if (typeof window.OndaTracking.trackPurchaseAsync === 'function') {
-                return window.OndaTracking.trackPurchaseAsync({
-                    transactionId: paymentIntentId,
-                    amountCents: result.amountCents,
-                    orderBumps: result.orderBumps,
-                });
+                await window.OndaTracking.trackPurchaseAsync(payload);
             }
 
-            if (typeof window.OndaTracking.trackPurchase === 'function') {
-                window.OndaTracking.trackPurchase({
-                    transactionId: paymentIntentId,
-                    amountCents: result.amountCents,
-                    orderBumps: result.orderBumps,
-                });
-
-                if (typeof window.OndaTracking.waitForTrackingFlush === 'function') {
-                    return window.OndaTracking.waitForTrackingFlush(450);
-                }
+            if (typeof window.OndaTracking.wasPurchaseTracked === 'function' &&
+                window.OndaTracking.wasPurchaseTracked(paymentIntentId)) {
+                return;
             }
 
-            return Promise.resolve();
+            await new Promise(function (resolve) {
+                setTimeout(resolve, 500);
+            });
         }
-
-        if (window.OndaTracking && typeof window.OndaTracking.bootstrap === 'function') {
-            return window.OndaTracking.bootstrap().then(fire).catch(fire);
-        }
-
-        return fire();
     }
 
     async function verifyPurchase() {

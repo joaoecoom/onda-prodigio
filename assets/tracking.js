@@ -524,6 +524,10 @@
         });
     }
 
+    function wasPurchaseTracked(transactionId) {
+        return wasTrackedOnce(getPurchaseOnceKey(transactionId));
+    }
+
     function trackPurchaseAsync(payload) {
         return bootstrap()
             .then(function () {
@@ -764,6 +768,7 @@
         trackPaymentSucceeded: trackPaymentSucceeded,
         trackPurchase: trackPurchase,
         trackPurchaseAsync: trackPurchaseAsync,
+        wasPurchaseTracked: wasPurchaseTracked,
         waitForTrackingFlush: waitForTrackingFlush,
         trackCtaClick: trackCtaClick,
         trackVslEvent: trackVslEvent,
