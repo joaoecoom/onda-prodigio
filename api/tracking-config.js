@@ -6,5 +6,6 @@ module.exports = async function handler(_req, res) {
         stapeGtmUrl: process.env.SERVER_CONTAINER_URL || '',
         ga4MeasurementId: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID || process.env.GA4_MEASUREMENT_ID || '',
         metaPixelId: process.env.META_PIXEL_ID || '',
+        gtmWebEnabled: process.env.GTM_WEB_ENABLED === 'true',
     });
 };

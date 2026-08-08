@@ -13,7 +13,8 @@
 | Purchase | `obgd/obgd.js` (1×) | `api/stripe-webhook.js` | `event_id` = `purchase_event_id` |
 
 **Não duplicar Meta:**
-- GTM Web (`GTM-KMMX6RRB`): **sem tag Meta Pixel / Facebook** — o pixel vive só em `tracking.js`
+- GTM Web (`GTM-KMMX6RRB`): **desactivado no site** (`gtmWebEnabled` só com `GTM_WEB_ENABLED=true`) — tinha tags Meta/Stape duplicadas; pixel e GA4 vão directo em `tracking.js`
+- Se reactivares GTM Web na Vercel, **remove primeiro** tags Meta / PageView Facebook do container GTM
 - Stape sGTM: **sem tag Meta CAPI para Purchase** enquanto o webhook envia CAPI directo
 - Custom events (`checkout_started`, `payment_succeeded`, etc.): **GA4/dataLayer only**, não vão para `fbq`
 

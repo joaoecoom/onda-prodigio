@@ -744,7 +744,9 @@
                     initPageTracking();
 
                     Promise.allSettled([
-                        loadGtm(config.gtmContainerId, config.stapeGtmUrl || config.serverContainerUrl),
+                        config.gtmWebEnabled && config.gtmContainerId
+                            ? loadGtm(config.gtmContainerId, config.stapeGtmUrl || config.serverContainerUrl)
+                            : Promise.resolve(),
                         loadGa4(config.ga4MeasurementId),
                     ]);
 
