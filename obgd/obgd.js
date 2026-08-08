@@ -4,6 +4,7 @@
         : '/checkout9/';
     var POLL_MS = 2000;
     var MAX_ATTEMPTS = 30;
+    var ENABLE_POST_CHECKOUT_UPSELLS = false;
 
     var content = document.getElementById('obgd-content');
     var loading = document.getElementById('obgd-loading');
@@ -38,7 +39,9 @@
         window.location.replace(CHECKOUT_URL);
     }
 
-    function showThankYouPage(keepPreviewParam) {
+    function showThankYouPage(options) {
+        options = options || {};
+
         if (loading) {
             loading.hidden = true;
             loading.setAttribute('aria-hidden', 'true');
@@ -63,7 +66,7 @@
         if (window.history && typeof window.history.replaceState === 'function') {
             var nextUrl = window.location.pathname;
 
-            if (keepPreviewParam) {
+            if (options.keepPreviewParam || isPreviewMode()) {
                 nextUrl += '?preview=1';
             }
 
@@ -76,7 +79,22 @@
             successBar.hidden = false;
         }
 
-        showThankYouPage(true);
+        showThankYouPage({ keepPreviewParam: true });
+    }
+
+    async function completeVerifiedPurchase(result, paymentIntentId) {
+        await trackVerifiedPurchase(result, paymentIntentId);
+
+        if (ENABLE_POST_CHECKOUT_UPSELLS) {
+            var params = new URLSearchParams(window.location.search);
+
+            if (!params.get('upsells')) {
+                window.location.replace('/obgd/upsell1' + window.location.search);
+                return;
+            }
+        }
+
+        showThankYouPage();
     }
 
     async function verifyPurchaseOnce(paymentIntentId) {
@@ -156,21 +174,12 @@
                 var result = await verifyPurchaseOnce(paymentIntentId);
 
                 if (result.verified) {
-                    await trackVerifiedPurchase(result, paymentIntentId);
-
-                    var params = new URLSearchParams(window.location.search);
-
-                    if (!params.get('upsells')) {
-                        window.location.replace('/obgd/upsell1' + window.location.search);
-                        return;
-                    }
-
-                    showThankYouPage();
+                    await completeVerifiedPurchase(result, paymentIntentId);
                     return;
                 }
 
                 if (redirectStatus === 'succeeded' && attempt >= 2) {
-                    showThankYouPage();
+                    await completeVerifiedPurchase(result, paymentIntentId);
                     return;
                 }
 
@@ -188,7 +197,7 @@
                 });
             }
 
-            showThankYouPage();
+            await completeVerifiedPurchase(result, paymentIntentId);
         } catch (error) {
             redirectToCheckout();
         }
