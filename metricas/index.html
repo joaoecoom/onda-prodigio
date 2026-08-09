@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-PT" data-page-type="internal">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Métricas — Onda Prodígio</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/metricas/metricas.css">
+</head>
+<body>
+    <div class="metrics-app" id="metrics-app">
+        <section class="metrics-login" id="metrics-login" hidden>
+            <div class="metrics-login__card">
+                <p class="metrics-login__eyebrow">Onda Prodígio</p>
+                <h1>Métricas reais</h1>
+                <p class="metrics-login__text">Vendas do Stripe com atribuição por campanha, conjunto e anúncio — o que o Facebook muitas vezes não vê.</p>
+                <form class="metrics-login__form" id="metrics-login-form">
+                    <label class="metrics-login__label" for="metrics-password">Palavra-passe</label>
+                    <input class="metrics-login__input" id="metrics-password" type="password" autocomplete="current-password" required>
+                    <button class="metrics-login__button" type="submit">Entrar</button>
+                    <p class="metrics-login__error" id="metrics-login-error" hidden></p>
+                </form>
+            </div>
+        </section>
+
+        <section class="metrics-dashboard" id="metrics-dashboard" hidden>
+            <header class="metrics-header">
+                <div>
+                    <p class="metrics-header__eyebrow">Dashboard interno</p>
+                    <h1>Vendas reais (Stripe)</h1>
+                    <p class="metrics-header__sub">Atribuição por UTMs Meta — independente do Ads Manager.</p>
+                </div>
+                <div class="metrics-header__actions">
+                    <label class="metrics-select-wrap">
+                        <span>Período</span>
+                        <select id="metrics-days">
+                            <option value="7">Últimos 7 dias</option>
+                            <option value="30" selected>Últimos 30 dias</option>
+                            <option value="90">Últimos 90 dias</option>
+                            <option value="0">Tudo</option>
+                        </select>
+                    </label>
+                    <button class="metrics-button metrics-button--ghost" type="button" id="metrics-refresh">Actualizar</button>
+                    <button class="metrics-button metrics-button--ghost" type="button" id="metrics-logout">Sair</button>
+                </div>
+            </header>
+
+            <div class="metrics-status" id="metrics-status" hidden></div>
+
+            <div class="metrics-summary" id="metrics-summary"></div>
+
+            <section class="metrics-panel">
+                <div class="metrics-panel__head">
+                    <h2>Campanhas → Conjuntos → Anúncios</h2>
+                    <p id="metrics-generated-at"></p>
+                </div>
+                <div class="metrics-tree" id="metrics-tree"></div>
+            </section>
+
+            <section class="metrics-panel">
+                <div class="metrics-panel__head">
+                    <h2>Vendas recentes</h2>
+                </div>
+                <div class="metrics-table-wrap">
+                    <table class="metrics-table" id="metrics-recent-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Campanha</th>
+                                <th>Conjunto</th>
+                                <th>Anúncio</th>
+                                <th>Valor</th>
+                                <th>Bumps</th>
+                                <th>fbc</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metrics-recent-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <p class="metrics-note" id="metrics-note"></p>
+        </section>
+    </div>
+
+    <script src="/metricas/metricas.js" defer></script>
+</body>
+</html>

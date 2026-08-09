@@ -47,6 +47,10 @@
     {
       "source": "/respostaquestionario",
       "destination": "/comunidade/respostaquestionario.html"
+    },
+    {
+      "source": "/metricas",
+      "destination": "/metricas/index.html"
     }
   ],
   "headers": [
