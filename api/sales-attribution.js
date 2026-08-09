@@ -1,38 +1,6 @@
 var Stripe = require('stripe');
-var attribution = require('../lib/tracking/attribution');
-
-function getAuthToken(req) {
-    var header = req.headers.authorization || '';
-
-    if (header.indexOf('Bearer ') === 0) {
-        return header.slice(7).trim();
-    }
-
-    return '';
-}
-
-function summarizePaymentIntent(paymentIntent) {
-    var metadata = paymentIntent.metadata || {};
-    var adLabel = attribution.getPrimaryAdLabel(metadata);
-
-    return {
-        payment_intent: paymentIntent.id,
-        created: new Date(paymentIntent.created * 1000).toISOString(),
-        amount_eur: Number((paymentIntent.amount / 100).toFixed(2)),
-        email: metadata.email || paymentIntent.receipt_email || '',
-        ad_name: metadata.ad_name || metadata.utm_content || '',
-        ad_id: metadata.ad_id || '',
-        adset_id: metadata.adset_id || '',
-        campaign_name: metadata.campaign_name || metadata.utm_campaign || '',
-        ad_platform: metadata.ad_platform || '',
-        utm_source: metadata.utm_source || '',
-        utm_medium: metadata.utm_medium || '',
-        utm_campaign: metadata.utm_campaign || '',
-        utm_content: metadata.utm_content || '',
-        has_attribution: Boolean(adLabel || metadata.ad_id || metadata.fbc),
-        ad_label: adLabel || 'desconhecido',
-    };
-}
+var metricsAuth = require('../lib/metrics/auth');
+var salesReport = require('../lib/metrics/sales-report');
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'GET') {
@@ -40,9 +8,7 @@ module.exports = async function handler(req, res) {
         return res.status(405).json({ error: 'Método não permitido.' });
     }
 
-    var bootstrapSecret = process.env.BOOTSTRAP_SECRET;
-
-    if (!bootstrapSecret || getAuthToken(req) !== bootstrapSecret) {
+    if (!metricsAuth.isAuthorized(req)) {
         return res.status(401).json({ error: 'Não autorizado.' });
     }
 
@@ -53,12 +19,16 @@ module.exports = async function handler(req, res) {
     }
 
     var stripe = new Stripe(secretKey);
+    var days = parseInt(req.query.days, 10);
+    var minTimestamp = Number.isFinite(days) && days > 0
+        ? Math.floor(Date.now() / 1000) - (days * 24 * 60 * 60)
+        : 0;
 
     try {
         var paymentIntents = [];
         var startingAfter;
 
-        for (var page = 0; page < 5; page += 1) {
+        for (var page = 0; page < 10; page += 1) {
             var listed = await stripe.paymentIntents.list({
                 limit: 100,
                 starting_after: startingAfter,
@@ -73,21 +43,16 @@ module.exports = async function handler(req, res) {
             startingAfter = listed.data[listed.data.length - 1].id;
         }
 
-        var liveSales = paymentIntents
-            .filter(function (paymentIntent) {
-                var metadata = paymentIntent.metadata || {};
-                return paymentIntent.status === 'succeeded' &&
-                    metadata.checkout === 'checkout9' &&
-                    metadata.stripe_mode !== 'test';
-            })
-            .map(summarizePaymentIntent)
-            .sort(function (a, b) {
-                return a.created.localeCompare(b.created);
+        if (minTimestamp > 0) {
+            paymentIntents = paymentIntents.filter(function (paymentIntent) {
+                return paymentIntent.created >= minTimestamp;
             });
+        }
 
+        var report = salesReport.buildReport(paymentIntents);
         var byAd = {};
 
-        liveSales.forEach(function (sale) {
+        report.recent_sales.forEach(function (sale) {
             var key = sale.ad_label || 'desconhecido';
 
             if (!byAd[key]) {
@@ -104,14 +69,13 @@ module.exports = async function handler(req, res) {
             byAd[key].emails.push(sale.email);
         });
 
-        return res.status(200).json({
-            total_sales: liveSales.length,
+        return res.status(200).json(Object.assign({}, report, {
+            total_sales: report.summary.total_sales,
             by_ad: Object.values(byAd).sort(function (a, b) {
                 return b.sales - a.sales;
             }),
-            sales: liveSales,
-            note: 'Vendas antigas podem aparecer como ad_label=desconhecido até configurares utm_content={{ad.name}} nos anúncios.',
-        });
+            sales: report.recent_sales,
+        }));
     } catch (error) {
         console.error('Relatório de vendas falhou:', error);
         return res.status(500).json({

@@ -87,7 +87,7 @@
 
         setStatus('A carregar vendas do Stripe…', false);
 
-        var response = await fetch('/api/metrics?days=' + encodeURIComponent(days), {
+        var response = await fetch('/api/sales-attribution?days=' + encodeURIComponent(days), {
             headers: {
                 Authorization: 'Bearer ' + token,
             },
