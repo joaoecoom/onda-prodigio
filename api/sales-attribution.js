@@ -1,5 +1,5 @@
-var metricsAuth = require('../metrics/auth');
-var stripeSales = require('../metrics/stripe-sales');
+var metricsAuth = require('../lib/metrics/auth');
+var stripeSales = require('../lib/metrics/stripe-sales');
 var metaConfig = require('../meta-ads/config');
 var metaClient = require('../meta-ads/client');
 var metaInsights = require('../meta-ads/insights');
