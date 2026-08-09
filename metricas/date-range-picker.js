@@ -417,11 +417,9 @@
             }
         });
 
-        cancelButton.addEventListener('click', closePopover);
-
-        applyButton.addEventListener('click', applyDraft);
-
         presetsRoot.addEventListener('click', function (event) {
+            event.stopPropagation();
+
             var button = event.target.closest('[data-preset]');
 
             if (!button) {
@@ -437,6 +435,8 @@
         });
 
         calendarsRoot.addEventListener('click', function (event) {
+            event.stopPropagation();
+
             var nav = event.target.closest('[data-shift]');
 
             if (nav) {
@@ -454,7 +454,7 @@
 
             var clicked = fromIso(dayButton.getAttribute('data-date'));
 
-            if (!pendingStart || (draftRange.from && draftRange.to)) {
+            if (pendingStart === null) {
                 pendingStart = clicked;
                 draftRange = { from: clicked, to: clicked, presetId: '' };
             } else {
@@ -468,6 +468,20 @@
             }
 
             renderAll();
+        });
+
+        popover.addEventListener('click', function (event) {
+            event.stopPropagation();
+        });
+
+        cancelButton.addEventListener('click', function (event) {
+            event.stopPropagation();
+            closePopover();
+        });
+
+        applyButton.addEventListener('click', function (event) {
+            event.stopPropagation();
+            applyDraft();
         });
 
         fromInput.addEventListener('change', function () {
@@ -491,7 +505,13 @@
         });
 
         document.addEventListener('click', function (event) {
-            if (!open || root.contains(event.target)) {
+            if (!open) {
+                return;
+            }
+
+            var path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+
+            if (path.indexOf(root) !== -1 || root.contains(event.target)) {
                 return;
             }
 
