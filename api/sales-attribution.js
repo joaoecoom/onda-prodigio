@@ -1,10 +1,10 @@
 var metricsAuth = require('../lib/metrics/auth');
 var stripeSales = require('../lib/metrics/stripe-sales');
-var metaConfig = require('../meta-ads/config');
-var metaClient = require('../meta-ads/client');
-var metaInsights = require('../meta-ads/insights');
-var metaMerge = require('../meta-ads/merge');
-var metaStatus = require('../meta-ads/status');
+var metaConfig = require('../lib/meta-ads/config');
+var metaClient = require('../lib/meta-ads/client');
+var metaInsights = require('../lib/meta-ads/insights');
+var metaMerge = require('../lib/meta-ads/merge');
+var metaStatus = require('../lib/meta-ads/status');
 
 async function readJsonBody(req) {
     if (req.body && typeof req.body === 'object') {
