@@ -23,12 +23,19 @@ Manter `_fbc` e `_fbp` como cookies **first-party** no Safari/iOS, **sem duplica
 
 O site carrega o loader GTM **via Stape** (`stapeGtmUrl`), não via googletagmanager.com.
 
-## Configurar no Stape (painel)
+## Configurado via API (container `zswotzns`)
 
-1. Container **GTM-KMMX6RRB** (web) no Stape
-2. Power-up **Cookie Extender** (ou Cookie Keeper) para Meta — activar `_fbc` + `_fbp`
-3. Garantir que **não existem** tags Facebook Pixel / Meta CAPI neste container
-4. Publicar versão GTM web
+- **Custom Loader:** activo (plano Free)
+- **Web GTM ID:** `GTM-KMMX6RRB` nos code settings
+- **Cookie Keeper:** requer plano **Pro+** — container está em Free → API devolve 409
+
+Para Cookie Keeper: Stape → container Onda Prodigio → Upgrade para Pro → Power-ups → Cookie Keeper → Facebook + GA.
+
+## MCP Cursor
+
+API key em `~/.cursor/mcp.json` e `.cursor/mcp.json`. Após trocar a key: **Reload Window** no Cursor para o MCP Stape voltar a verde.
+
+Header REST directo: `X-AUTH-TOKEN` (não `Authorization`).
 
 ## Container server GTM-PHNC98MZ
 
