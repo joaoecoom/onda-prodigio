@@ -8,11 +8,12 @@ alwaysApply: true
 Quando o utilizador perguntar o que meter nos UTMs, parâmetros de URL, ou URL parameters nos anúncios Facebook/Instagram, responder com isto:
 
 ```
-utm_source=facebook&utm_medium=paid&utm_content={{ad.name}}&utm_campaign={{campaign.name}}
+utm_source=facebook&utm_medium=paid&utm_content={{ad.name}}&utm_campaign={{campaign.name}}&utm_term={{adset.name}}
 ```
 
 Notas:
 - Colocar no campo **Parâmetros de URL** / **URL parameters** de cada anúncio (não no URL base do site).
 - `{{ad.name}}` preenche automaticamente com o nome do anúncio (qualquer nome — não precisa ser 1, 2, 3…).
 - `{{campaign.name}}` preenche com o nome da campanha.
+- `{{adset.name}}` preenche com o nome do conjunto de anúncios.
 - Se o URL do site já tiver `?`, usar `&` em vez de `?` antes destes parâmetros.

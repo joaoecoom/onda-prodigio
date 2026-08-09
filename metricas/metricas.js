@@ -14,6 +14,15 @@
     var noteBox = document.getElementById('metrics-note');
     var refreshButton = document.getElementById('metrics-refresh');
     var logoutButton = document.getElementById('metrics-logout');
+    var accountWrap = document.getElementById('metrics-account-wrap');
+    var accountSelect = document.getElementById('metrics-account');
+    var metaBanner = document.getElementById('metrics-meta-banner');
+    var metaPanel = document.getElementById('metrics-meta-panel');
+    var metaContext = document.getElementById('metrics-meta-context');
+    var metaBody = document.getElementById('metrics-meta-body');
+    var metaGeneratedAt = document.getElementById('metrics-meta-generated-at');
+    var ACCOUNT_KEY = 'onda-metrics-account';
+    var latestPayload = null;
     var datePickerRoot = document.getElementById('metrics-date-picker-root');
     var datePicker = window.MetricsDateRangePicker.create({
         root: datePickerRoot,
@@ -60,8 +69,202 @@
         statusBox.classList.toggle('metrics-status--error', Boolean(isError));
     }
 
-    function formatMoney(value) {
-        return '€' + Number(value || 0).toFixed(2);
+    function formatMoney(value, currency) {
+        var prefix = currency === 'USD' ? '$' : '€';
+        return prefix + Number(value || 0).toFixed(2);
+    }
+
+    function formatMoneyEur(value) {
+        return formatMoney(value, 'EUR');
+    }
+
+    function getSelectedAccountId() {
+        return accountSelect.value || window.sessionStorage.getItem(ACCOUNT_KEY) || '';
+    }
+
+    function setSelectedAccountId(accountId) {
+        if (accountId) {
+            accountSelect.value = accountId;
+            window.sessionStorage.setItem(ACCOUNT_KEY, accountId);
+        }
+    }
+
+    function buildQuery(range) {
+        var params = ['action=combined'];
+
+        if (range.from && range.to) {
+            params.push('from=' + encodeURIComponent(range.from));
+            params.push('to=' + encodeURIComponent(range.to));
+        } else {
+            params.push('days=0');
+        }
+
+        var accountId = getSelectedAccountId();
+
+        if (accountId) {
+            params.push('account_id=' + encodeURIComponent(accountId));
+        }
+
+        return params.join('&');
+    }
+
+    function renderAccountOptions(accounts, activeAccountId) {
+        if (!accounts || !accounts.length) {
+            accountWrap.hidden = true;
+            return;
+        }
+
+        accountWrap.hidden = false;
+        accountSelect.innerHTML = accounts.map(function (account) {
+            var label = account.label || account.name || ('Conta ' + account.id);
+            var suffix = account.currency ? ' · ' + account.currency : '';
+            var selected = account.id === activeAccountId ? ' selected' : '';
+            return '<option value="' + escapeHtml(account.id) + '"' + selected + '>' + escapeHtml(label + suffix) + '</option>';
+        }).join('');
+
+        if (activeAccountId) {
+            setSelectedAccountId(activeAccountId);
+        }
+    }
+
+    function renderMetaBanner(metaConnection) {
+        if (!metaConnection) {
+            metaBanner.hidden = true;
+            metaBanner.textContent = '';
+            return;
+        }
+
+        if (metaConnection.ok) {
+            metaBanner.hidden = true;
+            metaBanner.textContent = '';
+            return;
+        }
+
+        metaBanner.hidden = false;
+        metaBanner.className = 'metrics-meta-banner metrics-meta-banner--warn';
+
+        if (!metaConnection.has_token) {
+            metaBanner.textContent = 'Meta Ads ainda não ligado: falta META_ACCESS_TOKEN na Vercel com ads_read e ads_management.';
+            return;
+        }
+
+        if (metaConnection.missing_scopes && metaConnection.missing_scopes.length) {
+            metaBanner.textContent = 'Token Meta incompleto. Faltam permissões: ' + metaConnection.missing_scopes.join(', ') + '.';
+            return;
+        }
+
+        metaBanner.textContent = metaConnection.error || 'Não foi possível ligar ao Meta Ads.';
+    }
+
+    function renderStatusBadge(status) {
+        var normalized = String(status || '').toUpperCase();
+        var className = normalized === 'ACTIVE'
+            ? 'metrics-badge metrics-badge--ok'
+            : 'metrics-badge metrics-badge--warn';
+        return '<span class="' + className + '">' + escapeHtml(normalized || '—') + '</span>';
+    }
+
+    function renderMetaPanel(payload) {
+        var merged = payload && payload.merged;
+        var metaConnection = payload && payload.meta_connection;
+
+        renderMetaBanner(metaConnection);
+
+        if (!merged || !merged.campaigns || !merged.campaigns.length) {
+            metaPanel.hidden = true;
+            metaBody.innerHTML = '';
+            metaContext.textContent = '';
+            return;
+        }
+
+        metaPanel.hidden = false;
+
+        var account = merged.account || {};
+        var summary = merged.summary || {};
+        var currency = summary.meta_currency || account.currency || 'EUR';
+
+        metaContext.textContent = [
+            account.name || account.label || ('Conta ' + account.id),
+            account.timezone_name ? 'Fuso: ' + account.timezone_name : '',
+            currency !== 'EUR'
+                ? 'Gasto original em ' + currency + ' · convertido para EUR'
+                : 'Moeda: EUR',
+        ].filter(Boolean).join(' · ');
+
+        metaGeneratedAt.textContent = payload.stripe && payload.stripe.summary && payload.stripe.summary.generated_at
+            ? 'Actualizado ' + formatDate(payload.stripe.summary.generated_at)
+            : '';
+
+        metaBody.innerHTML = merged.campaigns.map(function (campaign) {
+            var spendLabel = currency === 'EUR'
+                ? formatMoneyEur(campaign.spend_eur)
+                : formatMoney(campaign.spend_original, currency) + ' (' + formatMoneyEur(campaign.spend_eur) + ')';
+            var roasLabel = campaign.roas_real === null ? '—' : String(campaign.roas_real);
+            var isActive = String(campaign.effective_status || campaign.status).toUpperCase() === 'ACTIVE';
+            var actionLabel = isActive ? 'Pausar' : 'Activar';
+            var nextStatus = isActive ? 'PAUSED' : 'ACTIVE';
+
+            return (
+                '<tr>' +
+                '<td><strong>' + escapeHtml(campaign.name) + '</strong><br><span class="metrics-node__meta">ID ' + escapeHtml(campaign.id) + '</span></td>' +
+                '<td>' + renderStatusBadge(campaign.effective_status || campaign.status) + '</td>' +
+                '<td>' + escapeHtml(spendLabel) + '</td>' +
+                '<td>' + Number(campaign.meta_purchases || 0) + ' compras</td>' +
+                '<td><strong>' + Number(campaign.stripe_sales || 0) + '</strong> vendas · ' + escapeHtml(formatMoneyEur(campaign.stripe_revenue_eur)) + '</td>' +
+                '<td>' + escapeHtml(roasLabel) + '</td>' +
+                '<td><button type="button" class="metrics-button metrics-button--ghost metrics-toggle" data-campaign-id="' + escapeHtml(campaign.id) + '" data-next-status="' + nextStatus + '">' + actionLabel + '</button></td>' +
+                '</tr>'
+            );
+        }).join('');
+    }
+
+    async function toggleCampaignStatus(button) {
+        var campaignId = button.getAttribute('data-campaign-id');
+        var nextStatus = button.getAttribute('data-next-status');
+        var accountId = getSelectedAccountId();
+        var token = getToken();
+
+        if (!campaignId || !accountId || !token) {
+            return;
+        }
+
+        var confirmMessage = nextStatus === 'PAUSED'
+            ? 'Pausar esta campanha no Meta?'
+            : 'Activar esta campanha no Meta?';
+
+        if (!window.confirm(confirmMessage)) {
+            return;
+        }
+
+        button.disabled = true;
+        setStatus('A actualizar campanha no Meta…', false);
+
+        try {
+            var response = await fetch('/api/sales-attribution?action=meta_status', {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer ' + token,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    account_id: accountId,
+                    object_id: campaignId,
+                    object_type: 'campaign',
+                    status: nextStatus,
+                }),
+            });
+            var data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Não foi possível actualizar a campanha.');
+            }
+
+            setStatus('Campanha actualizada no Meta.', false);
+            await fetchMetrics();
+        } catch (error) {
+            setStatus(error.message || 'Erro ao actualizar campanha.', true);
+            button.disabled = false;
+        }
     }
 
     function formatDate(iso) {
@@ -94,13 +297,9 @@
             return;
         }
 
-        setStatus('A carregar vendas do Stripe…', false);
+        setStatus('A carregar Stripe + Meta…', false);
 
-        var query = range.from && range.to
-            ? 'from=' + encodeURIComponent(range.from) + '&to=' + encodeURIComponent(range.to)
-            : 'days=0';
-
-        var response = await fetch('/api/sales-attribution?' + query, {
+        var response = await fetch('/api/sales-attribution?' + buildQuery(range), {
             headers: {
                 Authorization: 'Bearer ' + token,
             },
@@ -121,42 +320,50 @@
             return;
         }
 
-        setStatus('', false);
+        latestPayload = data;
         renderDashboard(data);
     }
 
-    function renderSummary(summary) {
-        var attributedPct = summary.total_sales
-            ? Math.round((summary.attributed_sales / summary.total_sales) * 100)
+    function renderSummaryCards(stripeSummary, mergedSummary) {
+        var attributedPct = stripeSummary.total_sales
+            ? Math.round((stripeSummary.attributed_sales / stripeSummary.total_sales) * 100)
             : 0;
-
-        summaryRoot.innerHTML = [
+        var cards = [
             {
-                label: 'Vendas',
-                value: summary.total_sales,
-                hint: 'Checkout live (Stripe)',
+                label: 'Vendas Stripe',
+                value: stripeSummary.total_sales,
+                hint: 'Checkout live',
             },
             {
-                label: 'Receita',
-                value: formatMoney(summary.total_revenue_eur),
+                label: 'Receita Stripe',
+                value: formatMoneyEur(stripeSummary.total_revenue_eur),
                 hint: 'EUR cobrado',
             },
             {
+                label: 'Gasto Meta',
+                value: mergedSummary ? formatMoneyEur(mergedSummary.meta_spend_eur) : '—',
+                hint: mergedSummary && mergedSummary.meta_currency !== 'EUR'
+                    ? 'Original ' + mergedSummary.meta_currency + ' convertido'
+                    : 'Período seleccionado',
+            },
+            {
+                label: 'ROAS real',
+                value: mergedSummary && mergedSummary.roas_real !== null ? mergedSummary.roas_real : '—',
+                hint: 'Receita Stripe ÷ gasto Meta',
+            },
+            {
                 label: 'Atribuídas',
-                value: summary.attributed_sales,
+                value: stripeSummary.attributed_sales,
                 hint: attributedPct + '% com campanha/anúncio',
             },
             {
-                label: 'Desconhecidas',
-                value: summary.unknown_sales,
-                hint: 'Sem UTM / clique Meta',
-            },
-            {
                 label: 'Com fbc',
-                value: summary.with_fbc,
+                value: stripeSummary.with_fbc,
                 hint: 'Cookie de clique no anúncio',
             },
-        ].map(function (card) {
+        ];
+
+        summaryRoot.innerHTML = cards.map(function (card) {
             return (
                 '<article class="metrics-card">' +
                 '<div class="metrics-card__label">' + escapeHtml(card.label) + '</div>' +
@@ -175,7 +382,7 @@
             (ad.ad_id ? '<span class="metrics-node__meta">ID ' + escapeHtml(ad.ad_id) + '</span>' : '') +
             '</div>' +
             '<div class="metrics-node__stat"><strong>' + ad.sales + '</strong> vendas</div>' +
-            '<div class="metrics-node__stat">' + escapeHtml(formatMoney(ad.revenue_eur)) + '</div>' +
+            '<div class="metrics-node__stat">' + escapeHtml(formatMoneyEur(ad.revenue_eur)) + '</div>' +
             '</div></div>'
         );
     }
@@ -190,7 +397,7 @@
             (adset.adset_id ? '<span class="metrics-node__meta">ID ' + escapeHtml(adset.adset_id) + '</span>' : '') +
             '</div>' +
             '<div class="metrics-node__stat"><strong>' + adset.sales + '</strong> vendas</div>' +
-            '<div class="metrics-node__stat">' + escapeHtml(formatMoney(adset.revenue_eur)) + '</div>' +
+            '<div class="metrics-node__stat">' + escapeHtml(formatMoneyEur(adset.revenue_eur)) + '</div>' +
             '</summary>' +
             '<div class="metrics-node__children">' + (adsHtml || '<p class="metrics-tree__empty">Sem anúncios.</p>') + '</div>' +
             '</details>'
@@ -210,7 +417,7 @@
             (campaign.campaign_id ? '<span class="metrics-node__meta">ID ' + escapeHtml(campaign.campaign_id) + '</span>' : '') +
             '</div>' +
             '<div class="metrics-node__stat"><strong>' + campaign.sales + '</strong> vendas</div>' +
-            '<div class="metrics-node__stat">' + escapeHtml(formatMoney(campaign.revenue_eur)) + '</div>' +
+            '<div class="metrics-node__stat">' + escapeHtml(formatMoneyEur(campaign.revenue_eur)) + '</div>' +
             '</summary>' +
             '<div class="metrics-node__children">' + (adsetsHtml || '<p class="metrics-tree__empty">Sem conjuntos.</p>') + '</div>' +
             '</details>'
@@ -246,7 +453,7 @@
                 '<td>' + escapeHtml(sale.campaign_name) + '</td>' +
                 '<td>' + escapeHtml(sale.adset_name) + '</td>' +
                 '<td>' + escapeHtml(sale.ad_name) + '</td>' +
-                '<td>' + escapeHtml(formatMoney(sale.amount_eur)) + '</td>' +
+                '<td>' + escapeHtml(formatMoneyEur(sale.amount_eur)) + '</td>' +
                 '<td>' + bumps + '</td>' +
                 '<td>' + fbcBadge + '</td>' +
                 '</tr>'
@@ -255,13 +462,17 @@
     }
 
     function renderDashboard(data) {
-        renderSummary(data.summary || {});
-        renderTree(data.campaigns || []);
-        renderRecentSales(data.recent_sales || []);
-        generatedAt.textContent = data.summary && data.summary.generated_at
-            ? 'Actualizado ' + formatDate(data.summary.generated_at)
+        var stripe = data.stripe || data;
+
+        renderAccountOptions(data.accounts || [], data.active_account_id || getSelectedAccountId());
+        renderSummaryCards(stripe.summary || {}, data.merged && data.merged.summary ? data.merged.summary : null);
+        renderMetaPanel(data);
+        renderTree(stripe.campaigns || []);
+        renderRecentSales(stripe.recent_sales || []);
+        generatedAt.textContent = stripe.summary && stripe.summary.generated_at
+            ? 'Actualizado ' + formatDate(stripe.summary.generated_at)
             : '';
-        noteBox.textContent = data.note || '';
+        noteBox.textContent = stripe.note || '';
     }
 
     loginForm.addEventListener('submit', async function (event) {
@@ -282,6 +493,23 @@
         } catch (error) {
             setStatus('Erro de ligação. Tenta outra vez.', true);
         }
+    });
+
+    accountSelect.addEventListener('change', function () {
+        setSelectedAccountId(accountSelect.value);
+        fetchMetrics().catch(function () {
+            setStatus('Erro de ligação. Tenta outra vez.', true);
+        });
+    });
+
+    metaBody.addEventListener('click', function (event) {
+        var button = event.target.closest('.metrics-toggle');
+
+        if (!button) {
+            return;
+        }
+
+        toggleCampaignStatus(button);
     });
 
     refreshButton.addEventListener('click', function () {

@@ -1,95 +1,220 @@
-var Stripe = require('stripe');
-var metricsAuth = require('../lib/metrics/auth');
-var salesReport = require('../lib/metrics/sales-report');
+var metricsAuth = require('../metrics/auth');
+var stripeSales = require('../metrics/stripe-sales');
+var metaConfig = require('../meta-ads/config');
+var metaClient = require('../meta-ads/client');
+var metaInsights = require('../meta-ads/insights');
+var metaMerge = require('../meta-ads/merge');
+var metaStatus = require('../meta-ads/status');
 
-module.exports = async function handler(req, res) {
-    if (req.method !== 'GET') {
-        res.setHeader('Allow', 'GET');
-        return res.status(405).json({ error: 'Método não permitido.' });
+async function readJsonBody(req) {
+    if (req.body && typeof req.body === 'object') {
+        return req.body;
     }
 
+    if (typeof req.body === 'string' && req.body.trim()) {
+        return JSON.parse(req.body);
+    }
+
+    return {};
+}
+
+async function handleMetaHealth(res) {
+    var tokenInfo = await metaClient.debugAccessToken();
+    var accounts = metaConfig.getConfiguredAccounts();
+    var accountChecks = [];
+
+    if (tokenInfo.is_valid && tokenInfo.missing_scopes.length === 0) {
+        for (var i = 0; i < accounts.length; i += 1) {
+            try {
+                var details = await metaInsights.getAccountDetails(accounts[i].id);
+                accountChecks.push({
+                    id: details.id,
+                    label: accounts[i].label || details.name,
+                    ok: true,
+                    currency: details.currency,
+                    timezone_name: details.timezone_name,
+                });
+            } catch (error) {
+                accountChecks.push({
+                    id: accounts[i].id,
+                    label: accounts[i].label || ('Conta ' + accounts[i].id),
+                    ok: false,
+                    error: error.message,
+                });
+            }
+        }
+    }
+
+    return res.status(200).json({
+        meta_connection: Object.assign({}, tokenInfo, {
+            ok: Boolean(tokenInfo.is_valid && !tokenInfo.missing_scopes.length),
+        }),
+        accounts: accounts,
+        account_checks: accountChecks,
+    });
+}
+
+async function handleMetaAccounts(res) {
+    var tokenInfo = await metaClient.debugAccessToken();
+    var configured = metaConfig.getConfiguredAccounts();
+    var accounts = [];
+
+    for (var i = 0; i < configured.length; i += 1) {
+        var entry = configured[i];
+
+        if (tokenInfo.is_valid && tokenInfo.missing_scopes.length === 0) {
+            try {
+                var details = await metaInsights.getAccountDetails(entry.id);
+                accounts.push({
+                    id: details.id,
+                    label: entry.label || details.name,
+                    name: details.name,
+                    currency: details.currency,
+                    timezone_name: details.timezone_name,
+                    account_status: details.account_status,
+                });
+                continue;
+            } catch (error) {
+                accounts.push({
+                    id: entry.id,
+                    label: entry.label || ('Conta ' + entry.id),
+                    error: error.message,
+                });
+                continue;
+            }
+        }
+
+        accounts.push({
+            id: entry.id,
+            label: entry.label || ('Conta ' + entry.id),
+        });
+    }
+
+    return res.status(200).json({
+        meta_connection: tokenInfo,
+        accounts: accounts,
+    });
+}
+
+async function handleCombined(req, res) {
+    var accountId = metaConfig.normalizeAccountId(req.query.account_id) ||
+        metaConfig.getConfiguredAccounts()[0].id;
+    var bounds = stripeSales.resolveDateBounds(req.query);
+    var from = bounds.from;
+    var to = bounds.to;
+
+    if (!from || !to) {
+        var today = new Date();
+        var fallbackTo = today.toISOString().slice(0, 10);
+        var fallbackFromDate = new Date(today);
+        fallbackFromDate.setDate(fallbackFromDate.getDate() - 29);
+        from = from || fallbackFromDate.toISOString().slice(0, 10);
+        to = to || fallbackTo;
+    }
+
+    var stripeReport = await stripeSales.buildStripeReport(req.query);
+    var tokenInfo = await metaClient.debugAccessToken();
+    var metaReport = null;
+    var merged = null;
+    var metaError = '';
+
+    if (tokenInfo.is_valid && tokenInfo.missing_scopes.length === 0) {
+        try {
+            if (!metaConfig.isAllowedAccountId(accountId)) {
+                throw new Error('Conta Meta não autorizada.');
+            }
+
+            metaReport = await metaInsights.getCampaignReport(accountId, from, to);
+            merged = metaMerge.mergeReports(stripeReport, metaReport);
+        } catch (error) {
+            metaError = error.message;
+        }
+    } else {
+        metaError = tokenInfo.error || 'Token Meta inválido ou sem permissões ads_read/ads_management.';
+    }
+
+    return res.status(200).json({
+        stripe: stripeReport,
+        meta: metaReport,
+        merged: merged,
+        meta_connection: Object.assign({}, tokenInfo, {
+            ok: Boolean(tokenInfo.is_valid && !tokenInfo.missing_scopes.length && !metaError),
+            error: metaError,
+        }),
+        date_range: {
+            from: from,
+            to: to,
+        },
+        accounts: metaConfig.getConfiguredAccounts(),
+        active_account_id: accountId,
+    });
+}
+
+async function handleMetaStatus(req, res) {
+    var body = await readJsonBody(req);
+
+    try {
+        var result = await metaStatus.updateObjectStatus(body);
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(400).json({
+            error: error.message,
+            meta: error.meta || null,
+        });
+    }
+}
+
+async function handleStripe(req, res) {
+    try {
+        var report = await stripeSales.buildStripeReport(req.query);
+        return res.status(200).json(report);
+    } catch (error) {
+        console.error('Relatório Stripe falhou:', error);
+        return res.status(500).json({
+            error: error.message || 'Relatório falhou.',
+        });
+    }
+}
+
+module.exports = async function handler(req, res) {
     if (!metricsAuth.isAuthorized(req)) {
         return res.status(401).json({ error: 'Não autorizado.' });
     }
 
-    var secretKey = process.env.STRIPE_SECRET_KEY;
+    var action = String(req.query.action || 'stripe').trim();
 
-    if (!secretKey) {
-        return res.status(500).json({ error: 'STRIPE_SECRET_KEY em falta.' });
+    if (req.method === 'POST') {
+        if (action === 'meta_status') {
+            return handleMetaStatus(req, res);
+        }
+
+        res.setHeader('Allow', 'GET, POST');
+        return res.status(405).json({ error: 'Método não permitido.' });
     }
 
-    var stripe = new Stripe(secretKey);
-    var days = parseInt(req.query.days, 10);
-    var from = String(req.query.from || '').trim();
-    var to = String(req.query.to || '').trim();
-    var datePattern = /^\d{4}-\d{2}-\d{2}$/;
-    var minTimestamp = 0;
-    var maxTimestamp = Number.POSITIVE_INFINITY;
-
-    if (datePattern.test(from) && datePattern.test(to)) {
-        minTimestamp = Math.floor(new Date(from + 'T00:00:00.000Z').getTime() / 1000);
-        maxTimestamp = Math.floor(new Date(to + 'T23:59:59.999Z').getTime() / 1000);
-    } else if (Number.isFinite(days) && days > 0) {
-        minTimestamp = Math.floor(Date.now() / 1000) - (days * 24 * 60 * 60);
-        maxTimestamp = Number.POSITIVE_INFINITY;
+    if (req.method !== 'GET') {
+        res.setHeader('Allow', 'GET, POST');
+        return res.status(405).json({ error: 'Método não permitido.' });
     }
 
     try {
-        var paymentIntents = [];
-        var startingAfter;
-
-        for (var page = 0; page < 10; page += 1) {
-            var listed = await stripe.paymentIntents.list({
-                limit: 100,
-                starting_after: startingAfter,
-            });
-
-            paymentIntents = paymentIntents.concat(listed.data || []);
-
-            if (!listed.has_more) {
-                break;
-            }
-
-            startingAfter = listed.data[listed.data.length - 1].id;
+        if (action === 'meta_health') {
+            return handleMetaHealth(res);
         }
 
-        if (minTimestamp > 0 || Number.isFinite(maxTimestamp)) {
-            paymentIntents = paymentIntents.filter(function (paymentIntent) {
-                return paymentIntent.created >= minTimestamp && paymentIntent.created <= maxTimestamp;
-            });
+        if (action === 'meta_accounts') {
+            return handleMetaAccounts(res);
         }
 
-        var report = salesReport.buildReport(paymentIntents);
-        var byAd = {};
+        if (action === 'combined') {
+            return handleCombined(req, res);
+        }
 
-        report.recent_sales.forEach(function (sale) {
-            var key = sale.ad_label || 'desconhecido';
-
-            if (!byAd[key]) {
-                byAd[key] = {
-                    ad_label: key,
-                    sales: 0,
-                    revenue_eur: 0,
-                    emails: [],
-                };
-            }
-
-            byAd[key].sales += 1;
-            byAd[key].revenue_eur = Number((byAd[key].revenue_eur + sale.amount_eur).toFixed(2));
-            byAd[key].emails.push(sale.email);
-        });
-
-        return res.status(200).json(Object.assign({}, report, {
-            total_sales: report.summary.total_sales,
-            by_ad: Object.values(byAd).sort(function (a, b) {
-                return b.sales - a.sales;
-            }),
-            sales: report.recent_sales,
-        }));
+        return handleStripe(req, res);
     } catch (error) {
-        console.error('Relatório de vendas falhou:', error);
+        console.error('API métricas falhou:', error);
         return res.status(500).json({
-            error: error.message || 'Relatório falhou.',
+            error: error.message || 'Pedido falhou.',
         });
     }
 };

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/metricas/metricas.css?v=3">
+    <link rel="stylesheet" href="/metricas/metricas.css?v=4">
 </head>
 <body>
     <noscript>
@@ -33,10 +33,14 @@
             <header class="metrics-header">
                 <div>
                     <p class="metrics-header__eyebrow">Dashboard interno</p>
-                    <h1>Vendas reais (Stripe)</h1>
-                    <p class="metrics-header__sub">Atribuição por UTMs Meta — independente do Ads Manager.</p>
+                    <h1>Métricas reais</h1>
+                    <p class="metrics-header__sub">Stripe + Meta Ads — vendas reais vs gasto, com controlo de campanhas.</p>
                 </div>
                 <div class="metrics-header__actions">
+                    <label class="metrics-select-wrap" id="metrics-account-wrap" hidden>
+                        <span>Conta Meta</span>
+                        <select id="metrics-account"></select>
+                    </label>
                     <div id="metrics-date-picker-root"></div>
                     <button class="metrics-button metrics-button--ghost" type="button" id="metrics-refresh">Actualizar</button>
                     <button class="metrics-button metrics-button--ghost" type="button" id="metrics-logout">Sair</button>
@@ -44,8 +48,35 @@
             </header>
 
             <div class="metrics-status" id="metrics-status" hidden></div>
+            <div class="metrics-meta-banner" id="metrics-meta-banner" hidden></div>
 
             <div class="metrics-summary" id="metrics-summary"></div>
+
+            <section class="metrics-panel" id="metrics-meta-panel" hidden>
+                <div class="metrics-panel__head">
+                    <div>
+                        <h2>Meta Ads + Stripe</h2>
+                        <p id="metrics-meta-context"></p>
+                    </div>
+                    <p id="metrics-meta-generated-at"></p>
+                </div>
+                <div class="metrics-table-wrap">
+                    <table class="metrics-table" id="metrics-meta-table">
+                        <thead>
+                            <tr>
+                                <th>Campanha</th>
+                                <th>Estado</th>
+                                <th>Gasto</th>
+                                <th>Meta</th>
+                                <th>Stripe</th>
+                                <th>ROAS real</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="metrics-meta-body"></tbody>
+                    </table>
+                </div>
+            </section>
 
             <section class="metrics-panel">
                 <div class="metrics-panel__head">
@@ -82,6 +113,6 @@
     </div>
 
     <script src="/metricas/date-range-picker.js?v=2" defer></script>
-    <script src="/metricas/metricas.js?v=4" defer></script>
+    <script src="/metricas/metricas.js?v=5" defer></script>
 </body>
 </html>
