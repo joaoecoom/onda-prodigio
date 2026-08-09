@@ -15,6 +15,8 @@ module.exports = async function handler(req, res) {
     }
 
     var serverEvents = require('../lib/tracking/server-events');
+    var metaUserData = require('../lib/tracking/meta-user-data');
+    var identity = require('../lib/tracking/identity');
     var email = typeof body.email === 'string' ? body.email.trim() : '';
     var fullName = typeof body.full_name === 'string' ? body.full_name.trim() : '';
     var phone = typeof body.phone === 'string' ? body.phone.trim() : '';
@@ -59,6 +61,7 @@ module.exports = async function handler(req, res) {
         await stripeClient.stripe.paymentIntents.update(paymentIntent.id, {
             metadata: Object.assign({}, paymentIntent.metadata || {}, {
                 purchase_event_id: 'purchase_' + paymentIntent.id,
+                client_ip: identity.sanitizeMetadataValue(metaUserData.getClientIp(req), 45),
             }),
         });
 

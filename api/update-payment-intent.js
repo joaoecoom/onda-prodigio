@@ -15,6 +15,8 @@ module.exports = async function handler(req, res) {
     }
 
     var serverEvents = require('../lib/tracking/server-events');
+    var metaUserData = require('../lib/tracking/meta-user-data');
+    var identity = require('../lib/tracking/identity');
     var clientSecret = typeof body.client_secret === 'string' ? body.client_secret.trim() : '';
     var email = typeof body.email === 'string' ? body.email.trim() : '';
     var fullName = typeof body.full_name === 'string' ? body.full_name.trim() : '';
@@ -63,6 +65,7 @@ module.exports = async function handler(req, res) {
         };
 
         updatePayload.metadata.purchase_event_id = 'purchase_' + paymentIntentId;
+        updatePayload.metadata.client_ip = identity.sanitizeMetadataValue(metaUserData.getClientIp(req), 45);
 
         if (Number.isFinite(amountCents) && amountCents >= baseAmount && amountCents <= maxAmount) {
             updatePayload.amount = amountCents;
