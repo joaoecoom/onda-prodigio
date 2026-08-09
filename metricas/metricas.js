@@ -19,7 +19,7 @@
     var metaBanner = document.getElementById('metrics-meta-banner');
     var metaPanel = document.getElementById('metrics-meta-panel');
     var metaContext = document.getElementById('metrics-meta-context');
-    var metaBody = document.getElementById('metrics-meta-body');
+    var metaTree = document.getElementById('metrics-meta-tree');
     var metaGeneratedAt = document.getElementById('metrics-meta-generated-at');
     var ACCOUNT_KEY = 'onda-metrics-account';
     var latestPayload = null;
@@ -164,6 +164,89 @@
         return '<span class="' + className + '">' + escapeHtml(normalized || '—') + '</span>';
     }
 
+    function renderSpendLabel(node, currency) {
+        if (currency === 'EUR') {
+            return formatMoneyEur(node.spend_eur);
+        }
+
+        return formatMoney(node.spend_original, currency) + ' (' + formatMoneyEur(node.spend_eur) + ')';
+    }
+
+    function renderMetaStats(node, currency) {
+        var roasLabel = node.roas_real === null ? '—' : String(node.roas_real);
+
+        return (
+            '<div class="metrics-node__stat">' + escapeHtml(renderSpendLabel(node, currency)) + '</div>' +
+            '<div class="metrics-node__stat">' + Number(node.meta_purchases || 0) + ' meta</div>' +
+            '<div class="metrics-node__stat"><strong>' + Number(node.stripe_sales || 0) + '</strong> stripe · ' + escapeHtml(formatMoneyEur(node.stripe_revenue_eur)) + '</div>' +
+            '<div class="metrics-node__stat">ROAS ' + escapeHtml(roasLabel) + '</div>'
+        );
+    }
+
+    function renderMetaToggle(node) {
+        var isActive = String(node.effective_status || node.status).toUpperCase() === 'ACTIVE';
+        var actionLabel = isActive ? 'Pausar' : 'Activar';
+        var nextStatus = isActive ? 'PAUSED' : 'ACTIVE';
+
+        return (
+            '<button type="button" class="metrics-button metrics-button--ghost metrics-toggle" ' +
+            'data-object-id="' + escapeHtml(node.id) + '" ' +
+            'data-object-type="' + escapeHtml(node.object_type || 'campaign') + '" ' +
+            'data-next-status="' + nextStatus + '">' + actionLabel + '</button>'
+        );
+    }
+
+    function renderMetaAdNode(ad, currency) {
+        return (
+            '<div class="metrics-node metrics-node--level-ad">' +
+            '<div class="metrics-node__row metrics-node__row--static metrics-node__row--meta">' +
+            '<div><span class="metrics-node__name">' + escapeHtml(ad.name) + '</span>' +
+            renderStatusBadge(ad.effective_status || ad.status) +
+            '<span class="metrics-node__meta">ID ' + escapeHtml(ad.id) + '</span></div>' +
+            renderMetaStats(ad, currency) +
+            '<div class="metrics-node__actions">' + renderMetaToggle(ad) + '</div>' +
+            '</div></div>'
+        );
+    }
+
+    function renderMetaAdsetNode(adset, currency) {
+        var adsHtml = (adset.ads || []).map(function (ad) {
+            return renderMetaAdNode(ad, currency);
+        }).join('');
+
+        return (
+            '<details class="metrics-node metrics-node--level-adset" open>' +
+            '<summary class="metrics-node__row metrics-node__row--meta">' +
+            '<div><span class="metrics-node__name">' + escapeHtml(adset.name) + '</span>' +
+            renderStatusBadge(adset.effective_status || adset.status) +
+            '<span class="metrics-node__meta">ID ' + escapeHtml(adset.id) + '</span></div>' +
+            renderMetaStats(adset, currency) +
+            '<div class="metrics-node__actions">' + renderMetaToggle(adset) + '</div>' +
+            '</summary>' +
+            '<div class="metrics-node__children">' + (adsHtml || '<p class="metrics-tree__empty">Sem anúncios.</p>') + '</div>' +
+            '</details>'
+        );
+    }
+
+    function renderMetaCampaignNode(campaign, currency) {
+        var adsetsHtml = (campaign.adsets || []).map(function (adset) {
+            return renderMetaAdsetNode(adset, currency);
+        }).join('');
+
+        return (
+            '<details class="metrics-node metrics-node--level-campaign" open>' +
+            '<summary class="metrics-node__row metrics-node__row--meta">' +
+            '<div><span class="metrics-node__name">' + escapeHtml(campaign.name) + '</span>' +
+            renderStatusBadge(campaign.effective_status || campaign.status) +
+            '<span class="metrics-node__meta">ID ' + escapeHtml(campaign.id) + '</span></div>' +
+            renderMetaStats(campaign, currency) +
+            '<div class="metrics-node__actions">' + renderMetaToggle(campaign) + '</div>' +
+            '</summary>' +
+            '<div class="metrics-node__children">' + (adsetsHtml || '<p class="metrics-tree__empty">Sem conjuntos.</p>') + '</div>' +
+            '</details>'
+        );
+    }
+
     function renderMetaPanel(payload) {
         var merged = payload && payload.merged;
         var metaConnection = payload && payload.meta_connection;
@@ -172,7 +255,7 @@
 
         if (!merged || !merged.campaigns || !merged.campaigns.length) {
             metaPanel.hidden = true;
-            metaBody.innerHTML = '';
+            metaTree.innerHTML = '';
             metaContext.textContent = '';
             return;
         }
@@ -195,49 +278,33 @@
             ? 'Actualizado ' + formatDate(payload.stripe.summary.generated_at)
             : '';
 
-        metaBody.innerHTML = merged.campaigns.map(function (campaign) {
-            var spendLabel = currency === 'EUR'
-                ? formatMoneyEur(campaign.spend_eur)
-                : formatMoney(campaign.spend_original, currency) + ' (' + formatMoneyEur(campaign.spend_eur) + ')';
-            var roasLabel = campaign.roas_real === null ? '—' : String(campaign.roas_real);
-            var isActive = String(campaign.effective_status || campaign.status).toUpperCase() === 'ACTIVE';
-            var actionLabel = isActive ? 'Pausar' : 'Activar';
-            var nextStatus = isActive ? 'PAUSED' : 'ACTIVE';
-
-            return (
-                '<tr>' +
-                '<td><strong>' + escapeHtml(campaign.name) + '</strong><br><span class="metrics-node__meta">ID ' + escapeHtml(campaign.id) + '</span></td>' +
-                '<td>' + renderStatusBadge(campaign.effective_status || campaign.status) + '</td>' +
-                '<td>' + escapeHtml(spendLabel) + '</td>' +
-                '<td>' + Number(campaign.meta_purchases || 0) + ' compras</td>' +
-                '<td><strong>' + Number(campaign.stripe_sales || 0) + '</strong> vendas · ' + escapeHtml(formatMoneyEur(campaign.stripe_revenue_eur)) + '</td>' +
-                '<td>' + escapeHtml(roasLabel) + '</td>' +
-                '<td><button type="button" class="metrics-button metrics-button--ghost metrics-toggle" data-campaign-id="' + escapeHtml(campaign.id) + '" data-next-status="' + nextStatus + '">' + actionLabel + '</button></td>' +
-                '</tr>'
-            );
+        metaTree.innerHTML = merged.campaigns.map(function (campaign) {
+            return renderMetaCampaignNode(campaign, currency);
         }).join('');
     }
 
-    async function toggleCampaignStatus(button) {
-        var campaignId = button.getAttribute('data-campaign-id');
+    async function toggleMetaStatus(button) {
+        var objectId = button.getAttribute('data-object-id');
+        var objectType = button.getAttribute('data-object-type') || 'campaign';
         var nextStatus = button.getAttribute('data-next-status');
         var accountId = getSelectedAccountId();
         var token = getToken();
 
-        if (!campaignId || !accountId || !token) {
+        if (!objectId || !accountId || !token) {
             return;
         }
 
+        var label = objectType === 'adset' ? 'conjunto' : (objectType === 'ad' ? 'anúncio' : 'campanha');
         var confirmMessage = nextStatus === 'PAUSED'
-            ? 'Pausar esta campanha no Meta?'
-            : 'Activar esta campanha no Meta?';
+            ? 'Pausar este ' + label + ' no Meta?'
+            : 'Activar este ' + label + ' no Meta?';
 
         if (!window.confirm(confirmMessage)) {
             return;
         }
 
         button.disabled = true;
-        setStatus('A actualizar campanha no Meta…', false);
+        setStatus('A actualizar no Meta…', false);
 
         try {
             var response = await fetch('/api/sales-attribution?action=meta_status', {
@@ -248,21 +315,21 @@
                 },
                 body: JSON.stringify({
                     account_id: accountId,
-                    object_id: campaignId,
-                    object_type: 'campaign',
+                    object_id: objectId,
+                    object_type: objectType,
                     status: nextStatus,
                 }),
             });
             var data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || 'Não foi possível actualizar a campanha.');
+                throw new Error(data.error || 'Não foi possível actualizar.');
             }
 
-            setStatus('Campanha actualizada no Meta.', false);
+            setStatus('Actualizado no Meta.', false);
             await fetchMetrics();
         } catch (error) {
-            setStatus(error.message || 'Erro ao actualizar campanha.', true);
+            setStatus(error.message || 'Erro ao actualizar.', true);
             button.disabled = false;
         }
     }
@@ -502,14 +569,16 @@
         });
     });
 
-    metaBody.addEventListener('click', function (event) {
+    metaTree.addEventListener('click', function (event) {
         var button = event.target.closest('.metrics-toggle');
 
         if (!button) {
             return;
         }
 
-        toggleCampaignStatus(button);
+        event.preventDefault();
+        event.stopPropagation();
+        toggleMetaStatus(button);
     });
 
     refreshButton.addEventListener('click', function () {

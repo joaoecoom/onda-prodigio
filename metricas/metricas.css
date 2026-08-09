@@ -621,6 +621,30 @@ body {
     border-color: #ccd0d5;
 }
 
+.metrics-node__row--meta {
+    grid-template-columns: minmax(180px, 1.2fr) repeat(4, minmax(90px, auto)) auto;
+}
+
+.metrics-node__actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.metrics-meta-tree {
+    display: grid;
+    gap: 0.65rem;
+}
+
+@media (max-width: 960px) {
+    .metrics-node__row--meta {
+        grid-template-columns: 1fr;
+    }
+
+    .metrics-node__actions {
+        justify-content: flex-start;
+    }
+}
+
 @media (max-width: 720px) {
     .metrics-node__row {
         grid-template-columns: 1fr;
