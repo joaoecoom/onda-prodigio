@@ -12,9 +12,18 @@
     var recentBody = document.getElementById('metrics-recent-body');
     var generatedAt = document.getElementById('metrics-generated-at');
     var noteBox = document.getElementById('metrics-note');
-    var daysSelect = document.getElementById('metrics-days');
     var refreshButton = document.getElementById('metrics-refresh');
     var logoutButton = document.getElementById('metrics-logout');
+    var datePickerRoot = document.getElementById('metrics-date-picker-root');
+    var datePicker = window.MetricsDateRangePicker.create({
+        root: datePickerRoot,
+        defaultPreset: 'last_30',
+        onApply: function () {
+            fetchMetrics().catch(function () {
+                setStatus('Erro de ligação. Tenta outra vez.', true);
+            });
+        },
+    });
 
     function getToken() {
         return window.sessionStorage.getItem(TOKEN_KEY) || '';
@@ -78,7 +87,7 @@
 
     async function fetchMetrics() {
         var token = getToken();
-        var days = daysSelect.value;
+        var range = datePicker.getAppliedRange();
 
         if (!token) {
             showLogin();
@@ -87,7 +96,11 @@
 
         setStatus('A carregar vendas do Stripe…', false);
 
-        var response = await fetch('/api/sales-attribution?days=' + encodeURIComponent(days), {
+        var query = range.from && range.to
+            ? 'from=' + encodeURIComponent(range.from) + '&to=' + encodeURIComponent(range.to)
+            : 'days=0';
+
+        var response = await fetch('/api/sales-attribution?' + query, {
             headers: {
                 Authorization: 'Bearer ' + token,
             },
@@ -269,12 +282,6 @@
         } catch (error) {
             setStatus('Erro de ligação. Tenta outra vez.', true);
         }
-    });
-
-    daysSelect.addEventListener('change', function () {
-        fetchMetrics().catch(function () {
-            setStatus('Erro de ligação. Tenta outra vez.', true);
-        });
     });
 
     refreshButton.addEventListener('click', function () {

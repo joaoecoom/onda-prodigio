@@ -20,9 +20,19 @@ module.exports = async function handler(req, res) {
 
     var stripe = new Stripe(secretKey);
     var days = parseInt(req.query.days, 10);
-    var minTimestamp = Number.isFinite(days) && days > 0
-        ? Math.floor(Date.now() / 1000) - (days * 24 * 60 * 60)
-        : 0;
+    var from = String(req.query.from || '').trim();
+    var to = String(req.query.to || '').trim();
+    var datePattern = /^\d{4}-\d{2}-\d{2}$/;
+    var minTimestamp = 0;
+    var maxTimestamp = Number.POSITIVE_INFINITY;
+
+    if (datePattern.test(from) && datePattern.test(to)) {
+        minTimestamp = Math.floor(new Date(from + 'T00:00:00.000Z').getTime() / 1000);
+        maxTimestamp = Math.floor(new Date(to + 'T23:59:59.999Z').getTime() / 1000);
+    } else if (Number.isFinite(days) && days > 0) {
+        minTimestamp = Math.floor(Date.now() / 1000) - (days * 24 * 60 * 60);
+        maxTimestamp = Number.POSITIVE_INFINITY;
+    }
 
     try {
         var paymentIntents = [];
@@ -43,9 +53,9 @@ module.exports = async function handler(req, res) {
             startingAfter = listed.data[listed.data.length - 1].id;
         }
 
-        if (minTimestamp > 0) {
+        if (minTimestamp > 0 || Number.isFinite(maxTimestamp)) {
             paymentIntents = paymentIntents.filter(function (paymentIntent) {
-                return paymentIntent.created >= minTimestamp;
+                return paymentIntent.created >= minTimestamp && paymentIntent.created <= maxTimestamp;
             });
         }
 
