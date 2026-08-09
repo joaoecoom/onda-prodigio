@@ -56,6 +56,7 @@ module.exports = async function handler(req, res) {
                 upsell: upsell.id,
                 email: email,
                 full_name: metadata.full_name || '',
+                vtid: metadata.vtid || '',
             },
         };
 

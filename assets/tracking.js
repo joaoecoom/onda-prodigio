@@ -30,6 +30,8 @@
     var config = null;
     var bootstrapPromise = null;
     var purchaseEventId = null;
+    var checkoutPaymentIntentId = '';
+    var metaAdvancedMatchingPayload = null;
     var ATTRIBUTION_STORAGE_KEY = 'onda-attribution';
 
     var ATTRIBUTION_QUERY_KEYS = [
@@ -45,6 +47,7 @@
         'utm_content',
         'utm_term',
         'fbclid',
+        'vtid',
     ];
 
     window.dataLayer = window.dataLayer || [];
@@ -59,6 +62,176 @@
 
     function centsToValue(cents) {
         return Number((Number(cents || 0) / 100).toFixed(2));
+    }
+
+    function getReportingCurrency() {
+        return config && config.metaReportingCurrency ? config.metaReportingCurrency : 'EUR';
+    }
+
+    function getReportingRate() {
+        if (!config) {
+            return 1;
+        }
+
+        if (getReportingCurrency() === 'USD') {
+            return Number(config.metaEurToUsdRate || 1.09);
+        }
+
+        if (getReportingCurrency() === 'BRL') {
+            return Number(config.metaEurToBrlRate || 6.1);
+        }
+
+        return 1;
+    }
+
+    function convertValueForMetaReporting(valueEur) {
+        var reportingCurrency = getReportingCurrency();
+
+        if (reportingCurrency === 'EUR') {
+            return {
+                currency: 'EUR',
+                value: Number(Number(valueEur || 0).toFixed(2)),
+            };
+        }
+
+        return {
+            currency: reportingCurrency,
+            value: Number((Number(valueEur || 0) * getReportingRate()).toFixed(2)),
+        };
+    }
+
+    function normalizeMetaName(value) {
+        return String(value || '')
+            .trim()
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z]/g, '');
+    }
+
+    function normalizePhoneForMetaHash(phone, countryCode) {
+        var digits = String(phone || '').replace(/\D/g, '');
+
+        if (!digits) {
+            return '';
+        }
+
+        var dialCodes = {
+            PT: '351',
+            LU: '352',
+            FR: '33',
+            BE: '32',
+            CH: '41',
+            DE: '49',
+            ES: '34',
+            IT: '39',
+            NL: '31',
+            GB: '44',
+            IE: '353',
+            AT: '43',
+            US: '1',
+            CA: '1',
+            BR: '55',
+        };
+        var dial = dialCodes[String(countryCode || 'PT').toUpperCase()] || '351';
+
+        if (digits.indexOf(dial) === 0 && digits.length > dial.length + 5) {
+            return digits;
+        }
+
+        return dial + digits;
+    }
+
+    function sha256Hex(value) {
+        if (!value || !window.crypto || !window.crypto.subtle) {
+            return Promise.resolve('');
+        }
+
+        return window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(value)).then(function (buffer) {
+            return Array.from(new Uint8Array(buffer)).map(function (byte) {
+                return byte.toString(16).padStart(2, '0');
+            }).join('');
+        });
+    }
+
+    function applyMetaAdvancedMatching() {
+        if (!window.fbq || !config || !config.metaPixelId || !metaAdvancedMatchingPayload) {
+            return;
+        }
+
+        window.fbq('init', config.metaPixelId, metaAdvancedMatchingPayload, { autoConfig: false });
+    }
+
+    function setMetaAdvancedMatching(data) {
+        data = data || {};
+
+        var email = String(data.email || '').trim().toLowerCase();
+        var phoneDigits = normalizePhoneForMetaHash(data.phone, data.phoneCountry || data.country || 'PT');
+        var firstName = normalizeMetaName(data.firstName || data.full_name || '');
+        var lastName = normalizeMetaName(data.lastName || '');
+
+        if (!data.lastName && data.full_name) {
+            var parts = String(data.full_name || '').trim().split(/\s+/).filter(Boolean);
+
+            if (parts.length > 1) {
+                firstName = normalizeMetaName(parts[0]);
+                lastName = normalizeMetaName(parts.slice(1).join(' '));
+            }
+        }
+
+        var country = String(data.country || data.phoneCountry || 'PT').trim().toLowerCase().slice(0, 2);
+        var tasks = [];
+
+        if (email) {
+            tasks.push(sha256Hex(email).then(function (hash) {
+                return { key: 'em', value: hash };
+            }));
+        }
+
+        if (phoneDigits) {
+            tasks.push(sha256Hex(phoneDigits).then(function (hash) {
+                return { key: 'ph', value: hash };
+            }));
+        }
+
+        if (firstName) {
+            tasks.push(sha256Hex(firstName).then(function (hash) {
+                return { key: 'fn', value: hash };
+            }));
+        }
+
+        if (lastName) {
+            tasks.push(sha256Hex(lastName).then(function (hash) {
+                return { key: 'ln', value: hash };
+            }));
+        }
+
+        return Promise.all(tasks).then(function (entries) {
+            metaAdvancedMatchingPayload = {};
+
+            entries.forEach(function (entry) {
+                if (entry && entry.key && entry.value) {
+                    metaAdvancedMatchingPayload[entry.key] = entry.value;
+                }
+            });
+
+            if (country) {
+                metaAdvancedMatchingPayload.country = country;
+            }
+
+            applyMetaAdvancedMatching();
+            return metaAdvancedMatchingPayload;
+        });
+    }
+
+    function getCheckoutPaymentIntentId() {
+        return checkoutPaymentIntentId || '';
+    }
+
+    function setCheckoutPaymentIntentId(paymentIntentId) {
+        if (paymentIntentId && paymentIntentId.indexOf('pi_') === 0) {
+            checkoutPaymentIntentId = paymentIntentId;
+        }
     }
 
     function randomSuffix() {
@@ -128,6 +301,10 @@
                 data[key] = value.trim();
             }
         });
+
+        if (data.vtid && data.vtid.indexOf('v3_') !== 0) {
+            delete data.vtid;
+        }
 
         if (data.fbclid && !data.ad_platform) {
             data.ad_platform = 'facebook';
@@ -220,7 +397,7 @@
             {
                 item_id: MAIN_ITEM.item_id,
                 item_name: MAIN_ITEM.item_name,
-                price: 9,
+                price: convertValueForMetaReporting(9).value,
                 quantity: 1,
                 item_category: 'produto_principal',
             },
@@ -236,7 +413,7 @@
             items.push({
                 item_id: bump.item_id,
                 item_name: bump.item_name,
-                price: 5,
+                price: convertValueForMetaReporting(5).value,
                 quantity: 1,
                 item_category: 'order_bump',
             });
@@ -246,12 +423,12 @@
     }
 
     function buildEcommerce(payload) {
-        var value = centsToValue(payload.amountCents || 900);
+        var valueInfo = convertValueForMetaReporting(centsToValue(payload.amountCents || 900));
         var items = buildItems(payload.orderBumps || []);
 
         return {
-            currency: 'EUR',
-            value: value,
+            currency: valueInfo.currency,
+            value: valueInfo.value,
             items: items,
         };
     }
@@ -381,8 +558,11 @@
 
         markTrackedOnce(onceKey);
 
+        // Meta PageView só na VSL — 1.º contacto anúncio → funil. Outras páginas usam eventos próprios.
         pushEvent('page_view', {
             page_title: document.title,
+        }, {
+            meta: getPageType() === 'vsl',
         });
     }
 
@@ -413,12 +593,33 @@
 
     function trackLead(payload) {
         if (wasTrackedOnce('onda-track-lead')) {
-            return;
+            return Promise.resolve(false);
         }
 
         markTrackedOnce('onda-track-lead');
 
-        pushEvent('lead', payload || {});
+        var leadPayload = Object.assign({}, payload || {});
+        var paymentIntentId = getCheckoutPaymentIntentId();
+
+        if (paymentIntentId && !leadPayload.event_id) {
+            leadPayload.event_id = 'lead_' + paymentIntentId;
+        }
+
+        var advancedMatchingPromise = setMetaAdvancedMatching(leadPayload).catch(function () {
+            return null;
+        });
+
+        return advancedMatchingPromise.then(function () {
+            pushEvent('lead', leadPayload);
+
+            if (paymentIntentId) {
+                trackInitiateCheckout({
+                    event_id: 'initiate_checkout_' + paymentIntentId,
+                });
+            }
+
+            return true;
+        });
     }
 
     function trackInitiateCheckout(payload) {
@@ -430,8 +631,18 @@
 
         markTrackedOnce(onceKey);
 
-        var checkoutPayload = buildCheckoutPayload(payload);
-        pushEvent('initiate_checkout', checkoutPayload);
+        var checkoutPayload = buildCheckoutPayload(payload || {});
+        var eventPayload = Object.assign({}, checkoutPayload, payload || {});
+
+        if (!eventPayload.event_id) {
+            var paymentIntentId = getCheckoutPaymentIntentId();
+
+            if (paymentIntentId) {
+                eventPayload.event_id = 'initiate_checkout_' + paymentIntentId;
+            }
+        }
+
+        pushEvent('initiate_checkout', eventPayload);
     }
 
     function trackCheckoutStarted(payload) {
@@ -490,7 +701,9 @@
         markTrackedOnce(onceKey);
 
         var checkoutPayload = buildCheckoutPayload(payload);
-        var eventId = getPurchaseEventId();
+        var eventId = payload && payload.transactionId
+            ? ('purchase_' + payload.transactionId)
+            : getPurchaseEventId();
 
         pushEvent('purchase', Object.assign({}, checkoutPayload, {
             event_id: eventId,
@@ -570,25 +783,49 @@
 
     function bindLeadTracking() {
         var emailField = document.getElementById('email');
+        var form = document.getElementById('checkout-form');
+        var fullNameField = form && form.full_name ? form.full_name : document.querySelector('[name="full_name"]');
+        var phoneField = form && form.phone ? form.phone : document.getElementById('phone');
+        var countryField = document.getElementById('country');
+        var phoneCountryField = form && form.phone_country ? form.phone_country : document.querySelector('[name="phone_country"]');
 
         if (!emailField) {
             return;
         }
 
+        function getLeadPayload() {
+            return {
+                email: emailField.value.trim(),
+                full_name: fullNameField ? fullNameField.value.trim() : '',
+                phone: phoneField ? phoneField.value.trim() : '',
+                country: countryField ? countryField.value.trim() : '',
+                phoneCountry: phoneCountryField ? phoneCountryField.value.trim() : '',
+            };
+        }
+
         function maybeTrackLead() {
-            var email = emailField.value.trim();
+            var payload = getLeadPayload();
+            var email = payload.email;
 
             if (!email || email.indexOf('@') === -1) {
                 return;
             }
 
-            trackLead({
-                email: email,
-            });
+            trackLead(payload);
         }
 
         emailField.addEventListener('blur', maybeTrackLead);
         emailField.addEventListener('change', maybeTrackLead);
+    }
+
+    function bindCheckoutPaymentIntentTracking() {
+        document.addEventListener('checkout:payment-intent-ready', function (event) {
+            if (!event.detail || !event.detail.paymentIntentId) {
+                return;
+            }
+
+            setCheckoutPaymentIntentId(event.detail.paymentIntentId);
+        });
     }
 
     function bindCtaTracking() {
@@ -637,8 +874,9 @@
         }
 
         if (pageType === 'checkout') {
+            bindCheckoutPaymentIntentTracking();
+
             function fireCheckoutEvents() {
-                trackInitiateCheckout();
                 bindLeadTracking();
             }
 
@@ -715,7 +953,7 @@
             "n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;" +
             "n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;" +
             "t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window, document,'script'," +
-            "'https://connect.facebook.net/en_US/fbevents.js');fbq('init','" + pixelId + "');"
+            "'https://connect.facebook.net/en_US/fbevents.js');fbq('init','" + pixelId + "',{}, {autoConfig:false});"
         );
 
         var inline = document.createElement('script');
@@ -741,14 +979,18 @@
                 config = trackingConfig || {};
 
                 return loadMetaPixel(config.metaPixelId).then(function () {
+                    applyMetaAdvancedMatching();
                     initPageTracking();
 
-                    Promise.allSettled([
-                        config.gtmWebEnabled && config.gtmContainerId
-                            ? loadGtm(config.gtmContainerId, config.stapeGtmUrl || config.serverContainerUrl)
-                            : Promise.resolve(),
-                        loadGa4(config.ga4MeasurementId),
-                    ]);
+                    var loaderTasks = [loadGa4(config.ga4MeasurementId)];
+
+                    if (config.gtmWebEnabled && config.gtmContainerId) {
+                        loaderTasks.push(loadGtm(config.gtmContainerId, config.stapeGtmUrl || config.serverContainerUrl));
+                    } else if (config.stapeCookieExtenderEnabled && config.gtmContainerId && config.stapeGtmUrl) {
+                        loaderTasks.push(loadGtm(config.gtmContainerId, config.stapeGtmUrl));
+                    }
+
+                    Promise.allSettled(loaderTasks);
 
                     return config;
                 });
@@ -781,6 +1023,8 @@
         getStripeTrackingMetadata: getStripeTrackingMetadata,
         getAttribution: getAttribution,
         captureAttribution: captureAttribution,
+        setMetaAdvancedMatching: setMetaAdvancedMatching,
+        applyMetaAdvancedMatching: applyMetaAdvancedMatching,
         pushEvent: pushEvent,
     };
 

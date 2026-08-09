@@ -126,6 +126,12 @@
             status: data.status || 'unknown',
             amountCents: data.amount_cents || 0,
             orderBumps: Array.isArray(data.order_bumps) ? data.order_bumps : [],
+            email: data.email || '',
+            full_name: data.full_name || '',
+            phone: data.phone || '',
+            country: data.country || '',
+            region: data.region || '',
+            phone_country: data.phone_country || '',
         };
     }
 
@@ -136,6 +142,17 @@
 
         if (typeof window.OndaTracking.bootstrap === 'function') {
             await window.OndaTracking.bootstrap().catch(function () {});
+        }
+
+        if (typeof window.OndaTracking.setMetaAdvancedMatching === 'function') {
+            await window.OndaTracking.setMetaAdvancedMatching({
+                email: result.email || '',
+                full_name: result.full_name || '',
+                phone: result.phone || '',
+                country: result.country || '',
+                phoneCountry: result.phone_country || '',
+                region: result.region || '',
+            }).catch(function () {});
         }
 
         var payload = {

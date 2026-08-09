@@ -6,11 +6,21 @@
 
 | Evento | Browser (Pixel) | Servidor (CAPI) | Dedup |
 |--------|-----------------|-----------------|-------|
-| PageView | `assets/tracking.js` | — | — |
+## Eventos por página (Meta)
+
+| Página | Evento Meta | Notas |
+|--------|-------------|-------|
+| VSL | PageView + ViewContent | Único PageView do funil |
+| Checkout | InitiateCheckout (+ Lead) | Sem PageView Meta |
+| Obrigado | Purchase | Sem PageView Meta |
+| Upsell 1/2 | ViewContent (ver oferta) + Purchase (se comprar) | Por implementar quando upsells activos |
+
+**PageView Meta:** só dispara em `data-page-type="vsl"`. GA4 continua a receber `page_view` em todas as páginas.
 | ViewContent | `assets/tracking.js` | — | — |
 | InitiateCheckout | `assets/tracking.js` | — | — |
-| Lead | `assets/tracking.js` | — | — |
-| Purchase | `obgd/obgd.js` (1×) | `api/stripe-webhook.js` | `event_id` = `purchase_event_id` |
+| Lead | `assets/tracking.js` | `update-payment-intent` (CAPI) | `event_id` = `lead_{pi_id}` |
+| InitiateCheckout | `assets/tracking.js` (após email) | `update-payment-intent` (CAPI) | `event_id` = `initiate_checkout_{pi_id}` |
+| Purchase | `obgd/obgd.js` (1×) | `api/stripe-webhook.js` | `event_id` = `purchase_{pi_id}` |
 
 **Não duplicar Meta:**
 - GTM Web (`GTM-KMMX6RRB`): **desactivado no site** (`gtmWebEnabled` só com `GTM_WEB_ENABLED=true`) — tinha tags Meta/Stape duplicadas; pixel e GA4 vão directo em `tracking.js`

@@ -1,0 +1,41 @@
+# Stape cookie extender — Onda Prodígio
+
+## Objectivo
+
+Manter `_fbc` e `_fbp` como cookies **first-party** no Safari/iOS, **sem duplicar** Meta Pixel nem CAPI Purchase.
+
+## Arquitectura (não duplicar)
+
+| Canal | O que faz |
+|-------|-----------|
+| `assets/tracking.js` | Pixel Meta (browser) |
+| `api/stripe-webhook.js` | CAPI Purchase directo |
+| Stape GTM loader | **Só** cookie extender / GA4 server |
+
+**Proibido:** tags Meta Pixel ou Meta CAPI Purchase no GTM web/server enquanto o webhook envia CAPI directo.
+
+## Activar no site
+
+1. Vercel env: `STAPE_COOKIE_EXTENDER_ENABLED=true`
+2. Manter `SERVER_CONTAINER_URL=https://zswotzns.eu.stape.io`
+3. Manter `NEXT_PUBLIC_GTM_ID=GTM-KMMX6RRB`
+4. **Não** activar `GTM_WEB_ENABLED` (evita tags Meta duplicadas)
+
+O site carrega o loader GTM **via Stape** (`stapeGtmUrl`), não via googletagmanager.com.
+
+## Configurar no Stape (painel)
+
+1. Container **GTM-KMMX6RRB** (web) no Stape
+2. Power-up **Cookie Extender** (ou Cookie Keeper) para Meta — activar `_fbc` + `_fbp`
+3. Garantir que **não existem** tags Facebook Pixel / Meta CAPI neste container
+4. Publicar versão GTM web
+
+## Container server GTM-PHNC98MZ
+
+Opcional para GA4 server-side. **Sem** tag Meta CAPI Purchase (webhook já envia).
+
+## Verificação
+
+1. Events Manager → qualidade do evento → EMQ deve subir após Advanced Matching + cookies
+2. DevTools → Application → Cookies → domínio do site → `_fbc` / `_fbp` com validade longa
+3. Test Events: Purchase continua **1×** (browser + CAPI deduplicados por `event_id`)

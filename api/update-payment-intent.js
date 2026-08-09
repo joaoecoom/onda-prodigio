@@ -62,11 +62,29 @@ module.exports = async function handler(req, res) {
             }, serverEvents.buildStripeTrackingMetadata(tracking, userAgent)),
         };
 
+        updatePayload.metadata.purchase_event_id = 'purchase_' + paymentIntentId;
+
         if (Number.isFinite(amountCents) && amountCents >= baseAmount && amountCents <= maxAmount) {
             updatePayload.amount = amountCents;
         }
 
         await stripeClient.stripe.paymentIntents.update(paymentIntentId, updatePayload);
+
+        var funnelResults = null;
+
+        try {
+            var updatedPaymentIntent = await stripeClient.stripe.paymentIntents.retrieve(paymentIntentId);
+            funnelResults = await serverEvents.sendFunnelMetaEventsIfNeeded(updatedPaymentIntent, req);
+            var funnelFlags = serverEvents.getFunnelMetaMetadataFlags(funnelResults || {});
+
+            if (Object.keys(funnelFlags).length > 0) {
+                await stripeClient.stripe.paymentIntents.update(paymentIntentId, {
+                    metadata: funnelFlags,
+                });
+            }
+        } catch (funnelError) {
+            console.error('Meta funnel CAPI falhou:', paymentIntentId, funnelError.message);
+        }
 
         return res.status(200).json({ ok: true, mode: mode });
     } catch (error) {

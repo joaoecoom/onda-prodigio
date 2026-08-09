@@ -56,6 +56,12 @@ module.exports = async function handler(req, res) {
             }, serverEvents.buildStripeTrackingMetadata(tracking, userAgent)),
         });
 
+        await stripeClient.stripe.paymentIntents.update(paymentIntent.id, {
+            metadata: Object.assign({}, paymentIntent.metadata || {}, {
+                purchase_event_id: 'purchase_' + paymentIntent.id,
+            }),
+        });
+
         return res.status(200).json({
             clientSecret: paymentIntent.client_secret,
             mode: mode,

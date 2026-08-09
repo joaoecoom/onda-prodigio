@@ -723,6 +723,12 @@
         isReady = false;
         submitBtn.disabled = true;
 
+        document.dispatchEvent(new CustomEvent('checkout:payment-intent-ready', {
+            detail: {
+                paymentIntentId: getPaymentIntentId(),
+            },
+        }));
+
         elements = stripe.elements({
             clientSecret: clientSecret,
             locale: 'pt',

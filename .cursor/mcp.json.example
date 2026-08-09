@@ -5,6 +5,26 @@
       "headers": {
         "Authorization": "Bearer COLOCA_AQUI_O_PAT_DA_ANGELA"
       }
+    },
+    "stape-eu": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.stape.ai/mcp",
+        "--header",
+        "Authorization:COLOCA_AQUI_A_STAPE_API_KEY",
+        "--header",
+        "X-Stape-Region:EU"
+      ]
+    },
+    "gtm-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://gtm-mcp.stape.ai/mcp"
+      ]
     }
   }
 }

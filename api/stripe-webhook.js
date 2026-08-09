@@ -64,6 +64,19 @@ module.exports = async function handler(req, res) {
         }
 
         if (event.type === 'checkout.session.completed') {
+            var session = event.data.object;
+            var sessionMetadata = session.metadata || {};
+
+            if (sessionMetadata.stripe_mode !== 'test' && sessionMetadata.checkout !== 'checkout9-test') {
+                try {
+                    var vturbConversion = require('../lib/tracking/vturb-conversion');
+                    var vturbResult = await vturbConversion.sendFromCheckoutSession(session, req);
+                    console.log('VTurb upsell:', session.id, JSON.stringify(vturbResult));
+                } catch (vturbError) {
+                    console.error('VTurb upsell falhou:', vturbError);
+                }
+            }
+
             try {
                 var grantAccessCheckout = require('../lib/comunidade/grant-access');
                 var checkoutResult = await grantAccessCheckout.grantAccessFromCheckoutSession(stripe, event.data.object);

@@ -40,6 +40,12 @@ module.exports = async function handler(req, res) {
                 .split(',')
                 .map(function (item) { return item.trim(); })
                 .filter(Boolean),
+            email: paymentIntent.receipt_email || paymentIntent.metadata.email || '',
+            full_name: paymentIntent.metadata.full_name || '',
+            phone: paymentIntent.metadata.phone || '',
+            country: paymentIntent.metadata.country || '',
+            region: paymentIntent.metadata.region || '',
+            phone_country: paymentIntent.metadata.phone_country || '',
         });
     } catch (error) {
         console.error('Erro ao verificar pagamento:', error);
