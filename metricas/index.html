@@ -11,8 +11,11 @@
     <link rel="stylesheet" href="/metricas/metricas.css">
 </head>
 <body>
+    <noscript>
+        <p style="padding:2rem;font-family:Inter,sans-serif;">Activa JavaScript para usar o dashboard de métricas.</p>
+    </noscript>
     <div class="metrics-app" id="metrics-app">
-        <section class="metrics-login" id="metrics-login" hidden>
+        <section class="metrics-login" id="metrics-login">
             <div class="metrics-login__card">
                 <p class="metrics-login__eyebrow">Onda Prodígio</p>
                 <h1>Métricas reais</h1>
@@ -86,6 +89,6 @@
         </section>
     </div>
 
-    <script src="/metricas/metricas.js" defer></script>
+    <script src="/metricas/metricas.js?v=2" defer></script>
 </body>
 </html>

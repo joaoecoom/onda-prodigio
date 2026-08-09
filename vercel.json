@@ -51,6 +51,10 @@
     {
       "source": "/metricas",
       "destination": "/metricas/index.html"
+    },
+    {
+      "source": "/metricas/",
+      "destination": "/metricas/index.html"
     }
   ],
   "headers": [
