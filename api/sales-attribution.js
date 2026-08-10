@@ -112,25 +112,32 @@ async function handleCombined(req, res) {
         to = to || fallbackTo;
     }
 
-    var stripeReport = await stripeSales.buildStripeReport(req.query);
-    var tokenInfo = await metaClient.debugAccessToken();
+    var metaPromise = metaConfig.isAllowedAccountId(accountId)
+        ? metaInsights.getCampaignReport(accountId, from, to).catch(function (error) {
+            return { __error: error.message || 'Meta API falhou.' };
+        })
+        : Promise.resolve({ __error: 'Conta Meta não autorizada.' });
+
+    var results = await Promise.all([
+        stripeSales.buildStripeReport(req.query),
+        metaClient.debugAccessToken(),
+        metaPromise,
+    ]);
+
+    var stripeReport = results[0];
+    var tokenInfo = results[1];
+    var metaResult = results[2];
     var metaReport = null;
     var merged = null;
     var metaError = '';
 
-    if (tokenInfo.is_valid && tokenInfo.missing_scopes.length === 0) {
-        try {
-            if (!metaConfig.isAllowedAccountId(accountId)) {
-                throw new Error('Conta Meta não autorizada.');
-            }
-
-            metaReport = await metaInsights.getCampaignReport(accountId, from, to);
-            merged = metaMerge.mergeReports(stripeReport, metaReport);
-        } catch (error) {
-            metaError = error.message;
-        }
-    } else {
+    if (metaResult && metaResult.__error) {
+        metaError = metaResult.__error;
+    } else if (!tokenInfo.is_valid || tokenInfo.missing_scopes.length) {
         metaError = tokenInfo.error || 'Token Meta inválido ou sem permissões ads_read/ads_management.';
+    } else {
+        metaReport = metaResult;
+        merged = metaMerge.mergeReports(stripeReport, metaReport);
     }
 
     return res.status(200).json({
