@@ -305,10 +305,10 @@
 
         metaContext.textContent = [
             account.name || account.label || ('Conta ' + account.id),
-            account.timezone_name ? 'Fuso: ' + account.timezone_name : '',
-            currency !== 'EUR'
-                ? 'Gasto original em ' + currency + ' · convertido para EUR'
-                : 'Moeda: EUR',
+            'Vendas Stripe: fuso Portugal',
+            account.timezone_name && account.timezone_name !== 'Europe/Lisbon'
+                ? 'Gastos Meta: fuso ' + account.timezone_name
+                : '',
         ].filter(Boolean).join(' · ');
 
         metaGeneratedAt.textContent = payload.stripe && payload.stripe.summary && payload.stripe.summary.generated_at
@@ -401,7 +401,8 @@
         renderTree(stripe.campaigns || []);
         renderRecentSales(stripe.recent_sales || stripe.sales || []);
         generatedAt.textContent = stripe.summary && stripe.summary.generated_at
-            ? 'Actualizado ' + formatDate(stripe.summary.generated_at)
+            ? 'Actualizado ' + formatDate(stripe.summary.generated_at) +
+                (stripe.date_range && stripe.date_range.timezone === 'Europe/Lisbon' ? ' · Fuso vendas: Portugal' : '')
             : '';
         noteBox.textContent = stripe.note || '';
     }
