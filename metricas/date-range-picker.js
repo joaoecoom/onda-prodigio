@@ -108,7 +108,7 @@
             case 'max':
                 return { from: null, to: null, presetId: id };
             default:
-                return getPresetRange('last_30');
+                return getPresetRange('today');
         }
     }
 
@@ -185,7 +185,7 @@
     function createDateRangePicker(options) {
         var root = options.root;
         var onApply = options.onApply;
-        var appliedRange = getPresetRange(options.defaultPreset || 'last_30');
+        var appliedRange = getPresetRange(options.defaultPreset || 'today');
         var draftRange = Object.assign({}, appliedRange);
         var viewMonth = startOfMonth(appliedRange.from || new Date());
         var pendingStart = null;

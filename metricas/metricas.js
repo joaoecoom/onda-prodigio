@@ -26,7 +26,7 @@
     var datePickerRoot = document.getElementById('metrics-date-picker-root');
     var datePicker = window.MetricsDateRangePicker.create({
         root: datePickerRoot,
-        defaultPreset: 'last_30',
+        defaultPreset: 'today',
         onApply: function () {
             fetchMetrics().catch(function () {
                 setStatus('Erro de ligação. Tenta outra vez.', true);
