@@ -5,6 +5,7 @@ var metaClient = require('../lib/meta-ads/client');
 var metaInsights = require('../lib/meta-ads/insights');
 var metaMerge = require('../lib/meta-ads/merge');
 var metaStatus = require('../lib/meta-ads/status');
+var metaCache = require('../lib/meta-ads/cache');
 
 async function readJsonBody(req) {
     if (req.body && typeof req.body === 'object') {
@@ -96,10 +97,8 @@ async function handleMetaAccounts(res) {
     });
 }
 
-async function handleCombined(req, res) {
-    var accountId = metaConfig.normalizeAccountId(req.query.account_id) ||
-        metaConfig.getConfiguredAccounts()[0].id;
-    var bounds = stripeSales.resolveDateBounds(req.query);
+async function resolveDateRange(query) {
+    var bounds = stripeSales.resolveDateBounds(query);
     var from = bounds.from;
     var to = bounds.to;
 
@@ -112,29 +111,53 @@ async function handleCombined(req, res) {
         to = to || fallbackTo;
     }
 
-    var metaPromise = metaConfig.isAllowedAccountId(accountId)
-        ? metaInsights.getCampaignReport(accountId, from, to).catch(function (error) {
+    return { from: from, to: to };
+}
+
+function getActiveAccountId(query) {
+    return metaConfig.normalizeAccountId(query.account_id) ||
+        metaConfig.getConfiguredAccounts()[0].id;
+}
+
+function buildMetaConnection(hasToken, error) {
+    return {
+        has_token: hasToken,
+        is_valid: hasToken && !error,
+        ok: hasToken && !error,
+        missing_scopes: [],
+        error: error || '',
+    };
+}
+
+async function handleCombined(req, res) {
+    var accountId = getActiveAccountId(req.query);
+    var dateRange = await resolveDateRange(req.query);
+    var from = dateRange.from;
+    var to = dateRange.to;
+    var skipCache = String(req.query.refresh || '') === '1';
+    var hasToken = Boolean(metaClient.getAccessToken());
+
+    var metaPromise = hasToken && metaConfig.isAllowedAccountId(accountId)
+        ? metaInsights.getCampaignReport(accountId, from, to, { skipCache: skipCache }).catch(function (error) {
             return { __error: error.message || 'Meta API falhou.' };
         })
-        : Promise.resolve({ __error: 'Conta Meta não autorizada.' });
+        : Promise.resolve({
+            __error: hasToken ? 'Conta Meta não autorizada.' : 'META_ACCESS_TOKEN em falta.',
+        });
 
     var results = await Promise.all([
         stripeSales.buildStripeReport(req.query),
-        metaClient.debugAccessToken(),
         metaPromise,
     ]);
 
     var stripeReport = results[0];
-    var tokenInfo = results[1];
-    var metaResult = results[2];
+    var metaResult = results[1];
     var metaReport = null;
     var merged = null;
     var metaError = '';
 
     if (metaResult && metaResult.__error) {
         metaError = metaResult.__error;
-    } else if (!tokenInfo.is_valid || tokenInfo.missing_scopes.length) {
-        metaError = tokenInfo.error || 'Token Meta inválido ou sem permissões ads_read/ads_management.';
     } else {
         metaReport = metaResult;
         merged = metaMerge.mergeReports(stripeReport, metaReport);
@@ -144,10 +167,7 @@ async function handleCombined(req, res) {
         stripe: stripeReport,
         meta: metaReport,
         merged: merged,
-        meta_connection: Object.assign({}, tokenInfo, {
-            ok: Boolean(tokenInfo.is_valid && !tokenInfo.missing_scopes.length && !metaError),
-            error: metaError,
-        }),
+        meta_connection: buildMetaConnection(hasToken, metaError),
         date_range: {
             from: from,
             to: to,
@@ -157,11 +177,72 @@ async function handleCombined(req, res) {
     });
 }
 
+async function handleMeta(req, res) {
+    var accountId = getActiveAccountId(req.query);
+    var dateRange = await resolveDateRange(req.query);
+    var from = dateRange.from;
+    var to = dateRange.to;
+    var skipCache = String(req.query.refresh || '') === '1';
+    var hasToken = Boolean(metaClient.getAccessToken());
+
+    var stripeReport = await stripeSales.buildStripeReport(req.query);
+
+    if (!hasToken) {
+        return res.status(200).json({
+            stripe: stripeReport,
+            meta: null,
+            merged: null,
+            meta_connection: buildMetaConnection(false, 'META_ACCESS_TOKEN em falta.'),
+            date_range: { from: from, to: to },
+            accounts: metaConfig.getConfiguredAccounts(),
+            active_account_id: accountId,
+        });
+    }
+
+    if (!metaConfig.isAllowedAccountId(accountId)) {
+        return res.status(200).json({
+            stripe: stripeReport,
+            meta: null,
+            merged: null,
+            meta_connection: buildMetaConnection(true, 'Conta Meta não autorizada.'),
+            date_range: { from: from, to: to },
+            accounts: metaConfig.getConfiguredAccounts(),
+            active_account_id: accountId,
+        });
+    }
+
+    try {
+        var metaReport = await metaInsights.getCampaignReport(accountId, from, to, { skipCache: skipCache });
+        var merged = metaMerge.mergeReports(stripeReport, metaReport);
+
+        return res.status(200).json({
+            stripe: stripeReport,
+            meta: metaReport,
+            merged: merged,
+            meta_connection: buildMetaConnection(true, ''),
+            date_range: { from: from, to: to },
+            accounts: metaConfig.getConfiguredAccounts(),
+            active_account_id: accountId,
+        });
+    } catch (error) {
+        return res.status(200).json({
+            stripe: stripeReport,
+            meta: null,
+            merged: null,
+            meta_connection: buildMetaConnection(true, error.message || 'Meta API falhou.'),
+            date_range: { from: from, to: to },
+            accounts: metaConfig.getConfiguredAccounts(),
+            active_account_id: accountId,
+        });
+    }
+}
+
 async function handleMetaStatus(req, res) {
     var body = await readJsonBody(req);
 
     try {
         var result = await metaStatus.updateObjectStatus(body);
+        metaCache.clearAccountReports(result.account_id);
         return res.status(200).json(result);
     } catch (error) {
         return res.status(400).json({
@@ -174,7 +255,10 @@ async function handleMetaStatus(req, res) {
 async function handleStripe(req, res) {
     try {
         var report = await stripeSales.buildStripeReport(req.query);
-        return res.status(200).json(report);
+        return res.status(200).json(Object.assign({}, report, {
+            accounts: metaConfig.getConfiguredAccounts(),
+            active_account_id: getActiveAccountId(req.query),
+        }));
     } catch (error) {
         console.error('Relatório Stripe falhou:', error);
         return res.status(500).json({
@@ -215,6 +299,10 @@ module.exports = async function handler(req, res) {
 
         if (action === 'combined') {
             return handleCombined(req, res);
+        }
+
+        if (action === 'meta') {
+            return handleMeta(req, res);
         }
 
         return handleStripe(req, res);

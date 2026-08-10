@@ -89,8 +89,8 @@
         }
     }
 
-    function buildQuery(range) {
-        var params = ['action=combined'];
+    function buildQuery(range, action, options) {
+        var params = ['action=' + encodeURIComponent(action || 'stripe')];
 
         if (range.from && range.to) {
             params.push('from=' + encodeURIComponent(range.from));
@@ -105,7 +105,34 @@
             params.push('account_id=' + encodeURIComponent(accountId));
         }
 
+        if (options && options.refresh) {
+            params.push('refresh=1');
+        }
+
         return params.join('&');
+    }
+
+    async function fetchJson(path, token) {
+        var response = await fetch(path, {
+            headers: {
+                Authorization: 'Bearer ' + token,
+            },
+        });
+        var data = await response.json();
+
+        if (response.status === 401) {
+            setToken('');
+            showLogin();
+            loginError.hidden = false;
+            loginError.textContent = 'Sessão expirada. Introduz a palavra-passe outra vez.';
+            return null;
+        }
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Não foi possível carregar as métricas.');
+        }
+
+        return data;
     }
 
     function renderAccountOptions(accounts, activeAccountId) {
@@ -247,15 +274,25 @@
         );
     }
 
-    function renderMetaPanel(payload) {
+    function renderMetaPanel(payload, metaLoading) {
         var merged = payload && payload.merged;
         var metaConnection = payload && payload.meta_connection;
 
         renderMetaBanner(metaConnection);
 
+        if (metaLoading) {
+            metaPanel.hidden = false;
+            metaContext.textContent = 'A carregar gastos e ROAS do Meta Ads…';
+            metaGeneratedAt.textContent = '';
+            metaTree.innerHTML = '<p class="metrics-tree__empty">A carregar Meta Ads…</p>';
+            return;
+        }
+
         if (!merged || !merged.campaigns || !merged.campaigns.length) {
-            metaPanel.hidden = true;
-            metaTree.innerHTML = '';
+            metaPanel.hidden = !metaConnection || metaConnection.ok === false;
+            metaTree.innerHTML = metaConnection && !metaConnection.ok
+                ? '<p class="metrics-tree__empty">Meta Ads indisponível neste momento.</p>'
+                : '';
             metaContext.textContent = '';
             return;
         }
@@ -327,7 +364,7 @@
             }
 
             setStatus('Actualizado no Meta.', false);
-            await fetchMetrics();
+            await fetchMetrics({ refresh: true });
         } catch (error) {
             setStatus(error.message || 'Erro ao actualizar.', true);
             button.disabled = false;
@@ -355,40 +392,70 @@
             .replace(/"/g, '&quot;');
     }
 
-    async function fetchMetrics() {
+    function renderDashboard(data, metaLoading) {
+        var stripe = data.stripe || data;
+
+        renderAccountOptions(data.accounts || [], data.active_account_id || getSelectedAccountId());
+        renderSummaryCards(stripe.summary || {}, data.merged && data.merged.summary ? data.merged.summary : null);
+        renderMetaPanel(data, metaLoading);
+        renderTree(stripe.campaigns || []);
+        renderRecentSales(stripe.recent_sales || stripe.sales || []);
+        generatedAt.textContent = stripe.summary && stripe.summary.generated_at
+            ? 'Actualizado ' + formatDate(stripe.summary.generated_at)
+            : '';
+        noteBox.textContent = stripe.note || '';
+    }
+
+    async function fetchMetrics(options) {
         var token = getToken();
         var range = datePicker.getAppliedRange();
+        var refresh = Boolean(options && options.refresh);
 
         if (!token) {
             showLogin();
             return;
         }
 
-        setStatus('A carregar Stripe + Meta…', false);
+        setStatus('A carregar vendas Stripe…', false);
 
-        var response = await fetch('/api/sales-attribution?' + buildQuery(range), {
-            headers: {
-                Authorization: 'Bearer ' + token,
-            },
-        });
+        var stripeData = await fetchJson(
+            '/api/sales-attribution?' + buildQuery(range, 'stripe', { refresh: refresh }),
+            token
+        );
 
-        var data = await response.json();
-
-        if (response.status === 401) {
-            setToken('');
-            showLogin();
-            loginError.hidden = false;
-            loginError.textContent = 'Sessão expirada. Introduz a palavra-passe outra vez.';
+        if (!stripeData) {
             return;
         }
 
-        if (!response.ok) {
-            setStatus(data.error || 'Não foi possível carregar as métricas.', true);
-            return;
-        }
+        latestPayload = {
+            stripe: stripeData,
+            merged: null,
+            meta_connection: { ok: false, has_token: true },
+            accounts: stripeData.accounts || [],
+            active_account_id: stripeData.active_account_id || getSelectedAccountId(),
+        };
+        renderDashboard(latestPayload, true);
+        setStatus('', false);
 
-        latestPayload = data;
-        renderDashboard(data);
+        setStatus('A carregar Meta Ads…', false);
+
+        try {
+            var metaData = await fetchJson(
+                '/api/sales-attribution?' + buildQuery(range, 'meta', { refresh: refresh }),
+                token
+            );
+
+            if (!metaData) {
+                return;
+            }
+
+            latestPayload = metaData;
+            renderDashboard(metaData, false);
+            setStatus('', false);
+        } catch (error) {
+            renderMetaPanel(latestPayload, false);
+            setStatus(error.message || 'Stripe carregou, mas Meta falhou.', true);
+        }
     }
 
     function renderSummaryCards(stripeSummary, mergedSummary) {
@@ -528,20 +595,6 @@
         }).join('');
     }
 
-    function renderDashboard(data) {
-        var stripe = data.stripe || data;
-
-        renderAccountOptions(data.accounts || [], data.active_account_id || getSelectedAccountId());
-        renderSummaryCards(stripe.summary || {}, data.merged && data.merged.summary ? data.merged.summary : null);
-        renderMetaPanel(data);
-        renderTree(stripe.campaigns || []);
-        renderRecentSales(stripe.recent_sales || []);
-        generatedAt.textContent = stripe.summary && stripe.summary.generated_at
-            ? 'Actualizado ' + formatDate(stripe.summary.generated_at)
-            : '';
-        noteBox.textContent = stripe.note || '';
-    }
-
     loginForm.addEventListener('submit', async function (event) {
         event.preventDefault();
 
@@ -582,7 +635,7 @@
     });
 
     refreshButton.addEventListener('click', function () {
-        fetchMetrics().catch(function () {
+        fetchMetrics({ refresh: true }).catch(function () {
             setStatus('Erro de ligação. Tenta outra vez.', true);
         });
     });
