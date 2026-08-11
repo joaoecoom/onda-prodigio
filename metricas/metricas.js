@@ -8,6 +8,7 @@
     var loginError = document.getElementById('metrics-login-error');
     var statusBox = document.getElementById('metrics-status');
     var summaryRoot = document.getElementById('metrics-summary');
+    var funnelRoot = document.getElementById('metrics-funnel');
     var treeRoot = document.getElementById('metrics-tree');
     var recentBody = document.getElementById('metrics-recent-body');
     var generatedAt = document.getElementById('metrics-generated-at');
@@ -19,8 +20,13 @@
     var metaBanner = document.getElementById('metrics-meta-banner');
     var metaPanel = document.getElementById('metrics-meta-panel');
     var metaContext = document.getElementById('metrics-meta-context');
-    var metaTree = document.getElementById('metrics-meta-tree');
+    var metaHead = document.getElementById('metrics-meta-head');
+    var metaBody = document.getElementById('metrics-meta-body');
     var metaGeneratedAt = document.getElementById('metrics-meta-generated-at');
+    var vturbPanel = document.getElementById('metrics-vturb-panel');
+    var vturbContext = document.getElementById('metrics-vturb-context');
+    var vturbSummary = document.getElementById('metrics-vturb-summary');
+    var vturbGeneratedAt = document.getElementById('metrics-vturb-generated-at');
     var ACCOUNT_KEY = 'onda-metrics-account';
     var latestPayload = null;
     var datePickerRoot = document.getElementById('metrics-date-picker-root');
@@ -191,6 +197,34 @@
         return '<span class="' + className + '">' + escapeHtml(normalized || '—') + '</span>';
     }
 
+    function formatPercent(value) {
+        if (value === null || value === undefined || value === '') {
+            return '—';
+        }
+
+        return Number(value).toFixed(2).replace('.', ',') + '%';
+    }
+
+    function formatNumber(value) {
+        return Number(value || 0).toLocaleString('pt-PT');
+    }
+
+    function formatOptionalMoney(value, currency) {
+        if (value === null || value === undefined || value === '') {
+            return '—';
+        }
+
+        return formatMoney(value, currency);
+    }
+
+    function formatOptionalNumber(value) {
+        if (value === null || value === undefined || value === '') {
+            return '—';
+        }
+
+        return formatNumber(value);
+    }
+
     function renderSpendLabel(node, currency) {
         if (currency === 'EUR') {
             return formatMoneyEur(node.spend_eur);
@@ -199,15 +233,96 @@
         return formatMoney(node.spend_original, currency) + ' (' + formatMoneyEur(node.spend_eur) + ')';
     }
 
-    function renderMetaStats(node, currency) {
-        var roasLabel = node.roas_real === null ? '—' : String(node.roas_real);
+    var META_TABLE_COLUMNS = [
+        { key: 'name', label: 'Campanha', type: 'name' },
+        { key: 'spend_original', label: 'Gasto', type: 'money' },
+        { key: 'impressions', label: 'Impressões', type: 'number' },
+        { key: 'cpm', label: 'CPM', type: 'money' },
+        { key: 'reach', label: 'Alcance', type: 'number' },
+        { key: 'frequency', label: 'Freq.', type: 'decimal' },
+        { key: 'cpc_all', label: 'CPC (tudo)', type: 'money' },
+        { key: 'cpc_link', label: 'CPC (lig.)', type: 'money' },
+        { key: 'ctr_all', label: 'CTR (tudo)', type: 'percent' },
+        { key: 'ctr_link', label: 'CTR (lig.)', type: 'percent' },
+        { key: 'inline_link_clicks', label: 'Cliques lig.', type: 'number' },
+        { key: 'landing_page_views', label: 'LPV', type: 'number' },
+        { key: 'cost_per_landing_page_view', label: 'Custo/LPV', type: 'money' },
+        { key: 'initiate_checkout', label: 'IC', type: 'number' },
+        { key: 'meta_purchases', label: 'Compras Meta', type: 'number' },
+        { key: 'meta_purchase_value_original', label: 'Valor Meta', type: 'money' },
+        { key: 'stripe_sales', label: 'Stripe', type: 'number' },
+        { key: 'stripe_revenue_eur', label: 'Receita Stripe', type: 'money_eur' },
+        { key: 'roas_real', label: 'ROAS', type: 'decimal' },
+    ];
+
+    function renderMetaCell(node, column, currency) {
+        var value = node[column.key];
+
+        if (column.type === 'name') {
+            return (
+                '<div class="metrics-table__name">' + escapeHtml(node.name) + '</div>' +
+                renderStatusBadge(node.effective_status || node.status) +
+                '<div class="metrics-table__meta">ID ' + escapeHtml(node.id) + '</div>'
+            );
+        }
+
+        if (column.type === 'money') {
+            return escapeHtml(formatOptionalMoney(value, currency));
+        }
+
+        if (column.type === 'money_eur') {
+            return escapeHtml(formatMoneyEur(value || 0));
+        }
+
+        if (column.type === 'percent') {
+            return escapeHtml(formatPercent(value));
+        }
+
+        if (column.type === 'decimal') {
+            return escapeHtml(formatOptionalNumber(value));
+        }
+
+        return escapeHtml(formatNumber(value));
+    }
+
+    function renderMetaTableHead(currency) {
+        var actionHeader = '<th class="metrics-table__actions-head">Acções</th>';
+
+        metaHead.innerHTML = '<tr>' + META_TABLE_COLUMNS.map(function (column) {
+            return '<th>' + escapeHtml(column.label) + '</th>';
+        }).join('') + actionHeader + '</tr>';
+    }
+
+    function renderMetaTableRow(node, currency, level) {
+        var levelClass = level ? ' metrics-table__row--' + level : '';
+        var cells = META_TABLE_COLUMNS.map(function (column, index) {
+            var cellClass = index === 0 ? ' metrics-table__name-cell' : '';
+            return '<td class="' + cellClass.trim() + '">' + renderMetaCell(node, column, currency) + '</td>';
+        }).join('');
+
+        var toggle = node.object_type ? renderMetaToggle(node) : '';
 
         return (
-            '<div class="metrics-node__stat">' + escapeHtml(renderSpendLabel(node, currency)) + '</div>' +
-            '<div class="metrics-node__stat">' + Number(node.meta_purchases || 0) + ' meta</div>' +
-            '<div class="metrics-node__stat"><strong>' + Number(node.stripe_sales || 0) + '</strong> stripe · ' + escapeHtml(formatMoneyEur(node.stripe_revenue_eur)) + '</div>' +
-            '<div class="metrics-node__stat">ROAS ' + escapeHtml(roasLabel) + '</div>'
+            '<tr class="metrics-table__row' + levelClass + '">' +
+            cells +
+            '<td class="metrics-table__actions-cell">' + toggle + '</td>' +
+            '</tr>'
         );
+    }
+
+    function renderMetaNestedRows(nodes, currency, level) {
+        return (nodes || []).map(function (node) {
+            var childRows = '';
+
+            if (level === 'campaign' && node.adsets && node.adsets.length) {
+                childRows += node.adsets.map(function (adset) {
+                    return renderMetaTableRow(adset, currency, 'adset') +
+                        renderMetaNestedRows(adset.ads || [], currency, 'ad');
+                }).join('');
+            }
+
+            return renderMetaTableRow(node, currency, level) + childRows;
+        }).join('');
     }
 
     function renderMetaToggle(node) {
@@ -223,57 +338,6 @@
         );
     }
 
-    function renderMetaAdNode(ad, currency) {
-        return (
-            '<div class="metrics-node metrics-node--level-ad">' +
-            '<div class="metrics-node__row metrics-node__row--static metrics-node__row--meta">' +
-            '<div><span class="metrics-node__name">' + escapeHtml(ad.name) + '</span>' +
-            renderStatusBadge(ad.effective_status || ad.status) +
-            '<span class="metrics-node__meta">ID ' + escapeHtml(ad.id) + '</span></div>' +
-            renderMetaStats(ad, currency) +
-            '<div class="metrics-node__actions">' + renderMetaToggle(ad) + '</div>' +
-            '</div></div>'
-        );
-    }
-
-    function renderMetaAdsetNode(adset, currency) {
-        var adsHtml = (adset.ads || []).map(function (ad) {
-            return renderMetaAdNode(ad, currency);
-        }).join('');
-
-        return (
-            '<details class="metrics-node metrics-node--level-adset" open>' +
-            '<summary class="metrics-node__row metrics-node__row--meta">' +
-            '<div><span class="metrics-node__name">' + escapeHtml(adset.name) + '</span>' +
-            renderStatusBadge(adset.effective_status || adset.status) +
-            '<span class="metrics-node__meta">ID ' + escapeHtml(adset.id) + '</span></div>' +
-            renderMetaStats(adset, currency) +
-            '<div class="metrics-node__actions">' + renderMetaToggle(adset) + '</div>' +
-            '</summary>' +
-            '<div class="metrics-node__children">' + (adsHtml || '<p class="metrics-tree__empty">Sem anúncios.</p>') + '</div>' +
-            '</details>'
-        );
-    }
-
-    function renderMetaCampaignNode(campaign, currency) {
-        var adsetsHtml = (campaign.adsets || []).map(function (adset) {
-            return renderMetaAdsetNode(adset, currency);
-        }).join('');
-
-        return (
-            '<details class="metrics-node metrics-node--level-campaign" open>' +
-            '<summary class="metrics-node__row metrics-node__row--meta">' +
-            '<div><span class="metrics-node__name">' + escapeHtml(campaign.name) + '</span>' +
-            renderStatusBadge(campaign.effective_status || campaign.status) +
-            '<span class="metrics-node__meta">ID ' + escapeHtml(campaign.id) + '</span></div>' +
-            renderMetaStats(campaign, currency) +
-            '<div class="metrics-node__actions">' + renderMetaToggle(campaign) + '</div>' +
-            '</summary>' +
-            '<div class="metrics-node__children">' + (adsetsHtml || '<p class="metrics-tree__empty">Sem conjuntos.</p>') + '</div>' +
-            '</details>'
-        );
-    }
-
     function renderMetaPanel(payload, metaLoading) {
         var merged = payload && payload.merged;
         var metaConnection = payload && payload.meta_connection;
@@ -284,14 +348,14 @@
             metaPanel.hidden = false;
             metaContext.textContent = 'A carregar gastos e ROAS do Meta Ads…';
             metaGeneratedAt.textContent = '';
-            metaTree.innerHTML = '<p class="metrics-tree__empty">A carregar Meta Ads…</p>';
+            metaBody.innerHTML = '<tr><td colspan="20">A carregar Meta Ads…</td></tr>';
             return;
         }
 
         if (!merged || !merged.campaigns || !merged.campaigns.length) {
             metaPanel.hidden = !metaConnection || metaConnection.ok === false;
-            metaTree.innerHTML = metaConnection && !metaConnection.ok
-                ? '<p class="metrics-tree__empty">Meta Ads indisponível neste momento.</p>'
+            metaBody.innerHTML = metaConnection && !metaConnection.ok
+                ? '<tr><td colspan="20">Meta Ads indisponível neste momento.</td></tr>'
                 : '';
             metaContext.textContent = '';
             return;
@@ -300,12 +364,11 @@
         metaPanel.hidden = false;
 
         var account = merged.account || {};
-        var summary = merged.summary || {};
-        var currency = summary.meta_currency || account.currency || 'EUR';
+        var currency = merged.summary && merged.summary.meta_currency ? merged.summary.meta_currency : (account.currency || 'EUR');
 
         metaContext.textContent = [
             account.name || account.label || ('Conta ' + account.id),
-            'Vendas Stripe: fuso Portugal',
+            'Preset J.Ecoom · Vendas Stripe: fuso Portugal',
             account.timezone_name && account.timezone_name !== 'Europe/Lisbon'
                 ? 'Gastos Meta: fuso ' + account.timezone_name
                 : '',
@@ -315,8 +378,104 @@
             ? 'Actualizado ' + formatDate(payload.stripe.summary.generated_at)
             : '';
 
-        metaTree.innerHTML = merged.campaigns.map(function (campaign) {
-            return renderMetaCampaignNode(campaign, currency);
+        renderMetaTableHead(currency);
+        metaBody.innerHTML = renderMetaNestedRows(merged.campaigns, currency, 'campaign');
+    }
+
+    function renderVturbPanel(payload) {
+        var vturb = payload && payload.vturb;
+        var summary = vturb && vturb.summary;
+
+        if (!vturb || !vturb.configured) {
+            vturbPanel.hidden = true;
+            return;
+        }
+
+        vturbPanel.hidden = false;
+
+        if (!vturb.ok || !summary) {
+            vturbContext.textContent = vturb.error || 'VTurb indisponível.';
+            vturbSummary.innerHTML = '';
+            vturbGeneratedAt.textContent = '';
+            return;
+        }
+
+        vturbContext.textContent = [
+            'Player ' + (vturb.player_id || ''),
+            vturb.date_range && vturb.date_range.timezone ? 'Fuso ' + vturb.date_range.timezone : '',
+        ].filter(Boolean).join(' · ');
+
+        vturbGeneratedAt.textContent = vturb.generated_at
+            ? 'Actualizado ' + formatDate(vturb.generated_at)
+            : '';
+
+        var cards = [
+            { label: 'Views VSL', value: formatNumber(summary.views), hint: formatNumber(summary.views_unique_sessions) + ' sessões únicas' },
+            { label: 'Plays', value: formatNumber(summary.plays), hint: summary.play_rate !== null ? 'Play rate ' + formatPercent(summary.play_rate) : 'Play rate —' },
+            { label: 'Engagement', value: summary.engagement_rate !== null ? formatPercent(summary.engagement_rate) : '—', hint: 'Retenção média VSL' },
+            { label: 'Cliques CTA', value: formatNumber(summary.cta_clicks), hint: formatNumber(summary.cta_clicks_unique_sessions) + ' sessões' },
+            { label: 'Conversões VTurb', value: formatNumber(summary.conversions), hint: summary.conversion_rate !== null ? formatPercent(summary.conversion_rate) : 'Taxa —' },
+            { label: 'Receita VTurb', value: formatMoneyEur(summary.revenue_eur), hint: 'Valor reportado pelo player' },
+        ];
+
+        vturbSummary.innerHTML = cards.map(function (card) {
+            return (
+                '<article class="metrics-card">' +
+                '<div class="metrics-card__label">' + escapeHtml(card.label) + '</div>' +
+                '<div class="metrics-card__value">' + escapeHtml(String(card.value)) + '</div>' +
+                '<div class="metrics-card__hint">' + escapeHtml(card.hint) + '</div>' +
+                '</article>'
+            );
+        }).join('');
+    }
+
+    function renderFunnelCards(stripeSummary, mergedSummary, vturbSummary) {
+        if (!mergedSummary) {
+            funnelRoot.innerHTML = '';
+            return;
+        }
+
+        var cards = [
+            {
+                label: 'Impressões',
+                value: formatNumber(mergedSummary.impressions),
+                hint: 'Meta Ads',
+            },
+            {
+                label: 'Landing views',
+                value: formatNumber(mergedSummary.landing_page_views),
+                hint: mergedSummary.reach ? formatNumber(mergedSummary.reach) + ' alcance' : 'Meta pixel',
+            },
+            {
+                label: 'Views VSL',
+                value: vturbSummary ? formatNumber(vturbSummary.views) : '—',
+                hint: vturbSummary ? formatNumber(vturbSummary.plays) + ' plays' : 'VTurb',
+            },
+            {
+                label: 'Initiate checkout',
+                value: formatNumber(mergedSummary.initiate_checkout),
+                hint: 'Meta pixel/CAPI',
+            },
+            {
+                label: 'Vendas Stripe',
+                value: formatNumber(stripeSummary.total_sales || 0),
+                hint: formatMoneyEur(stripeSummary.total_revenue_eur || 0),
+            },
+            {
+                label: 'ROAS real',
+                value: mergedSummary.roas_real !== null ? mergedSummary.roas_real : '—',
+                hint: 'Receita Stripe ÷ gasto Meta',
+            },
+        ];
+
+        funnelRoot.innerHTML = cards.map(function (card) {
+            return (
+                '<article class="metrics-card metrics-card--funnel">' +
+                '<div class="metrics-card__label">' + escapeHtml(card.label) + '</div>' +
+                '<div class="metrics-card__value">' + escapeHtml(String(card.value)) + '</div>' +
+                '<div class="metrics-card__hint">' + escapeHtml(card.hint) + '</div>' +
+                '</article>'
+            );
         }).join('');
     }
 
@@ -392,12 +551,16 @@
             .replace(/"/g, '&quot;');
     }
 
-    function renderDashboard(data, metaLoading) {
+    function renderDashboard(data, loading) {
         var stripe = data.stripe || data;
+        var mergedSummary = data.merged && data.merged.summary ? data.merged.summary : null;
+        var vturbSummary = data.vturb && data.vturb.summary ? data.vturb.summary : null;
 
         renderAccountOptions(data.accounts || [], data.active_account_id || getSelectedAccountId());
-        renderSummaryCards(stripe.summary || {}, data.merged && data.merged.summary ? data.merged.summary : null);
-        renderMetaPanel(data, metaLoading);
+        renderSummaryCards(stripe.summary || {}, mergedSummary);
+        renderFunnelCards(stripe.summary || {}, mergedSummary, vturbSummary);
+        renderVturbPanel(data);
+        renderMetaPanel(data, loading);
         renderTree(stripe.campaigns || []);
         renderRecentSales(stripe.recent_sales || stripe.sales || []);
         generatedAt.textContent = stripe.summary && stripe.summary.generated_at
@@ -417,45 +580,23 @@
             return;
         }
 
-        setStatus('A carregar vendas Stripe…', false);
-
-        var stripeData = await fetchJson(
-            '/api/sales-attribution?' + buildQuery(range, 'stripe', { refresh: refresh }),
-            token
-        );
-
-        if (!stripeData) {
-            return;
-        }
-
-        latestPayload = {
-            stripe: stripeData,
-            merged: null,
-            meta_connection: { ok: false, has_token: true },
-            accounts: stripeData.accounts || [],
-            active_account_id: stripeData.active_account_id || getSelectedAccountId(),
-        };
-        renderDashboard(latestPayload, true);
-        setStatus('', false);
-
-        setStatus('A carregar Meta Ads…', false);
+        setStatus('A carregar métricas…', false);
 
         try {
-            var metaData = await fetchJson(
-                '/api/sales-attribution?' + buildQuery(range, 'meta', { refresh: refresh }),
+            var data = await fetchJson(
+                '/api/sales-attribution?' + buildQuery(range, 'combined', { refresh: refresh }),
                 token
             );
 
-            if (!metaData) {
+            if (!data) {
                 return;
             }
 
-            latestPayload = metaData;
-            renderDashboard(metaData, false);
+            latestPayload = data;
+            renderDashboard(data, false);
             setStatus('', false);
         } catch (error) {
-            renderMetaPanel(latestPayload, false);
-            setStatus(error.message || 'Stripe carregou, mas Meta falhou.', true);
+            setStatus(error.message || 'Erro ao carregar métricas.', true);
         }
     }
 
@@ -623,7 +764,7 @@
         });
     });
 
-    metaTree.addEventListener('click', function (event) {
+    metaBody.addEventListener('click', function (event) {
         var button = event.target.closest('.metrics-toggle');
 
         if (!button) {

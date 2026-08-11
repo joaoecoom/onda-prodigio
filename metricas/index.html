@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/metricas/metricas.css?v=5">
+    <link rel="stylesheet" href="/metricas/metricas.css?v=6">
 </head>
 <body>
     <noscript>
@@ -34,7 +34,7 @@
                 <div>
                     <p class="metrics-header__eyebrow">Dashboard interno</p>
                     <h1>Métricas reais</h1>
-                    <p class="metrics-header__sub">Stripe + Meta Ads — vendas reais vs gasto, com controlo de campanhas.</p>
+                    <p class="metrics-header__sub">Meta Ads + VTurb VSL + Stripe — funil completo num só sítio.</p>
                 </div>
                 <div class="metrics-header__actions">
                     <label class="metrics-select-wrap" id="metrics-account-wrap" hidden>
@@ -51,6 +51,18 @@
             <div class="metrics-meta-banner" id="metrics-meta-banner" hidden></div>
 
             <div class="metrics-summary" id="metrics-summary"></div>
+            <div class="metrics-summary metrics-summary--funnel" id="metrics-funnel"></div>
+
+            <section class="metrics-panel" id="metrics-vturb-panel" hidden>
+                <div class="metrics-panel__head">
+                    <div>
+                        <h2>VTurb VSL</h2>
+                        <p id="metrics-vturb-context"></p>
+                    </div>
+                    <p id="metrics-vturb-generated-at"></p>
+                </div>
+                <div class="metrics-summary metrics-summary--vturb" id="metrics-vturb-summary"></div>
+            </section>
 
             <section class="metrics-panel" id="metrics-meta-panel" hidden>
                 <div class="metrics-panel__head">
@@ -60,7 +72,13 @@
                     </div>
                     <p id="metrics-meta-generated-at"></p>
                 </div>
-                <div class="metrics-meta-tree" id="metrics-meta-tree"></div>
+                <div class="metrics-table-wrap metrics-table-wrap--wide">
+                    <table class="metrics-table metrics-table--meta" id="metrics-meta-table">
+                        <thead id="metrics-meta-head"></thead>
+                        <tbody id="metrics-meta-body"></tbody>
+                    </table>
+                </div>
+                <div class="metrics-meta-tree" id="metrics-meta-tree" hidden></div>
             </section>
 
             <section class="metrics-panel">
@@ -98,6 +116,6 @@
     </div>
 
     <script src="/metricas/date-range-picker.js?v=3" defer></script>
-    <script src="/metricas/metricas.js?v=9" defer></script>
+    <script src="/metricas/metricas.js?v=10" defer></script>
 </body>
 </html>

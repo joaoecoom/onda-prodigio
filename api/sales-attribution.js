@@ -9,6 +9,7 @@ var metaCache = require('../lib/meta-ads/cache');
 var adminMembers = require('../lib/admin/members');
 var stripeFailedPayments = require('../lib/metrics/stripe-failed-payments');
 var failedPaymentQueue = require('../lib/comunidade/failed-payment-recovery-queue');
+var vturbAnalytics = require('../lib/metrics/vturb-analytics');
 
 async function readJsonBody(req) {
     if (req.body && typeof req.body === 'object') {
@@ -151,10 +152,12 @@ async function handleCombined(req, res) {
     var results = await Promise.all([
         stripeSales.buildStripeReport(req.query),
         metaPromise,
+        vturbAnalytics.buildVturbReport(req.query),
     ]);
 
     var stripeReport = results[0];
     var metaResult = results[1];
+    var vturbReport = results[2];
     var metaReport = null;
     var merged = null;
     var metaError = '';
@@ -170,6 +173,7 @@ async function handleCombined(req, res) {
         stripe: stripeReport,
         meta: metaReport,
         merged: merged,
+        vturb: vturbReport,
         meta_connection: buildMetaConnection(hasToken, metaError),
         date_range: {
             from: from,
@@ -189,12 +193,14 @@ async function handleMeta(req, res) {
     var hasToken = Boolean(metaClient.getAccessToken());
 
     var stripeReport = await stripeSales.buildStripeReport(req.query);
+    var vturbReport = await vturbAnalytics.buildVturbReport(req.query);
 
     if (!hasToken) {
         return res.status(200).json({
             stripe: stripeReport,
             meta: null,
             merged: null,
+            vturb: vturbReport,
             meta_connection: buildMetaConnection(false, 'META_ACCESS_TOKEN em falta.'),
             date_range: { from: from, to: to },
             accounts: metaConfig.getConfiguredAccounts(),
@@ -207,6 +213,7 @@ async function handleMeta(req, res) {
             stripe: stripeReport,
             meta: null,
             merged: null,
+            vturb: vturbReport,
             meta_connection: buildMetaConnection(true, 'Conta Meta não autorizada.'),
             date_range: { from: from, to: to },
             accounts: metaConfig.getConfiguredAccounts(),
@@ -222,6 +229,7 @@ async function handleMeta(req, res) {
             stripe: stripeReport,
             meta: metaReport,
             merged: merged,
+            vturb: vturbReport,
             meta_connection: buildMetaConnection(true, ''),
             date_range: { from: from, to: to },
             accounts: metaConfig.getConfiguredAccounts(),
@@ -232,6 +240,7 @@ async function handleMeta(req, res) {
             stripe: stripeReport,
             meta: null,
             merged: null,
+            vturb: vturbReport,
             meta_connection: buildMetaConnection(true, error.message || 'Meta API falhou.'),
             date_range: { from: from, to: to },
             accounts: metaConfig.getConfiguredAccounts(),

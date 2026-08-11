@@ -621,6 +621,70 @@ body {
     border-color: #ccd0d5;
 }
 
+.metrics-summary--funnel,
+.metrics-summary--vturb {
+    margin-top: -0.35rem;
+}
+
+.metrics-card--funnel {
+    border-color: #1e3a5f;
+    background: linear-gradient(180deg, #121821 0%, #101722 100%);
+}
+
+.metrics-table-wrap--wide {
+    overflow-x: auto;
+}
+
+.metrics-table--meta {
+    min-width: 1480px;
+}
+
+.metrics-table--meta th,
+.metrics-table--meta td {
+    white-space: nowrap;
+    font-size: 0.78rem;
+    vertical-align: top;
+}
+
+.metrics-table--meta th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #121821;
+}
+
+.metrics-table__name-cell {
+    min-width: 220px;
+    white-space: normal;
+}
+
+.metrics-table__name {
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+.metrics-table__meta {
+    margin-top: 0.2rem;
+    font-size: 0.72rem;
+    color: #64748b;
+}
+
+.metrics-table__row--adset .metrics-table__name {
+    padding-left: 1rem;
+    font-weight: 500;
+}
+
+.metrics-table__row--ad .metrics-table__name {
+    padding-left: 2rem;
+    font-weight: 500;
+    color: #cbd5e1;
+}
+
+.metrics-table__actions-head,
+.metrics-table__actions-cell {
+    text-align: right;
+}
+
 .metrics-node__row--meta {
     grid-template-columns: minmax(180px, 1.2fr) repeat(4, minmax(90px, auto)) auto;
 }
