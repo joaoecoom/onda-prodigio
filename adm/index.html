@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-PT" data-page-type="internal">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Onda Prodígio</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/metricas/metricas.css?v=5">
+    <link rel="stylesheet" href="/adm/adm.css?v=3">
+</head>
+<body>
+    <noscript>
+        <p style="padding:2rem;font-family:Inter,sans-serif;">Activa JavaScript para usar o painel admin.</p>
+    </noscript>
+    <div class="metrics-app" id="adm-app">
+        <section class="metrics-login" id="adm-login">
+            <div class="metrics-login__card">
+                <p class="metrics-login__eyebrow">Onda Prodígio</p>
+                <h1>Painel admin</h1>
+                <p class="metrics-login__text">Membros, produtos pagos, progresso e gestão manual de acessos.</p>
+                <form class="metrics-login__form" id="adm-login-form">
+                    <label class="metrics-login__label" for="adm-password">Palavra-passe</label>
+                    <input class="metrics-login__input" id="adm-password" type="password" autocomplete="current-password" required>
+                    <button class="metrics-login__button" type="submit">Entrar</button>
+                    <p class="metrics-login__error" id="adm-login-error" hidden></p>
+                </form>
+            </div>
+        </section>
+
+        <section class="metrics-dashboard" id="adm-dashboard" hidden>
+            <header class="metrics-header">
+                <div>
+                    <p class="metrics-header__eyebrow">Super admin</p>
+                    <h1>Comunidade</h1>
+                    <p class="metrics-header__sub" id="adm-summary-text">Membros, compras Stripe e progresso na área de membros.</p>
+                </div>
+                <div class="metrics-header__actions">
+                    <input class="metrics-login__input adm-search" id="adm-search" type="search" placeholder="Pesquisar email ou nome…">
+                    <button class="metrics-button metrics-button--ghost" type="button" id="adm-resend-never-logged-in">Reenviar a quem nunca entrou</button>
+                    <button class="metrics-button metrics-button--ghost" type="button" id="adm-refresh">Actualizar</button>
+                    <button class="metrics-button metrics-button--ghost" type="button" id="adm-logout">Sair</button>
+                </div>
+            </header>
+
+            <div class="metrics-status" id="adm-status" hidden></div>
+
+            <section class="metrics-panel adm-add-panel">
+                <div class="metrics-panel__head">
+                    <div>
+                        <h2>Adicionar membro manualmente</h2>
+                        <p class="adm-muted">Cria conta, dá acesso aos produtos e envia email com password provisória.</p>
+                    </div>
+                </div>
+                <form class="adm-add-form" id="adm-add-form">
+                    <div class="adm-add-grid">
+                        <label class="metrics-login__label" for="adm-add-email">Email</label>
+                        <input class="metrics-login__input" id="adm-add-email" type="email" autocomplete="off" required placeholder="cliente@email.com">
+
+                        <label class="metrics-login__label" for="adm-add-name">Nome</label>
+                        <input class="metrics-login__input" id="adm-add-name" type="text" autocomplete="off" placeholder="Nome completo (opcional)">
+                    </div>
+
+                    <div class="adm-add-products">
+                        <p class="metrics-login__label">Produtos</p>
+                        <div class="adm-add-products-grid" id="adm-add-products"></div>
+                    </div>
+
+                    <label class="adm-add-checkbox">
+                        <input type="checkbox" id="adm-add-send-email" checked>
+                        <span>Enviar email de acesso com password provisória</span>
+                    </label>
+
+                    <div class="adm-add-actions">
+                        <button class="metrics-login__button" type="submit" id="adm-add-submit">Criar membro</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="metrics-panel">
+                <div class="metrics-panel__head">
+                    <h2>Membros</h2>
+                    <p id="adm-generated-at"></p>
+                </div>
+                <div class="metrics-table-wrap">
+                    <table class="metrics-table adm-table" id="adm-members-table">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Nome</th>
+                                <th>Produtos</th>
+                                <th>Stripe</th>
+                                <th>Progresso</th>
+                                <th>Logins</th>
+                                <th>WhatsApp</th>
+                                <th>Último acesso</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="adm-members-body"></tbody>
+                    </table>
+                </div>
+            </section>
+        </section>
+    </div>
+
+    <script src="/adm/adm.js?v=3" defer></script>
+</body>
+</html>

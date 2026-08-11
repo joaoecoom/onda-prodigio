@@ -1,0 +1,149 @@
+.adm-search {
+    min-width: 220px;
+    max-width: 320px;
+}
+
+.adm-add-panel {
+    margin-bottom: 0;
+}
+
+.adm-add-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.adm-add-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1rem;
+}
+
+.adm-add-products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.5rem 1rem;
+    margin-top: 0.35rem;
+}
+
+.adm-add-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: #c7d2e0;
+    font-size: 0.92rem;
+    cursor: pointer;
+}
+
+.adm-add-checkbox input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: #38bdf8;
+}
+
+.adm-add-actions {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.adm-add-actions .metrics-login__button {
+    width: auto;
+    min-width: 180px;
+}
+
+.adm-product-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.7rem;
+    border-radius: 10px;
+    border: 1px solid #334155;
+    background: #111827;
+    color: #dbeafe;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.adm-product-check input {
+    accent-color: #38bdf8;
+}
+
+@media (max-width: 760px) {
+    .adm-add-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.adm-table td {
+    vertical-align: top;
+}
+
+.adm-products {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 180px;
+}
+
+.adm-product-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 999px;
+    background: #1f2937;
+    border: 1px solid #334155;
+    font-size: 0.78rem;
+    color: #dbeafe;
+}
+
+.adm-actions {
+    display: grid;
+    gap: 0.45rem;
+    min-width: 150px;
+}
+
+.adm-actions select,
+.adm-actions button {
+    width: 100%;
+}
+
+.adm-actions button {
+    cursor: pointer;
+}
+
+.adm-muted {
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+
+.adm-progress {
+    font-weight: 700;
+    color: #7dd3fc;
+}
+
+.adm-wa-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.adm-wa-badge--ok {
+    color: #86efac;
+}
+
+.adm-wa-badge--fail {
+    color: #fca5a5;
+}
+
+.adm-wa-badge--muted {
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+@media (max-width: 1100px) {
+    .adm-table {
+        min-width: 1080px;
+    }
+}

@@ -1,6 +1,9 @@
 var routes = {
     'check-email': require('../../lib/comunidade/handlers/check-email'),
     'set-password': require('../../lib/comunidade/handlers/set-password'),
+    'request-password-reset': require('../../lib/comunidade/handlers/request-password-reset'),
+    'verify-reset-token': require('../../lib/comunidade/handlers/verify-reset-token'),
+    'reset-password': require('../../lib/comunidade/handlers/reset-password'),
     config: require('../../lib/comunidade/handlers/config'),
     me: require('../../lib/comunidade/handlers/me'),
     products: require('../../lib/comunidade/handlers/products'),

@@ -1,0 +1,48 @@
+# Evolution API — WhatsApp Web para envio automático pós-compra
+# Correr num VPS (Railway, Hetzner, etc.) com Docker.
+#
+# 1. Copia este ficheiro e define EVOLUTION_API_KEY (string longa aleatória)
+# 2. docker compose -f docker-compose.whatsapp.yml up -d
+# 3. Cria instância e liga o 968 100 700 via QR:
+#    POST {EVOLUTION_API_URL}/instance/create  body: {"instanceName":"onda-prodigio","qrcode":true}
+#    GET  {EVOLUTION_API_URL}/instance/connect/onda-prodigio  → QR code
+# 4. Na Vercel: WHATSAPP_ENABLED=true + mesmas vars EVOLUTION_*
+
+services:
+  evolution-api:
+    image: evoapicloud/evolution-api:v2.3.7
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SERVER_URL: ${EVOLUTION_PUBLIC_URL:-http://localhost:8080}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY:?definir EVOLUTION_API_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "true"
+      DEL_INSTANCE: "false"
+      QRCODE_LIMIT: "30"
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:evolution@postgres:5432/evolution
+      DATABASE_CONNECTION_CLIENT_NAME: evolution
+      CACHE_REDIS_ENABLED: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: evolution
+      POSTGRES_DB: evolution
+    volumes:
+      - evolution_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evolution -d evolution"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  evolution_pg:

@@ -101,9 +101,31 @@ module.exports = async function handler(req, res) {
         if (event.type === 'payment_intent.payment_failed') {
             var failedMetadata = event.data.object.metadata || {};
 
+            if (failedMetadata.payment_attempted !== 'true') {
+                try {
+                    await stripe.paymentIntents.update(event.data.object.id, {
+                        metadata: {
+                            payment_attempted: 'true',
+                        },
+                    });
+                } catch (metadataError) {
+                    console.error('Erro ao marcar payment_attempted:', event.data.object.id, metadataError.message);
+                }
+            }
+
             if (failedMetadata.stripe_mode !== 'test' && failedMetadata.checkout !== 'checkout9-test') {
                 trackingResults = await serverEvents.sendPaymentFailedFromPaymentIntent(event.data.object, req);
                 console.log('Payment failed tracking:', event.data.object.id, JSON.stringify(trackingResults));
+
+                try {
+                    var failedPaymentQueue = require('../lib/comunidade/failed-payment-recovery-queue');
+                    var recoveryResult = await failedPaymentQueue.enqueueFailedPaymentRecovery({
+                        paymentIntent: event.data.object,
+                    });
+                    console.log('Payment failed WhatsApp queue:', event.data.object.id, JSON.stringify(recoveryResult));
+                } catch (recoveryError) {
+                    console.error('Erro ao enfileirar WhatsApp de pagamento falhado:', recoveryError);
+                }
             }
         }
 

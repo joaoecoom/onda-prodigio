@@ -67,6 +67,14 @@ module.exports = async function handler(req, res) {
         updatePayload.metadata.purchase_event_id = 'purchase_' + paymentIntentId;
         updatePayload.metadata.client_ip = identity.sanitizeMetadataValue(metaUserData.getClientIp(req), 45);
 
+        if (email) {
+            updatePayload.metadata.checkout_engaged = 'true';
+        }
+
+        if (body.payment_attempt === true) {
+            updatePayload.metadata.payment_attempted = 'true';
+        }
+
         if (Number.isFinite(amountCents) && amountCents >= baseAmount && amountCents <= maxAmount) {
             updatePayload.amount = amountCents;
         }

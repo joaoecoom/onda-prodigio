@@ -1438,7 +1438,7 @@
             return;
         }
 
-        aulaList.innerHTML = '<p class="comunidade-panel__subtitle">Conteúdo em breve — estamos a preparar este módulo.</p>';
+        renderAulaList([moduleItem]);
     }
 
     function showLessonView(moduleId, aulaId) {
@@ -1719,6 +1719,13 @@
     }
 
     function openModule(moduleId) {
+        var moduleItem = getModuleById(moduleId);
+
+        if (moduleItem && !moduleHasAulas(moduleItem)) {
+            showLessonView(moduleId, moduleItem.id);
+            return;
+        }
+
         showModuleAulasView(moduleId);
     }
 
@@ -2064,7 +2071,12 @@
         var onlyModule = state.modules[0];
 
         if (onlyModule) {
-            showModuleAulasView(onlyModule.id);
+            if (moduleHasAulas(onlyModule)) {
+                showModuleAulasView(onlyModule.id);
+                return;
+            }
+
+            showLessonView(onlyModule.id, onlyModule.id);
         }
     }
 

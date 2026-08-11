@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/comunidade/comunidade.css">
+    <link rel="stylesheet" href="/comunidade/comunidade.css?v=20260810c">
     <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('comunidade-theme') === 'light' ? 'light' : 'dark');</script>
 </head>
 <body>
@@ -17,8 +17,14 @@
             <div class="comunidade-topbar__row comunidade-topbar__row--main">
                 <div class="comunidade-topbar__identity">
                     <div class="comunidade-topbar__brand">Onda Prodígio <span>· Comunidade</span></div>
-                    <div class="comunidade-topbar__user" id="topbar-user"></div>
                 </div>
+                <a class="comunidade-profile-chip" id="topbar-profile" href="/comunidade/perfil" hidden>
+                    <span class="comunidade-profile-chip__avatar" id="topbar-avatar" aria-hidden="true">?</span>
+                    <span class="comunidade-profile-chip__text">
+                        <span class="comunidade-profile-chip__name" id="topbar-name">Membro</span>
+                        <span class="comunidade-profile-chip__hint">Perfil</span>
+                    </span>
+                </a>
                 <button type="button" class="comunidade-theme-toggle comunidade-topbar__theme" data-theme-toggle aria-label="Alternar tema">
                     <svg class="comunidade-theme-toggle__icon--dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
                     <svg class="comunidade-theme-toggle__icon--light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -31,9 +37,33 @@
         </header>
 
         <div class="comunidade-main comunidade-main--dashboard">
-            <div class="comunidade-welcome">
-                <h1 id="welcome-title">Os teus cursos</h1>
-                <p id="welcome-subtitle">Acede aos programas incluídos na tua compra.</p>
+            <section class="comunidade-hero" id="comunidade-hero">
+                <div class="comunidade-hero__grid">
+                    <div class="comunidade-hero__content">
+                        <p class="comunidade-hero__eyebrow">Área de membros</p>
+                        <h1 class="comunidade-hero__title" id="welcome-title">Bem-vinda à comunidade</h1>
+                        <p class="comunidade-hero__text" id="welcome-subtitle">A tua jornada Onda Prodígio começa aqui. Avança nos módulos e desbloqueia o potencial do teu filho.</p>
+
+                        <div class="comunidade-hero__stats">
+                            <div class="comunidade-hero__stat">
+                                <span class="comunidade-hero__stat-label">Programas desbloqueados</span>
+                                <strong class="comunidade-hero__stat-value" id="hero-unlocked-label">—</strong>
+                            </div>
+                            <div class="comunidade-hero__progress-wrap">
+                                <div class="comunidade-hero__progress-bar" aria-hidden="true">
+                                    <span class="comunidade-hero__progress-fill" id="hero-progress-fill" style="width:0%"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="comunidade-roadmap" id="comunidade-roadmap" aria-label="Progresso da jornada"></div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="comunidade-section-head">
+                <h2>Os teus programas</h2>
+                <p>Abre o que compraste. Os restantes aparecem bloqueados até desbloqueares.</p>
             </div>
 
             <div class="comunidade-grid" id="product-grid"></div>
@@ -42,6 +72,6 @@
 
     <script src="/comunidade/theme.js"></script>
     <script src="/comunidade/auth.js"></script>
-    <script src="/comunidade/index.js?v=20260807b"></script>
+    <script src="/comunidade/index.js?v=20260810d"></script>
 </body>
 </html>

@@ -42,9 +42,9 @@ body {
 .headline h1 {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.55rem;
     font-weight: 700;
-    line-height: 1.25;
+    line-height: 1.35;
 }
 
 .headline .line-1,
@@ -52,32 +52,40 @@ body {
 .headline .line-3,
 .headline .line-4 {
     display: block;
-    font-size: clamp(1.35rem, 4.5vw, 2.1rem);
-}
-
-.highlight-red {
-    color: #ff2d2d;
-}
-
-.underline-white {
-    text-decoration: underline;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 4px;
-    text-decoration-color: #fff;
+    font-size: clamp(1.32rem, 4.9vw, 2rem);
+    font-weight: 800;
+    line-height: 1.35;
 }
 
 .highlight-cyan {
     background-color: #00e5ff;
     color: #000;
-    padding: 0.1em 0.35em;
+    padding: 0.08em 0.3em;
     border-radius: 2px;
+    white-space: nowrap;
 }
 
-.underline-purple {
-    text-decoration: underline;
-    text-decoration-thickness: 2px;
-    text-underline-offset: 4px;
-    text-decoration-color: #c850ff;
+.headline-gradient-wrap {
+    display: inline;
+    background: linear-gradient(
+        90deg,
+        #ff2d2d 0%,
+        #ff6a00 12%,
+        #ffb800 24%,
+        #c4d832 38%,
+        #00e5ff 54%,
+        #7b5cff 72%,
+        #c850ff 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+.headline-plain {
+    -webkit-text-fill-color: #fff;
+    color: #fff;
 }
 
 /* ── Video ── */
@@ -147,15 +155,29 @@ body {
 
 @media (max-width: 480px) {
     .vsl-page {
-        padding: 1.5rem 1rem 2.5rem;
+        padding: 1.15rem 0.45rem 2.5rem;
     }
 
     .headline {
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.35rem;
     }
 
     .headline h1 {
-        gap: 0.25rem;
+        gap: 0.48rem;
+        line-height: 1.32;
+    }
+
+    .headline .line-1,
+    .headline .line-2,
+    .headline .line-3,
+    .headline .line-4 {
+        font-size: clamp(1rem, 3.35vw, 1.12rem);
+        letter-spacing: -0.025em;
+        line-height: 1.38;
+    }
+
+    .highlight-cyan {
+        padding: 0.06em 0.22em;
     }
 
     .video-container {

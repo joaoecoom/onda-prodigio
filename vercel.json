@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/stripe-webhook.js": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     {
       "source": "/",
@@ -41,8 +46,16 @@
       "destination": "/comunidade/login.html"
     },
     {
+      "source": "/comunidade/redefinir-password",
+      "destination": "/comunidade/redefinir-password.html"
+    },
+    {
       "source": "/comunidade/produto",
       "destination": "/comunidade/produto.html"
+    },
+    {
+      "source": "/comunidade/perfil",
+      "destination": "/comunidade/perfil.html"
     },
     {
       "source": "/respostaquestionario",
@@ -55,6 +68,14 @@
     {
       "source": "/metricas/",
       "destination": "/metricas/index.html"
+    },
+    {
+      "source": "/adm",
+      "destination": "/adm/index.html"
+    },
+    {
+      "source": "/adm/",
+      "destination": "/adm/index.html"
     }
   ],
   "headers": [

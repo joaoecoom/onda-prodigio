@@ -22,7 +22,7 @@
         <section class="comunidade-login-card" aria-labelledby="login-title">
             <span class="comunidade-badge">Área de membros</span>
             <h1 id="login-title">Comunidade Onda Prodígio</h1>
-            <p>Usa o email da compra. Se for o teu primeiro acesso, vais definir a password aqui.</p>
+            <p>Usa o email da compra e a password provisória que recebeste por email. Verifica também a pasta <strong>Spam</strong> ou <strong>Promoções</strong>.</p>
 
             <div class="comunidade-alert comunidade-alert--error" id="login-error" hidden></div>
 
@@ -33,6 +33,21 @@
                         <input id="email" type="email" autocomplete="email" placeholder="nome@email.com" required>
                     </div>
                     <button class="comunidade-btn comunidade-btn--primary" type="button" id="btn-check-email">Continuar</button>
+                    <button class="comunidade-link-button" type="button" id="btn-forgot-from-email">Esqueci a password</button>
+                </div>
+            </div>
+
+            <div class="comunidade-steps" id="step-forgot-password">
+                <div class="comunidade-alert comunidade-alert--info" id="forgot-info">
+                    Introduz o email da compra. Enviaremos um link para redefinires a password.
+                </div>
+                <div class="comunidade-form" id="forgot-form">
+                    <div class="comunidade-field">
+                        <label for="forgot-email">Email da compra</label>
+                        <input id="forgot-email" type="email" autocomplete="email" placeholder="nome@email.com" required>
+                    </div>
+                    <button class="comunidade-btn comunidade-btn--primary" type="button" id="btn-send-reset">Enviar link</button>
+                    <button class="comunidade-btn comunidade-btn--light" type="button" id="btn-back-forgot">Voltar</button>
                 </div>
             </div>
 
@@ -44,6 +59,7 @@
                         <input id="password" type="password" autocomplete="current-password" minlength="8" required>
                     </div>
                     <button class="comunidade-btn comunidade-btn--primary" type="button" id="btn-login">Entrar</button>
+                    <button class="comunidade-link-button" type="button" id="btn-forgot-from-password">Esqueci a password</button>
                     <button class="comunidade-btn comunidade-btn--light" type="button" id="btn-back">Voltar</button>
                 </div>
             </div>

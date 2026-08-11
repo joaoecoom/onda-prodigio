@@ -7,6 +7,7 @@
     var paymentMessage = document.getElementById('payment-message');
     var submitBtn = document.getElementById('submit-payment');
     var paymentBlock = document.getElementById('checkout-payment-block');
+    var paymentPlaceholder = document.getElementById('payment-placeholder');
 
     if (!form || !paymentElementHost || !submitBtn) {
         return;
@@ -19,6 +20,8 @@
     var clientSecret = null;
     var isSubmitting = false;
     var isReady = false;
+    var isPaymentIntentPreparing = false;
+    var formPrepareTimer = null;
     var EXPRESS_CHECKOUT_ENABLED = false;
 
     var countryField = form.country;
@@ -283,7 +286,8 @@
         elements.update(getBillingDefaults());
     }
 
-    function validateForm() {
+    function getFormPayload(options) {
+        var showErrors = !options || options.showErrors !== false;
         var email = form.email.value.trim();
         var emailConfirm = form.email_confirm.value.trim();
         var fullName = form.full_name.value.trim();
@@ -293,26 +297,41 @@
         var region = getRegionValue();
 
         if (!email || !emailConfirm || !fullName || !phone || !country || !phoneCountry || !region) {
-            showMessage('Preenche todos os campos dos dados pessoais.', 'error');
+            if (showErrors) {
+                showMessage('Preenche todos os campos dos dados pessoais.', 'error');
+            }
+
             return null;
         }
 
         if (email !== emailConfirm) {
-            showMessage('Os e-mails não coincidem.', 'error');
+            if (showErrors) {
+                showMessage('Os e-mails não coincidem.', 'error');
+            }
+
             return null;
         }
 
         if (isPortuguesePhoneSelected() && phone.length < 9) {
-            showMessage('Introduz um número de telemóvel válido.', 'error');
+            if (showErrors) {
+                showMessage('Introduz um número de telemóvel válido.', 'error');
+            }
+
             return null;
         }
 
         if (!isPortuguesePhoneSelected() && phone.length < 6) {
-            showMessage('Introduz um número de telemóvel válido.', 'error');
+            if (showErrors) {
+                showMessage('Introduz um número de telemóvel válido.', 'error');
+            }
+
             return null;
         }
 
-        showMessage('');
+        if (showErrors) {
+            showMessage('');
+        }
+
         return {
             email: email,
             email_confirm: emailConfirm,
@@ -322,6 +341,42 @@
             phone_country: phoneCountry,
             region: region,
         };
+    }
+
+    function validateForm() {
+        return getFormPayload({ showErrors: true });
+    }
+
+    function setPaymentPlaceholderVisible(visible) {
+        if (paymentPlaceholder) {
+            paymentPlaceholder.hidden = !visible;
+        }
+
+        if (paymentElementHost) {
+            paymentElementHost.hidden = visible;
+        }
+
+        if (expressCheckoutHost) {
+            expressCheckoutHost.hidden = visible || expressCheckoutHost.hidden;
+        }
+
+        if (expressCheckoutEmpty) {
+            expressCheckoutEmpty.hidden = visible || expressCheckoutEmpty.hidden;
+        }
+
+        if (expressCheckoutDivider) {
+            expressCheckoutDivider.hidden = visible || expressCheckoutDivider.hidden;
+        }
+    }
+
+    function showPaymentPlaceholder() {
+        setPaymentPlaceholderVisible(true);
+        isReady = false;
+        submitBtn.disabled = true;
+    }
+
+    function hidePaymentPlaceholder() {
+        setPaymentPlaceholderVisible(false);
     }
 
     function setSubmitLoading(loading) {
@@ -476,7 +531,11 @@
         return data.clientSecret;
     }
 
-    async function syncPaymentIntent(payload) {
+    async function syncPaymentIntent(payload, options) {
+        if (!clientSecret) {
+            return;
+        }
+
         var response = await fetch(getApiBase() + '/api/update-payment-intent', {
             method: 'POST',
             headers: {
@@ -494,6 +553,7 @@
                 phone_country: payload ? payload.phone_country : '',
                 region: payload ? payload.region : '',
                 tracking: getTrackingPayload(),
+                payment_attempt: Boolean(options && options.paymentAttempt),
             })),
         });
 
@@ -502,6 +562,95 @@
         if (!response.ok) {
             throw new Error(data.error || 'Não foi possível actualizar o pagamento.');
         }
+    }
+
+    async function ensurePaymentIntentReady(payload) {
+        var formPayload = payload || getFormPayload({ showErrors: false });
+
+        if (!formPayload) {
+            throw new Error('Preenche todos os campos dos dados pessoais.');
+        }
+
+        if (clientSecret) {
+            await syncPaymentIntent(formPayload);
+            return formPayload;
+        }
+
+        if (isPaymentIntentPreparing) {
+            while (isPaymentIntentPreparing && !clientSecret) {
+                await new Promise(function (resolve) {
+                    setTimeout(resolve, 100);
+                });
+            }
+
+            if (clientSecret) {
+                await syncPaymentIntent(formPayload);
+            }
+
+            return formPayload;
+        }
+
+        isPaymentIntentPreparing = true;
+        setPaymentLoading(true);
+
+        try {
+            var secret = await createPaymentIntent(formPayload);
+            await mountPaymentElement(secret);
+            await syncPaymentIntent(formPayload);
+            hidePaymentPlaceholder();
+        } finally {
+            isPaymentIntentPreparing = false;
+            setPaymentLoading(false);
+        }
+
+        return formPayload;
+    }
+
+    function schedulePaymentIntentPrepare() {
+        if (clientSecret || isPaymentIntentPreparing) {
+            return;
+        }
+
+        if (formPrepareTimer) {
+            clearTimeout(formPrepareTimer);
+        }
+
+        formPrepareTimer = setTimeout(function () {
+            formPrepareTimer = null;
+
+            var payload = getFormPayload({ showErrors: false });
+
+            if (!payload) {
+                return;
+            }
+
+            ensurePaymentIntentReady(payload).catch(function (error) {
+                showMessage(error.message || 'Não foi possível preparar o pagamento.', 'error');
+            });
+        }, 400);
+    }
+
+    function setupPaymentIntentPrepareWatchers() {
+        var watchedFields = [
+            form.email,
+            form.email_confirm,
+            form.full_name,
+            form.phone,
+            countryField,
+            regionField,
+            regionOtherField,
+            phoneCountryField,
+        ];
+
+        watchedFields.forEach(function (field) {
+            if (!field) {
+                return;
+            }
+
+            field.addEventListener('input', schedulePaymentIntentPrepare);
+            field.addEventListener('change', schedulePaymentIntentPrepare);
+            field.addEventListener('blur', schedulePaymentIntentPrepare);
+        });
     }
 
     async function syncOrderTotal() {
@@ -588,7 +737,7 @@
 
             try {
                 syncBillingDefaults();
-                await syncPaymentIntent(payload);
+                await ensurePaymentIntentReady(payload);
             } catch (error) {
                 showMessage(error.message || 'Não foi possível preparar o pagamento.', 'error');
 
@@ -629,7 +778,8 @@
 
             try {
                 syncBillingDefaults();
-                await syncPaymentIntent(payload);
+                await ensurePaymentIntentReady(payload);
+                await syncPaymentIntent(payload, { paymentAttempt: true });
                 trackPaymentSubmitted();
 
                 var result = await stripe.confirmPayment({
@@ -766,25 +916,22 @@
     }
 
     async function initializeCheckout() {
-        setPaymentLoading(true);
+        showPaymentPlaceholder();
         showMessage('');
 
         try {
             await loadStripe();
-            var secret = await createPaymentIntent({});
             trackCheckoutStarted();
-            await mountPaymentElement(secret);
+            setupPaymentIntentPrepareWatchers();
         } catch (error) {
             showMessage(error.message || 'Erro ao carregar os métodos de pagamento.', 'error');
-        } finally {
-            setPaymentLoading(false);
         }
     }
 
     async function submitPayment(event) {
         event.preventDefault();
 
-        if (isSubmitting || !stripe || !elements || !clientSecret || !isReady) {
+        if (isSubmitting || !stripe) {
             return;
         }
 
@@ -799,8 +946,14 @@
         showMessage('');
 
         try {
+            await ensurePaymentIntentReady(payload);
+
+            if (!elements || !clientSecret || !isReady) {
+                throw new Error('Os métodos de pagamento ainda não estão prontos. Tenta novamente.');
+            }
+
             syncBillingDefaults();
-            await syncPaymentIntent(payload);
+            await syncPaymentIntent(payload, { paymentAttempt: true });
             trackPaymentSubmitted();
 
             var submitResult = await elements.submit();
