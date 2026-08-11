@@ -164,9 +164,21 @@ body {
 
 .metrics-summary {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0.85rem;
     margin-bottom: 1.25rem;
+}
+
+.metrics-card--primary {
+    border-color: #2b3a52;
+}
+
+.metrics-card__value--positive {
+    color: #86efac;
+}
+
+.metrics-card__value--negative {
+    color: #fca5a5;
 }
 
 .metrics-card {
@@ -624,6 +636,7 @@ body {
 .metrics-summary--funnel,
 .metrics-summary--vturb {
     margin-top: -0.35rem;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
 }
 
 .metrics-card--funnel {
@@ -700,6 +713,10 @@ body {
 }
 
 @media (max-width: 960px) {
+    .metrics-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .metrics-node__row--meta {
         grid-template-columns: 1fr;
     }

@@ -456,16 +456,6 @@
                 value: formatNumber(mergedSummary.initiate_checkout),
                 hint: 'Meta pixel/CAPI',
             },
-            {
-                label: 'Vendas Stripe',
-                value: formatNumber(stripeSummary.total_sales || 0),
-                hint: formatMoneyEur(stripeSummary.total_revenue_eur || 0),
-            },
-            {
-                label: 'ROAS real',
-                value: mergedSummary.roas_real !== null ? mergedSummary.roas_real : '—',
-                hint: 'Receita Stripe ÷ gasto Meta',
-            },
         ];
 
         funnelRoot.innerHTML = cards.map(function (card) {
@@ -601,49 +591,47 @@
     }
 
     function renderSummaryCards(stripeSummary, mergedSummary) {
-        var attributedPct = stripeSummary.total_sales
-            ? Math.round((stripeSummary.attributed_sales / stripeSummary.total_sales) * 100)
-            : 0;
+        var revenueEur = Number(stripeSummary.total_revenue_eur || 0);
+        var spendEur = mergedSummary ? Number(mergedSummary.meta_spend_eur || 0) : 0;
+        var profitEur = Number((revenueEur - spendEur).toFixed(2));
+        var profitClass = profitEur >= 0 ? ' metrics-card__value--positive' : ' metrics-card__value--negative';
+
         var cards = [
             {
-                label: 'Vendas Stripe',
-                value: stripeSummary.total_sales,
-                hint: 'Checkout live',
+                label: 'Vendas',
+                value: stripeSummary.total_sales || 0,
+                hint: 'Stripe · checkout live',
             },
             {
-                label: 'Receita Stripe',
-                value: formatMoneyEur(stripeSummary.total_revenue_eur),
+                label: 'Receitas',
+                value: formatMoneyEur(revenueEur),
                 hint: 'EUR cobrado',
             },
             {
-                label: 'Gasto Meta',
-                value: mergedSummary ? formatMoneyEur(mergedSummary.meta_spend_eur) : '—',
+                label: 'Gasto',
+                value: mergedSummary ? formatMoneyEur(spendEur) : '—',
                 hint: mergedSummary && mergedSummary.meta_currency !== 'EUR'
-                    ? 'Original ' + mergedSummary.meta_currency + ' convertido'
-                    : 'Período seleccionado',
+                    ? 'Meta · ' + mergedSummary.meta_currency + ' convertido'
+                    : 'Meta Ads',
             },
             {
-                label: 'ROAS real',
+                label: 'Lucro',
+                value: mergedSummary ? formatMoneyEur(profitEur) : '—',
+                hint: 'Receita Stripe − gasto Meta',
+                valueClass: mergedSummary ? profitClass : '',
+            },
+            {
+                label: 'ROAS',
                 value: mergedSummary && mergedSummary.roas_real !== null ? mergedSummary.roas_real : '—',
-                hint: 'Receita Stripe ÷ gasto Meta',
-            },
-            {
-                label: 'Atribuídas',
-                value: stripeSummary.attributed_sales,
-                hint: attributedPct + '% com campanha/anúncio',
-            },
-            {
-                label: 'Com fbc',
-                value: stripeSummary.with_fbc,
-                hint: 'Cookie de clique no anúncio',
+                hint: 'Receita ÷ gasto Meta',
             },
         ];
 
         summaryRoot.innerHTML = cards.map(function (card) {
             return (
-                '<article class="metrics-card">' +
+                '<article class="metrics-card metrics-card--primary">' +
                 '<div class="metrics-card__label">' + escapeHtml(card.label) + '</div>' +
-                '<div class="metrics-card__value">' + escapeHtml(String(card.value)) + '</div>' +
+                '<div class="metrics-card__value' + (card.valueClass || '') + '">' + escapeHtml(String(card.value)) + '</div>' +
                 '<div class="metrics-card__hint">' + escapeHtml(card.hint) + '</div>' +
                 '</article>'
             );
