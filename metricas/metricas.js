@@ -187,6 +187,10 @@
         }
 
         metaBanner.textContent = metaConnection.error || 'Não foi possível ligar ao Meta Ads.';
+
+        if (/request limit|rate limit|too many calls/i.test(metaConnection.error || '')) {
+            metaBanner.textContent = 'Limite de pedidos da Meta API atingido. Aguarda 1–2 minutos e clica Actualizar (sem mudar de data). Os dados Stripe e VTurb continuam disponíveis.';
+        }
     }
 
     function renderStatusBadge(status) {
