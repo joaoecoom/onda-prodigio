@@ -650,6 +650,8 @@ body {
 
 .metrics-table--meta {
     min-width: 1480px;
+    border-collapse: separate;
+    border-spacing: 0;
 }
 
 .metrics-table--meta th,
@@ -657,6 +659,14 @@ body {
     white-space: nowrap;
     font-size: 0.78rem;
     vertical-align: top;
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid #243041;
+    border-right: 1px solid #2a3544;
+}
+
+.metrics-table--meta th:last-child,
+.metrics-table--meta td:last-child {
+    border-right: 0;
 }
 
 .metrics-table--meta th {
@@ -664,6 +674,7 @@ body {
     top: 0;
     z-index: 1;
     background: #121821;
+    border-bottom: 1px solid #334155;
 }
 
 .metrics-table__name-cell {
