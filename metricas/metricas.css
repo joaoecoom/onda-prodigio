@@ -633,10 +633,27 @@ body {
     border-color: #ccd0d5;
 }
 
-.metrics-summary--funnel,
-.metrics-summary--vturb {
+.metrics-summary--funnel {
     margin-top: -0.35rem;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.metrics-summary--vturb {
+    margin-top: -0.35rem;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.metrics-card--vturb {
+    min-height: 5.5rem;
+}
+
+.metrics-card--vturb .metrics-card__label {
+    min-height: 2.4rem;
+    line-height: 1.25;
+}
+
+.metrics-card--vturb .metrics-card__value {
+    font-size: 1.35rem;
 }
 
 .metrics-card--funnel {
@@ -725,6 +742,10 @@ body {
 
 @media (max-width: 960px) {
     .metrics-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .metrics-summary--vturb {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 

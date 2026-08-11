@@ -414,20 +414,25 @@
             : '';
 
         var cards = [
-            { label: 'Views VSL', value: formatNumber(summary.views), hint: formatNumber(summary.views_unique_sessions) + ' sessões únicas' },
-            { label: 'Plays', value: formatNumber(summary.plays), hint: summary.play_rate !== null ? 'Play rate ' + formatPercent(summary.play_rate) : 'Play rate —' },
-            { label: 'Engagement', value: summary.engagement_rate !== null ? formatPercent(summary.engagement_rate) : '—', hint: 'Retenção média VSL' },
-            { label: 'Cliques CTA', value: formatNumber(summary.cta_clicks), hint: formatNumber(summary.cta_clicks_unique_sessions) + ' sessões' },
-            { label: 'Conversões VTurb', value: formatNumber(summary.conversions), hint: summary.conversion_rate !== null ? formatPercent(summary.conversion_rate) : 'Taxa —' },
-            { label: 'Receita VTurb', value: formatMoneyEur(summary.revenue_eur), hint: 'Valor reportado pelo player' },
+            { label: 'Visualizações', value: formatNumber(summary.views) },
+            { label: 'Visualizações Únicas', value: formatNumber(summary.views_unique_sessions) },
+            { label: 'Plays', value: formatNumber(summary.plays) },
+            { label: 'Plays Únicos', value: formatNumber(summary.plays_unique_sessions) },
+            { label: 'Play Rate', value: summary.play_rate !== null ? formatPercent(summary.play_rate) : '—' },
+            { label: 'Retenção ao Pitch', value: summary.over_pitch_rate !== null ? formatPercent(summary.over_pitch_rate) : '—' },
+            { label: 'Audiência do Pitch', value: formatNumber(summary.over_pitch) },
+            { label: 'Engajamento', value: summary.engagement_rate !== null ? formatPercent(summary.engagement_rate) : '—' },
+            { label: 'Cliques no Botão', value: formatNumber(summary.cta_clicks) },
+            { label: 'Conversões', value: formatNumber(summary.conversions) },
+            { label: 'Taxa de Conversão', value: summary.conversion_rate !== null ? formatPercent(summary.conversion_rate) : '—' },
+            { label: 'Receita', value: formatMoneyEur(summary.revenue_eur) },
         ];
 
         vturbSummary.innerHTML = cards.map(function (card) {
             return (
-                '<article class="metrics-card">' +
+                '<article class="metrics-card metrics-card--vturb">' +
                 '<div class="metrics-card__label">' + escapeHtml(card.label) + '</div>' +
                 '<div class="metrics-card__value">' + escapeHtml(String(card.value)) + '</div>' +
-                '<div class="metrics-card__hint">' + escapeHtml(card.hint) + '</div>' +
                 '</article>'
             );
         }).join('');
