@@ -9,6 +9,7 @@ var routes = {
     products: require('../../lib/comunidade/handlers/products'),
     product: require('../../lib/comunidade/handlers/product'),
     comments: require('../../lib/comunidade/handlers/comments'),
+    'cron-ai-comments': require('../../lib/comunidade/handlers/cron-ai-comments'),
     survey: require('../../lib/comunidade/handlers/survey'),
     progress: require('../../lib/comunidade/handlers/progress'),
 };

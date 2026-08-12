@@ -181,7 +181,9 @@
         activeAulaId: null,
         comments: [],
         isAdmin: false,
+        memberId: null,
         replyToId: null,
+        replyToLabel: '',
         searchQuery: '',
         sidebarSearchQuery: '',
         sidebarExpandedModules: {},
@@ -1972,27 +1974,93 @@
     }
 
     function renderComment(comment, isReply) {
-        var adminActions = '';
+        var actions = '';
+        var badges = '';
 
-        if (state.isAdmin) {
-            adminActions = '<div class="comunidade-comment__actions">' +
-                (!comment.is_admin ?
-                    '<button type="button" class="comunidade-btn comunidade-btn--light" data-reply-id="' + comment.id + '">Responder</button>' :
-                    '') +
-                '<button type="button" class="comunidade-btn comunidade-btn--danger" data-delete-id="' + comment.id + '">Eliminar</button>' +
-            '</div>';
+        if (comment.is_hidden && state.isAdmin) {
+            badges += '<span class="comunidade-comment__badge comunidade-comment__badge--hidden">Oculto</span>';
         }
 
+        if (comment.is_ai) {
+            badges += '<span class="comunidade-comment__badge comunidade-comment__badge--ai">Resposta automática</span>';
+        }
+
+        actions += '<div class="comunidade-comment__actions">';
+
+        actions += '<button type="button" class="comunidade-comment__action' + (comment.liked_by_me ? ' is-active' : '') + '" data-like-id="' + comment.id + '" aria-pressed="' + (comment.liked_by_me ? 'true' : 'false') + '">' +
+            '👍 Gosto' + (comment.like_count ? ' (' + comment.like_count + ')' : '') +
+        '</button>';
+
+        actions += '<button type="button" class="comunidade-comment__action" data-reply-id="' + comment.id + '">Responder</button>';
+
+        if (comment.can_delete) {
+            actions += '<button type="button" class="comunidade-comment__action comunidade-comment__action--danger" data-delete-id="' + comment.id + '">Eliminar</button>';
+        }
+
+        if (comment.can_moderate) {
+            if (comment.is_hidden) {
+                actions += '<button type="button" class="comunidade-comment__action" data-unhide-id="' + comment.id + '">Mostrar</button>';
+            } else {
+                actions += '<button type="button" class="comunidade-comment__action" data-hide-id="' + comment.id + '">Ocultar</button>';
+            }
+        }
+
+        actions += '</div>';
+
         return (
-            '<article class="comunidade-comment' + (comment.is_admin ? ' is-admin' : '') + (isReply ? ' comunidade-comment__reply' : '') + '">' +
+            '<article class="comunidade-comment' +
+                (comment.is_admin ? ' is-admin' : '') +
+                (comment.is_hidden ? ' is-hidden' : '') +
+                (isReply ? ' comunidade-comment__reply' : '') +
+                (comment.is_mine ? ' is-mine' : '') +
+            '" id="comment-' + comment.id + '">' +
                 '<div class="comunidade-comment__head">' +
-                    '<span class="comunidade-comment__author">' + escapeHtml(comment.author_name) + (comment.is_admin ? ' · Suporte' : '') + '</span>' +
+                    '<div class="comunidade-comment__author-wrap">' +
+                        '<span class="comunidade-comment__author">' + escapeHtml(comment.author_name) + (comment.is_admin ? ' · Suporte' : '') + '</span>' +
+                        badges +
+                    '</div>' +
                     '<span class="comunidade-comment__date">' + escapeHtml(formatDate(comment.created_at)) + '</span>' +
                 '</div>' +
                 '<div class="comunidade-comment__content">' + escapeHtml(comment.content) + '</div>' +
-                adminActions +
+                actions +
             '</article>'
         );
+    }
+
+    function resetReplyTarget() {
+        state.replyToId = null;
+        state.replyToLabel = '';
+        commentContent.placeholder = state.isAdmin ?
+            'Escreve um comentário ou resposta de suporte…' :
+            'Escreve aqui a tua dúvida ou partilha a tua experiência…';
+
+        var replyHint = document.getElementById('comment-reply-hint');
+
+        if (replyHint) {
+            replyHint.hidden = true;
+            replyHint.textContent = '';
+        }
+    }
+
+    function setReplyTarget(commentId, authorName) {
+        state.replyToId = commentId;
+        state.replyToLabel = authorName || '';
+        commentContent.placeholder = 'A responder a ' + (authorName || 'comentário') + '…';
+        commentContent.focus();
+
+        var replyHint = document.getElementById('comment-reply-hint');
+
+        if (replyHint) {
+            replyHint.hidden = false;
+            replyHint.innerHTML = 'A responder a <strong>' + escapeHtml(authorName || 'comentário') + '</strong>. <button type="button" class="comunidade-link-button" id="btn-cancel-reply">Cancelar</button>';
+            var cancelBtn = document.getElementById('btn-cancel-reply');
+
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', function () {
+                    resetReplyTarget();
+                });
+            }
+        }
     }
 
     function renderComments() {
@@ -2016,9 +2084,73 @@
 
         commentsList.querySelectorAll('[data-reply-id]').forEach(function (button) {
             button.addEventListener('click', function () {
-                state.replyToId = button.getAttribute('data-reply-id');
-                commentContent.placeholder = 'Resposta de suporte…';
-                commentContent.focus();
+                var commentId = button.getAttribute('data-reply-id');
+                var comment = state.comments.find(function (item) {
+                    return item.id === commentId;
+                });
+
+                setReplyTarget(commentId, comment ? comment.author_name : '');
+            });
+        });
+
+        commentsList.querySelectorAll('[data-like-id]').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                var commentId = button.getAttribute('data-like-id');
+
+                if (!commentId) {
+                    return;
+                }
+
+                var isActive = button.classList.contains('is-active');
+                clearCommentsError();
+                button.disabled = true;
+
+                var response = await window.ComunidadeAuth.apiFetch('/api/comunidade/comments', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: isActive ? 'unlike' : 'like',
+                        comment_id: commentId,
+                    }),
+                });
+
+                var data = await response.json();
+                button.disabled = false;
+
+                if (!response.ok) {
+                    showCommentsError(data.error || 'Não foi possível registar o gosto.');
+                    return;
+                }
+
+                await loadComments();
+            });
+        });
+
+        commentsList.querySelectorAll('[data-hide-id], [data-unhide-id]').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                var commentId = button.getAttribute('data-hide-id') || button.getAttribute('data-unhide-id');
+                var hidden = Boolean(button.getAttribute('data-hide-id'));
+
+                if (!commentId) {
+                    return;
+                }
+
+                clearCommentsError();
+                button.disabled = true;
+
+                var response = await window.ComunidadeAuth.apiFetch('/api/comunidade/comments', {
+                    method: 'PATCH',
+                    body: JSON.stringify({ id: commentId, hidden: hidden }),
+                });
+
+                var data = await response.json();
+                button.disabled = false;
+
+                if (!response.ok) {
+                    showCommentsError(data.error || 'Não foi possível actualizar o comentário.');
+                    return;
+                }
+
+                await loadComments();
             });
         });
 
@@ -2051,8 +2183,7 @@
                 }
 
                 if (state.replyToId === commentId) {
-                    state.replyToId = null;
-                    commentContent.placeholder = 'Escreve um comentário ou resposta de suporte…';
+                    resetReplyTarget();
                 }
 
                 await loadComments();
@@ -2070,6 +2201,11 @@
         }
 
         state.comments = data.comments || [];
+
+        if (data.member_id) {
+            state.memberId = data.member_id;
+        }
+
         renderComments();
     }
 
@@ -2245,8 +2381,11 @@
             content: content,
         };
 
-        if (state.isAdmin && state.replyToId) {
+        if (state.replyToId) {
             payload.parent_id = state.replyToId;
+        }
+
+        if (state.isAdmin && state.replyToId) {
             payload.admin_reply = true;
         } else if (state.isAdmin && content.indexOf('[resposta]') === 0) {
             payload.admin_reply = true;
@@ -2266,8 +2405,7 @@
         }
 
         commentContent.value = '';
-        state.replyToId = null;
-        commentContent.placeholder = state.isAdmin ? 'Escreve um comentário ou resposta de suporte…' : 'Escreve aqui…';
+        resetReplyTarget();
         await loadComments();
     });
 
