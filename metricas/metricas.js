@@ -422,6 +422,13 @@
                 : 'Gastos Meta: fuso Portugal';
         }
 
+        if (dateRange.alignment === 'account_calendar') {
+            return 'Gastos Meta: ' + dateRange.since + ' → ' + dateRange.until +
+                ' (calendário ' + (dateRange.account_timezone || account.timezone_name || 'conta') + ')' +
+                ' · vendas Stripe: Portugal ' + dateRange.requested_from +
+                (dateRange.requested_to !== dateRange.requested_from ? ' → ' + dateRange.requested_to : '');
+        }
+
         return 'Gastos Meta: ' + dateRange.since + ' → ' + dateRange.until +
             ' (' + (dateRange.account_timezone || account.timezone_name || 'conta') +
             ') · alinhado a Portugal ' + dateRange.requested_from +
@@ -459,7 +466,7 @@
         metaContext.textContent = [
             account.name || account.label || ('Conta ' + account.id),
             'Vendas Stripe: fuso Portugal',
-            buildMetaDateContext(data.merged && data.merged.date_range, account),
+            buildMetaDateContext(merged.date_range, account),
         ].filter(Boolean).join(' · ');
 
         metaGeneratedAt.textContent = payload.stripe && payload.stripe.summary && payload.stripe.summary.generated_at
@@ -538,7 +545,7 @@
             {
                 label: 'Landing views',
                 value: formatNumber(mergedSummary.landing_page_views),
-                hint: mergedSummary.reach ? formatNumber(mergedSummary.reach) + ' alcance' : 'Meta pixel',
+                hint: 'Meta pixel/CAPI',
             },
             {
                 label: 'Views VSL',
