@@ -140,10 +140,15 @@ async function handleCombined(req, res) {
     var to = dateRange.to;
     var skipCache = String(req.query.refresh || '') === '1';
     var skipVturb = String(req.query.skip_vturb || '') === '1';
+    var metaMode = String(req.query.meta_mode || 'full').trim();
     var hasToken = Boolean(metaClient.getAccessToken());
 
+    var fetchMetaReport = metaMode === 'summary'
+        ? metaInsights.getAccountSummaryReport
+        : metaInsights.getCampaignReport;
+
     var metaPromise = hasToken && metaConfig.isAllowedAccountId(accountId)
-        ? metaInsights.getCampaignReport(accountId, from, to, { skipCache: skipCache }).catch(function (error) {
+        ? fetchMetaReport(accountId, from, to, { skipCache: skipCache }).catch(function (error) {
             return { __error: error.message || 'Meta API falhou.' };
         })
         : Promise.resolve({

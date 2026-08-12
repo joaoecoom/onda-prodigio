@@ -187,6 +187,10 @@
             params.push('skip_vturb=1');
         }
 
+        if (options && options.metaMode) {
+            params.push('meta_mode=' + encodeURIComponent(options.metaMode));
+        }
+
         return params.join('&');
     }
 
@@ -782,13 +786,16 @@
             }, false, { stripeOnly: true });
 
             if (!silent) {
-                setStatus('A carregar Meta Ads…', false);
+                setStatus(METRICS_PAGE === 'analise' ? 'A carregar campanhas Meta…' : 'A carregar gastos Meta…', false);
             }
 
             var combinedOptions = { refresh: shouldRefresh };
 
             if (METRICS_PAGE === 'analise') {
                 combinedOptions.skipVturb = true;
+                combinedOptions.metaMode = 'full';
+            } else {
+                combinedOptions.metaMode = 'summary';
             }
 
             var data = await fetchJson(
