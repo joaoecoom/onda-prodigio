@@ -627,11 +627,6 @@
                 spacedAccordionItems: true,
             },
             paymentMethodOrder: ['mb_way', 'card', 'klarna'],
-            wallets: {
-                applePay: 'never',
-                googlePay: 'never',
-                link: 'never',
-            },
             fields: {
                 billingDetails: {
                     email: 'never',
