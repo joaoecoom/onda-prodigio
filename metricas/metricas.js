@@ -1,6 +1,6 @@
 (function () {
     var TOKEN_KEY = 'onda-metrics-token';
-    var METRICS_PAGE = document.body.getAttribute('data-metrics-page') || 'dashboard';
+    var METRICS_PAGE = document.documentElement.getAttribute('data-metrics-page') || 'dashboard';
 
     var loginSection = document.getElementById('metrics-login');
     var dashboardSection = document.getElementById('metrics-dashboard');
