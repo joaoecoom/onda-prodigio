@@ -1476,6 +1476,63 @@
         });
     }
 
+    function formatSponsorPrice(sponsorAd) {
+        if (!sponsorAd) {
+            return '';
+        }
+
+        if (sponsorAd.billing_type === 'subscription') {
+            return sponsorAd.billing_note || 'Subscrição mensal';
+        }
+
+        if (typeof sponsorAd.amount_cents === 'number' && sponsorAd.amount_cents > 0) {
+            var euros = (sponsorAd.amount_cents / 100).toFixed(sponsorAd.amount_cents % 100 === 0 ? 0 : 2).replace('.', ',');
+            return euros + '€';
+        }
+
+        return 'Ver oferta';
+    }
+
+    function renderModuleCard(moduleItem) {
+        var index = state.modules.findIndex(function (item) {
+            return item.id === moduleItem.id;
+        });
+        var thumbIndex = Math.min(index + 1, 5);
+        var thumbLabel = THUMB_LABELS[index] || moduleItem.title;
+        var image = moduleItem.image_url ? '/' + moduleItem.image_url.replace(/^\//, '') : '';
+        var progress = getModuleProgress(moduleItem);
+
+        return (
+            '<button type="button" class="comunidade-module-card" data-open-module="' + moduleItem.id + '">' +
+                '<div class="comunidade-module-card__progress">' +
+                    renderProgressMarkup(progress) +
+                '</div>' +
+                '<div class="comunidade-module-card__title">' + escapeHtml(moduleItem.title) + '</div>' +
+                '<div class="comunidade-module-card__thumb comunidade-module-card__thumb--' + thumbIndex + '">' +
+                    (image ? '<img src="' + image + '" alt="">' : '<span class="comunidade-module-card__label">' + escapeHtml(thumbLabel) + '</span>') +
+                '</div>' +
+            '</button>'
+        );
+    }
+
+    function renderModuleGridUpsellCard(sponsorAd) {
+        var image = sponsorAd.image_url ? '/' + String(sponsorAd.image_url).replace(/^\//, '') : '';
+        var priceLabel = formatSponsorPrice(sponsorAd);
+
+        return (
+            '<a class="comunidade-module-card comunidade-module-card--upsell" href="' + escapeHtml(sponsorAd.checkout_url) + '">' +
+                '<div class="comunidade-module-card__progress comunidade-module-card__progress--upsell">' +
+                    '<span class="comunidade-module-card__upsell-badge">Só para ti</span>' +
+                '</div>' +
+                '<div class="comunidade-module-card__title">' + escapeHtml(sponsorAd.title) + '</div>' +
+                '<div class="comunidade-module-card__thumb comunidade-module-card__thumb--upsell">' +
+                    (image ? '<img src="' + image + '" alt="">' : '') +
+                    '<span class="comunidade-module-card__upsell-cta">Comprar · ' + escapeHtml(priceLabel) + '</span>' +
+                '</div>' +
+            '</a>'
+        );
+    }
+
     function renderModuleGrid() {
         var modules = getFilteredModules();
 
@@ -1484,27 +1541,23 @@
             return;
         }
 
-        moduleGrid.innerHTML = modules.map(function (moduleItem) {
-            var index = state.modules.findIndex(function (item) {
-                return item.id === moduleItem.id;
-            });
-            var thumbIndex = Math.min(index + 1, 5);
-            var thumbLabel = THUMB_LABELS[index] || moduleItem.title;
-            var image = moduleItem.image_url ? '/' + moduleItem.image_url.replace(/^\//, '') : '';
-            var progress = getModuleProgress(moduleItem);
+        var shownSponsorIds = {};
+        var html = [];
 
-            return (
-                '<button type="button" class="comunidade-module-card" data-open-module="' + moduleItem.id + '">' +
-                    '<div class="comunidade-module-card__progress">' +
-                        renderProgressMarkup(progress) +
-                    '</div>' +
-                    '<div class="comunidade-module-card__title">' + escapeHtml(moduleItem.title) + '</div>' +
-                    '<div class="comunidade-module-card__thumb comunidade-module-card__thumb--' + thumbIndex + '">' +
-                        (image ? '<img src="' + image + '" alt="">' : '<span class="comunidade-module-card__label">' + escapeHtml(thumbLabel) + '</span>') +
-                    '</div>' +
-                '</button>'
-            );
-        }).join('');
+        modules.forEach(function (moduleItem) {
+            html.push(renderModuleCard(moduleItem));
+
+            if (
+                !state.isAdmin &&
+                moduleItem.sponsor_ad &&
+                !shownSponsorIds[moduleItem.sponsor_ad.product_id]
+            ) {
+                shownSponsorIds[moduleItem.sponsor_ad.product_id] = true;
+                html.push(renderModuleGridUpsellCard(moduleItem.sponsor_ad));
+            }
+        });
+
+        moduleGrid.innerHTML = html.join('');
 
         moduleGrid.querySelectorAll('[data-open-module]').forEach(function (button) {
             button.addEventListener('click', function () {

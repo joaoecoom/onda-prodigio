@@ -1323,6 +1323,61 @@ html[data-theme="light"] .comunidade-sidebar-lesson.is-active {
     overflow: hidden;
 }
 
+.comunidade-module-card--upsell {
+    text-decoration: none;
+    color: inherit;
+}
+
+.comunidade-module-card--upsell:hover {
+    transform: translateY(-2px);
+}
+
+.comunidade-module-card__progress--upsell {
+    min-height: 1.25rem;
+}
+
+.comunidade-module-card__upsell-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.12rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(0, 119, 200, 0.14);
+    color: var(--accent);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.comunidade-module-card__thumb--upsell {
+    position: relative;
+    border: 1px dashed var(--accent-border);
+    box-shadow: inset 0 0 0 1px rgba(0, 119, 200, 0.08);
+}
+
+.comunidade-module-card__thumb--upsell img {
+    filter: saturate(1.05);
+}
+
+.comunidade-module-card__upsell-cta {
+    position: absolute;
+    left: 0.65rem;
+    right: 0.65rem;
+    bottom: 0.65rem;
+    padding: 0.35rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(15, 20, 25, 0.82);
+    color: #f8fafc;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.25;
+}
+
+html[data-theme="light"] .comunidade-module-card__upsell-cta {
+    background: rgba(15, 23, 42, 0.88);
+}
+
 .comunidade-back-bar {
     margin-bottom: 1rem;
 }
