@@ -28,7 +28,7 @@ self.addEventListener('push', function (event) {
                 tag: payload.tag || 'onda-sale',
                 renotify: true,
                 silent: false,
-                sound: payload.sound || '/metricas/sounds/ka-ching.wav',
+                sound: payload.sound || '/metricas/sounds/sonido-shopify.mp3',
                 vibrate: [120, 60, 120],
                 data: {
                     url: payload.url || '/metricas/',
@@ -50,6 +50,7 @@ self.addEventListener('notificationclick', function (event) {
                 var client = clients[i];
 
                 if (client.url.indexOf('/metricas') !== -1 && 'focus' in client) {
+                    client.postMessage({ type: 'play-sale-sound' });
                     return client.focus();
                 }
             }

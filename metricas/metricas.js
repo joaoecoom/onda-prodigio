@@ -264,7 +264,7 @@
                 pushBannerToggle.classList.remove('metrics-button--push-active');
             }
             if (pushBannerText) {
-                pushBannerText.textContent = 'Recebe «ka-ching» e notificação quando entra uma venda Stripe.';
+                pushBannerText.textContent = 'Recebe o som Shopify e notificação quando entra uma venda Stripe.';
             }
         }
     }
