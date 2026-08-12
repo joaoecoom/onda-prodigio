@@ -29,6 +29,8 @@
     var vturbGeneratedAt = document.getElementById('metrics-vturb-generated-at');
     var ACCOUNT_KEY = 'onda-metrics-account';
     var latestPayload = null;
+    var autoRefreshTimer = null;
+    var AUTO_REFRESH_MS = 60 * 1000;
     var datePickerRoot = document.getElementById('metrics-date-picker-root');
     var datePicker = window.MetricsDateRangePicker.create({
         root: datePickerRoot,
@@ -53,6 +55,7 @@
     }
 
     function showLogin() {
+        stopAutoRefresh();
         loginSection.hidden = false;
         dashboardSection.hidden = true;
     }
@@ -92,6 +95,70 @@
         if (accountId) {
             accountSelect.value = accountId;
             window.sessionStorage.setItem(ACCOUNT_KEY, accountId);
+        }
+    }
+
+    function getTodayIsoLocal() {
+        var today = new Date();
+        var month = String(today.getMonth() + 1).padStart(2, '0');
+        var day = String(today.getDate()).padStart(2, '0');
+        return today.getFullYear() + '-' + month + '-' + day;
+    }
+
+    function isLiveRange(range) {
+        if (!range || !range.from || !range.to) {
+            return false;
+        }
+
+        return range.to >= getTodayIsoLocal();
+    }
+
+    function stopAutoRefresh() {
+        if (autoRefreshTimer) {
+            window.clearInterval(autoRefreshTimer);
+            autoRefreshTimer = null;
+        }
+    }
+
+    function startAutoRefresh() {
+        stopAutoRefresh();
+
+        if (dashboardSection.hidden || !getToken()) {
+            return;
+        }
+
+        var range = datePicker.getAppliedRange();
+
+        if (!isLiveRange(range)) {
+            return;
+        }
+
+        autoRefreshTimer = window.setInterval(function () {
+            if (document.hidden || dashboardSection.hidden || !getToken()) {
+                return;
+            }
+
+            fetchMetrics({ refresh: true, silent: true }).catch(function () {
+                // Mantém o último snapshot visível se um poll falhar.
+            });
+        }, AUTO_REFRESH_MS);
+    }
+
+    function updateLiveIndicator(range, silent) {
+        if (!generatedAt) {
+            return;
+        }
+
+        var baseText = generatedAt.textContent.replace(/ · Auto-actualização.*$/, '');
+
+        if (isLiveRange(range) && !dashboardSection.hidden) {
+            generatedAt.textContent = baseText + ' · Auto-actualização a cada minuto';
+        } else {
+            generatedAt.textContent = baseText;
+        }
+
+        if (!silent) {
+            startAutoRefresh();
         }
     }
 
@@ -573,17 +640,21 @@
         var token = getToken();
         var range = datePicker.getAppliedRange();
         var refresh = Boolean(options && options.refresh);
+        var silent = Boolean(options && options.silent);
 
         if (!token) {
             showLogin();
             return;
         }
 
-        setStatus('A carregar métricas…', false);
+        if (!silent) {
+            setStatus('A carregar métricas…', false);
+        }
 
         try {
+            var shouldRefresh = refresh || isLiveRange(range);
             var data = await fetchJson(
-                '/api/sales-attribution?' + buildQuery(range, 'combined', { refresh: refresh }),
+                '/api/sales-attribution?' + buildQuery(range, 'combined', { refresh: shouldRefresh }),
                 token
             );
 
@@ -593,9 +664,15 @@
 
             latestPayload = data;
             renderDashboard(data, false);
-            setStatus('', false);
+            updateLiveIndicator(range, silent);
+
+            if (!silent) {
+                setStatus('', false);
+            }
         } catch (error) {
-            setStatus(error.message || 'Erro ao carregar métricas.', true);
+            if (!silent) {
+                setStatus(error.message || 'Erro ao carregar métricas.', true);
+            }
         }
     }
 
@@ -780,9 +857,22 @@
     });
 
     logoutButton.addEventListener('click', function () {
+        stopAutoRefresh();
         setToken('');
         passwordInput.value = '';
         showLogin();
+    });
+
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) {
+            stopAutoRefresh();
+            return;
+        }
+
+        if (!dashboardSection.hidden && getToken()) {
+            fetchMetrics({ refresh: true, silent: true }).catch(function () {});
+            startAutoRefresh();
+        }
     });
 
     if (getToken()) {
