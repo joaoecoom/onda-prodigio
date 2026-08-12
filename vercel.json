@@ -62,6 +62,10 @@
       "destination": "/comunidade/respostaquestionario.html"
     },
     {
+      "source": "/comprar/:productId",
+      "destination": "/comprar/index.html"
+    },
+    {
       "source": "/metricas",
       "destination": "/metricas/index.html"
     },

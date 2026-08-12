@@ -1511,8 +1511,28 @@
         });
     }
 
+    function renderSponsorAdItem(sponsorAd) {
+        if (!sponsorAd) {
+            return '';
+        }
+
+        var image = sponsorAd.image_url ? '/' + String(sponsorAd.image_url).replace(/^\//, '') : '';
+
+        return (
+            '<a class="comunidade-aula-item comunidade-aula-item--ad" href="' + escapeHtml(sponsorAd.checkout_url) + '">' +
+                '<div class="comunidade-aula-item__thumb">' +
+                    (image ? '<img src="' + image + '" alt="">' : '') +
+                    '<span class="comunidade-aula-item__ad-badge">Anúncio</span>' +
+                '</div>' +
+                '<span class="comunidade-aula-item__meta">' +
+                    '<span class="comunidade-aula-item__title">' + escapeHtml(sponsorAd.title) + '</span>' +
+                '</span>' +
+            '</a>'
+        );
+    }
+
     function renderAulaList(aulas) {
-        aulaList.innerHTML = aulas.map(function (aulaItem, index) {
+        var html = aulas.map(function (aulaItem, index) {
             var image = aulaItem.image_url ? '/' + aulaItem.image_url.replace(/^\//, '') : '';
             var thumbLabel = getAulaThumbLabel(aulaItem, index, getActiveModule());
             var isDone = isItemComplete(aulaItem.id);
@@ -1537,6 +1557,14 @@
                 '</button>'
             );
         }).join('');
+
+        var activeModule = getActiveModule();
+
+        if (activeModule && activeModule.sponsor_ad) {
+            html += renderSponsorAdItem(activeModule.sponsor_ad);
+        }
+
+        aulaList.innerHTML = html;
 
         aulaList.querySelectorAll('[data-open-aula]').forEach(function (button) {
             button.addEventListener('click', function () {

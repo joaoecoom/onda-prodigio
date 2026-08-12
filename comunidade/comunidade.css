@@ -1462,6 +1462,30 @@ html[data-theme="light"] .comunidade-sidebar-lesson.is-active {
     color: var(--text);
 }
 
+.comunidade-aula-item--ad {
+    text-decoration: none;
+    border-style: dashed;
+}
+
+.comunidade-aula-item--ad:hover {
+    border-color: var(--accent);
+}
+
+.comunidade-aula-item__ad-badge {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.82);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
 .comunidade-aula-item__meta {
     flex: 1;
     min-width: 0;
@@ -2046,10 +2070,20 @@ html[data-theme="light"] .comunidade-hero__progress-bar {
     opacity: 0.92;
 }
 
+.comunidade-card--locked.comunidade-card--buyable {
+    cursor: pointer;
+}
+
 .comunidade-card--locked:hover {
     transform: none;
     border-color: var(--border);
     box-shadow: none;
+}
+
+.comunidade-card--locked.comunidade-card--buyable:hover {
+    transform: translateY(-1px);
+    border-color: var(--accent-border);
+    box-shadow: var(--shadow-card);
 }
 
 .comunidade-card__image--locked {
@@ -2071,6 +2105,15 @@ html[data-theme="light"] .comunidade-hero__progress-bar {
 
 .comunidade-card--locked .comunidade-card__cta {
     color: var(--text-muted);
+}
+
+.comunidade-card--buyable .comunidade-card__cta {
+    color: var(--accent);
+}
+
+.comunidade-card--buyable .comunidade-card__badge--locked {
+    background: rgba(0, 119, 200, 0.18);
+    color: #7dd3fc;
 }
 
 .comunidade-link-button {

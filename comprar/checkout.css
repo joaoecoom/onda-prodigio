@@ -1,0 +1,38 @@
+.comprar-page {
+    min-height: 100vh;
+    background: #f4f7fb;
+}
+
+.comprar-form-section {
+    padding: 2rem 1rem 3rem;
+}
+
+.comprar-form-grid {
+    max-width: 560px;
+    margin: 0 auto;
+}
+
+.comprar-page .checkout-form-panel {
+    box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
+}
+
+.comprar-page .product-summary {
+    margin-bottom: 1.25rem;
+}
+
+.comprar-page .checkout-submit {
+    width: 100%;
+}
+
+.comprar-page .payment-placeholder {
+    padding: 1rem;
+    border: 1px dashed #cfd8e3;
+    border-radius: 8px;
+    color: #5b6775;
+    font-size: 0.92rem;
+    margin-bottom: 1rem;
+}
+
+.comprar-page .payment-placeholder[hidden] {
+    display: none !important;
+}

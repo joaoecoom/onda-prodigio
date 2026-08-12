@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-PT" data-page-type="checkout">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout — Onda Prodígio</title>
+    <meta name="description" content="Finaliza a tua compra na Onda Prodígio.">
+    <meta name="robots" content="noindex, nofollow">
+
+    <script>window.dataLayer = window.dataLayer || [];</script>
+    <script src="/assets/tracking.js?v=meta-emq-usd" defer></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/checkout9/checkout.css">
+    <link rel="stylesheet" href="/comprar/checkout.css">
+</head>
+<body>
+    <div class="checkout-page comprar-page">
+        <main class="checkout-form-section comprar-form-section" aria-label="Checkout">
+            <div class="checkout-hero__grid comprar-form-grid">
+                <div class="checkout-form-panel">
+                    <div class="product-summary" id="product-summary">
+                        <img class="product-summary__thumb" id="product-summary-image" src="" alt="" width="72" height="72" loading="eager">
+                        <div class="product-summary__info">
+                            <p class="product-summary__title" id="product-summary-title">A carregar…</p>
+                            <p class="product-summary__author">Autor: TerraCommerce LLC</p>
+                            <p class="product-summary__price" id="product-summary-price"></p>
+                            <p class="product-summary__vat" id="product-summary-vat">IVA incluído</p>
+                        </div>
+                    </div>
+
+                    <form class="checkout-form" id="checkout-form" novalidate>
+                        <h2 class="checkout-form__title">Dados pessoais</h2>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="email">O seu e-mail</label>
+                            <input class="form-field__input" type="email" id="email" name="email" placeholder="Insira o seu e-mail para receber a compra" autocomplete="email" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="email-confirm">Confirme o seu e-mail</label>
+                            <input class="form-field__input" type="email" id="email-confirm" name="email_confirm" placeholder="Insira novamente o seu e-mail" autocomplete="email" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="country">País</label>
+                            <select class="form-field__input form-field__select" id="country" name="country" required autocomplete="country">
+                                <option value="" selected disabled>Selecione o seu país</option>
+                            </select>
+                        </div>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="region" id="region-label">Região</label>
+                            <select class="form-field__input form-field__select" id="region" name="region" hidden disabled>
+                                <option value="" selected disabled>Selecione a sua região</option>
+                                <option value="aveiro">Aveiro</option>
+                                <option value="beja">Beja</option>
+                                <option value="braga">Braga</option>
+                                <option value="braganca">Bragança</option>
+                                <option value="castelo-branco">Castelo Branco</option>
+                                <option value="coimbra">Coimbra</option>
+                                <option value="evora">Évora</option>
+                                <option value="faro">Faro</option>
+                                <option value="guarda">Guarda</option>
+                                <option value="leiria">Leiria</option>
+                                <option value="lisboa">Lisboa</option>
+                                <option value="portalegre">Portalegre</option>
+                                <option value="porto">Porto</option>
+                                <option value="santarem">Santarém</option>
+                                <option value="setubal">Setúbal</option>
+                                <option value="viana-castelo">Viana do Castelo</option>
+                                <option value="vila-real">Vila Real</option>
+                                <option value="viseu">Viseu</option>
+                                <option value="acores">Açores</option>
+                                <option value="madeira">Madeira</option>
+                            </select>
+                            <input class="form-field__input" type="text" id="region-other" name="region_other" placeholder="Região, estado ou província" autocomplete="address-level1" hidden>
+                        </div>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="full-name">O seu nome completo</label>
+                            <input class="form-field__input" type="text" id="full-name" name="full_name" placeholder="Insira o seu nome completo" autocomplete="name" required>
+                        </div>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="phone">Telemóvel</label>
+                            <div class="form-field__phone">
+                                <select class="form-field__phone-prefix" id="phone-country" name="phone_country" aria-label="Indicativo do telemóvel" required></select>
+                                <input class="form-field__input form-field__input--phone" type="tel" id="phone" name="phone" placeholder="" autocomplete="tel-national" inputmode="tel" required>
+                            </div>
+                        </div>
+
+                        <section class="order-summary" id="order-summary" aria-label="Detalhes da compra">
+                            <h2 class="checkout-form__title">Detalhes da compra</h2>
+                            <div class="order-summary__table">
+                                <div class="order-summary__lines" id="order-summary-lines"></div>
+                                <div class="order-summary__row order-summary__row--total">
+                                    <span class="order-summary__label">Total</span>
+                                    <span class="order-summary__value" id="order-summary-total"></span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <div class="checkout-form__divider" aria-hidden="true"></div>
+
+                        <div id="checkout-payment-block">
+                            <div class="payment-placeholder" id="payment-placeholder">
+                                <p>Preenche os dados pessoais para ver os métodos de pagamento.</p>
+                            </div>
+                            <div id="payment-element"></div>
+                            <p class="payment-message" id="payment-message" role="status" aria-live="polite"></p>
+                        </div>
+
+                        <button type="submit" class="checkout-submit" id="submit-payment" disabled>Pagar</button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="/comprar/checkout.js" defer></script>
+</body>
+</html>

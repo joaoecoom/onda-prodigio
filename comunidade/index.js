@@ -18,6 +18,19 @@
         'codigo-autoridade': 'Cód. Autoridade',
     };
 
+    var PRODUCT_CHECKOUT_PATHS = {
+        'onda-prodigio': '/checkout9/',
+        'tardes-sem-brigas': '/comprar/tardes-sem-brigas',
+        'caixa-super-truques': '/comprar/caixa-super-truques',
+        'grandes-mentes': '/comprar/grandes-mentes',
+        'clube-super-cerebros': '/comprar/clube-super-cerebros',
+        'codigo-autoridade': '/comprar/codigo-autoridade',
+    };
+
+    function getProductCheckoutPath(productId) {
+        return PRODUCT_CHECKOUT_PATHS[productId] || '';
+    }
+
     function escapeHtml(value) {
         return String(value || '')
             .replace(/&/g, '&amp;')
@@ -126,29 +139,32 @@
             var image = resolveProductImage(product);
             var moduleCount = (product.modules || []).length;
             var hasAccess = product.has_access !== false;
-            var cardClass = 'comunidade-card' + (hasAccess ? '' : ' comunidade-card--locked');
-            var tagName = hasAccess ? 'a' : 'div';
+            var checkoutPath = hasAccess ? '' : getProductCheckoutPath(product.id);
+            var isBuyable = !hasAccess && Boolean(checkoutPath);
+            var cardClass = 'comunidade-card' + (hasAccess ? '' : ' comunidade-card--locked') + (isBuyable ? ' comunidade-card--buyable' : '');
+            var tagName = hasAccess || isBuyable ? 'a' : 'div';
             var hrefAttr = hasAccess
                 ? ' href="/comunidade/produto?id=' + encodeURIComponent(product.id) + '"'
-                : '';
+                : (isBuyable ? ' href="' + checkoutPath + '"' : '');
             var badgeClass = hasAccess
                 ? 'comunidade-card__badge comunidade-card__badge--open'
                 : 'comunidade-card__badge comunidade-card__badge--locked';
-            var badgeText = hasAccess ? 'Desbloqueado' : 'Bloqueado';
+            var badgeText = hasAccess ? 'Desbloqueado' : (isBuyable ? 'Comprar' : 'Bloqueado');
+            var ctaText = hasAccess ? 'Aceder →' : (isBuyable ? 'Comprar →' : 'Indisponível');
 
             return (
                 '<' + tagName + ' class="' + cardClass + '"' + hrefAttr + '>' +
                     '<div class="comunidade-card__image-wrap">' +
                         (image ? '<img class="comunidade-card__image' + (hasAccess ? '' : ' comunidade-card__image--locked') + '" src="' + image + '" alt="">' : '') +
                         '<span class="' + badgeClass + '">' + badgeText + '</span>' +
-                        (hasAccess ? '' : '<div class="comunidade-card__lock-overlay"><span>Bloqueado</span></div>') +
+                        (hasAccess ? '' : '<div class="comunidade-card__lock-overlay"><span>' + (isBuyable ? 'Desbloquear' : 'Bloqueado') + '</span></div>') +
                     '</div>' +
                     '<div class="comunidade-card__body">' +
                         '<div class="comunidade-card__title">' + escapeHtml(product.name) + '</div>' +
                         '<div class="comunidade-card__text">' + escapeHtml(product.description || '') + '</div>' +
                         '<div class="comunidade-card__footer">' +
                             '<span class="comunidade-card__meta">' + moduleCount + ' módulo(s)</span>' +
-                            '<span class="comunidade-card__cta">' + (hasAccess ? 'Aceder →' : 'Indisponível') + '</span>' +
+                            '<span class="comunidade-card__cta">' + ctaText + '</span>' +
                         '</div>' +
                     '</div>' +
                 '</' + tagName + '>'
