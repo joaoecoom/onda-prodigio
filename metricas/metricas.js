@@ -262,6 +262,10 @@
 
         toastsRoot.appendChild(toast);
 
+        if (window.MetricsSaleSound) {
+            window.MetricsSaleSound.play();
+        }
+
         window.requestAnimationFrame(function () {
             toast.classList.add('metrics-toast--visible');
         });
@@ -1325,6 +1329,10 @@
         setToken(password);
         showDashboard();
 
+        if (window.MetricsSaleSound) {
+            window.MetricsSaleSound.prime();
+        }
+
         try {
             await fetchMetrics();
         } catch (error) {
@@ -1401,5 +1409,13 @@
         });
     } else {
         showLogin();
+    }
+
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', function (event) {
+            if (event.data && event.data.type === 'play-sale-sound' && window.MetricsSaleSound) {
+                window.MetricsSaleSound.play();
+            }
+        });
     }
 })();

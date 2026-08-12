@@ -15,16 +15,26 @@ self.addEventListener('push', function (event) {
         }
     }
 
-    event.waitUntil(self.registration.showNotification(payload.title || 'Nova venda', {
-        body: payload.body || '',
-        icon: '/comunidade/assets/onda-prodigio.png',
-        badge: '/comunidade/assets/onda-prodigio.png',
-        tag: payload.tag || 'onda-sale',
-        renotify: true,
-        data: {
-            url: payload.url || '/metricas/',
-        },
-    }));
+    event.waitUntil(
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
+            clientList.forEach(function (client) {
+                client.postMessage({ type: 'play-sale-sound' });
+            });
+
+            return self.registration.showNotification(payload.title || 'Nova venda', {
+                body: payload.body || '',
+                icon: '/comunidade/assets/onda-prodigio.png',
+                badge: '/comunidade/assets/onda-prodigio.png',
+                tag: payload.tag || 'onda-sale',
+                renotify: true,
+                silent: false,
+                vibrate: [120, 60, 120],
+                data: {
+                    url: payload.url || '/metricas/',
+                },
+            });
+        })
+    );
 });
 
 self.addEventListener('notificationclick', function (event) {
