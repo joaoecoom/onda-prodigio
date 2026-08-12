@@ -1476,6 +1476,16 @@
         });
     }
 
+    function formatSponsorCta(sponsorAd) {
+        var priceLabel = formatSponsorPrice(sponsorAd);
+
+        if (priceLabel && priceLabel !== 'Ver oferta') {
+            return 'Ver oferta · ' + priceLabel;
+        }
+
+        return 'Ver oferta';
+    }
+
     function formatSponsorPrice(sponsorAd) {
         if (!sponsorAd) {
             return '';
@@ -1517,7 +1527,7 @@
 
     function renderModuleGridUpsellCard(sponsorAd) {
         var image = sponsorAd.image_url ? '/' + String(sponsorAd.image_url).replace(/^\//, '') : '';
-        var priceLabel = formatSponsorPrice(sponsorAd);
+        var ctaLabel = formatSponsorCta(sponsorAd);
 
         return (
             '<a class="comunidade-module-card comunidade-module-card--upsell" href="' + escapeHtml(sponsorAd.checkout_url) + '">' +
@@ -1527,7 +1537,7 @@
                 '<div class="comunidade-module-card__title">' + escapeHtml(sponsorAd.title) + '</div>' +
                 '<div class="comunidade-module-card__thumb comunidade-module-card__thumb--upsell">' +
                     (image ? '<img src="' + image + '" alt="">' : '') +
-                    '<span class="comunidade-module-card__upsell-cta">Comprar · ' + escapeHtml(priceLabel) + '</span>' +
+                    '<span class="comunidade-module-card__upsell-cta">' + escapeHtml(ctaLabel) + '</span>' +
                 '</div>' +
             '</a>'
         );
@@ -1564,17 +1574,17 @@
         }
 
         var image = sponsorAd.image_url ? '/' + String(sponsorAd.image_url).replace(/^\//, '') : '';
-        var priceLabel = formatSponsorPrice(sponsorAd);
+        var ctaLabel = formatSponsorCta(sponsorAd);
 
         return (
             '<a class="comunidade-aula-item comunidade-aula-item--ad" href="' + escapeHtml(sponsorAd.checkout_url) + '">' +
                 '<div class="comunidade-aula-item__thumb">' +
                     (image ? '<img src="' + image + '" alt="">' : '') +
-                    '<span class="comunidade-aula-item__ad-badge">Oferta</span>' +
+                    '<span class="comunidade-aula-item__ad-badge">Só para ti</span>' +
                 '</div>' +
                 '<span class="comunidade-aula-item__meta">' +
                     '<span class="comunidade-aula-item__title">' + escapeHtml(sponsorAd.title) + '</span>' +
-                    '<span class="comunidade-aula-item__unlock">Comprar · ' + escapeHtml(priceLabel) + '</span>' +
+                    '<span class="comunidade-aula-item__unlock">' + escapeHtml(ctaLabel) + '</span>' +
                 '</span>' +
             '</a>'
         );
@@ -1586,17 +1596,17 @@
         }
 
         var image = sponsorAd.image_url ? '/' + String(sponsorAd.image_url).replace(/^\//, '') : '';
-        var priceLabel = formatSponsorPrice(sponsorAd);
+        var ctaLabel = formatSponsorCta(sponsorAd);
 
         return (
-            '<a class="comunidade-sidebar-sponsor" href="' + escapeHtml(sponsorAd.checkout_url) + '">' +
+            '<a class="comunidade-sidebar-sponsor comunidade-sidebar-sponsor--in-module" href="' + escapeHtml(sponsorAd.checkout_url) + '">' +
                 '<span class="comunidade-sidebar-sponsor__badge">Só para ti</span>' +
                 '<span class="comunidade-sidebar-sponsor__thumb">' +
                     (image ? '<img src="' + image + '" alt="">' : '') +
                 '</span>' +
                 '<span class="comunidade-sidebar-sponsor__info">' +
                     '<span class="comunidade-sidebar-sponsor__title">' + escapeHtml(sponsorAd.title) + '</span>' +
-                    '<span class="comunidade-sidebar-sponsor__cta">Comprar · ' + escapeHtml(priceLabel) + '</span>' +
+                    '<span class="comunidade-sidebar-sponsor__cta">' + escapeHtml(ctaLabel) + '</span>' +
                 '</span>' +
             '</a>'
         );
@@ -1768,6 +1778,9 @@
         var moduleProgress = getModuleProgress(moduleItem);
         var lessons = getSidebarLessonsForModule(moduleItem);
         var isActiveModule = moduleItem.id === state.activeModuleId;
+        var sponsorHtml = (!state.isAdmin && moduleItem.sponsor_ad && expanded) ?
+            renderSidebarSponsorAd(moduleItem.sponsor_ad) :
+            '';
 
         return (
             '<div class="comunidade-sidebar-module' + (isActiveModule ? ' is-active' : '') + '">' +
@@ -1790,6 +1803,7 @@
                             return renderSidebarLessonItem(moduleItem.id, aulaItem, index);
                         }).join('') :
                         '<p class="comunidade-sidebar-lessons__empty">Nenhuma aula encontrada.</p>') +
+                    sponsorHtml +
                 '</div>' +
             '</div>'
         );
@@ -1803,19 +1817,13 @@
             return;
         }
 
-        var shownSponsorIds = {};
-        var html = [];
-
-        modules.forEach(function (moduleItem) {
+        moduleList.innerHTML = modules.map(function (moduleItem) {
             var moduleIndex = state.modules.findIndex(function (item) {
                 return item.id === moduleItem.id;
             });
 
-            html.push(renderSidebarModule(moduleItem, moduleIndex));
-            appendModuleSponsorAd(html, moduleItem, shownSponsorIds);
-        });
-
-        moduleList.innerHTML = html.join('');
+            return renderSidebarModule(moduleItem, moduleIndex);
+        }).join('');
 
         moduleList.querySelectorAll('[data-module-toggle]').forEach(function (button) {
             button.addEventListener('click', function () {

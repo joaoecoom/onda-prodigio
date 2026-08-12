@@ -368,6 +368,10 @@ html[data-theme="light"] .comunidade-theme-toggle__icon--light {
     border-top: 1px solid var(--border);
 }
 
+.comunidade-sidebar-sponsor--in-module {
+    margin: 0.55rem 0.35rem 0.15rem;
+}
+
 .comunidade-sidebar-sponsor {
     position: relative;
     display: flex;
