@@ -422,6 +422,12 @@
                 : 'Gastos Meta: fuso Portugal';
         }
 
+        if (dateRange.use_hourly_filter) {
+            return 'Gastos Meta: hora a hora · Portugal ' + dateRange.requested_from +
+                (dateRange.requested_to !== dateRange.requested_from ? ' → ' + dateRange.requested_to : '') +
+                ' (' + (dateRange.account_timezone || account.timezone_name || 'conta') + ')';
+        }
+
         if (dateRange.alignment === 'account_calendar') {
             return 'Gastos Meta: ' + dateRange.since + ' → ' + dateRange.until +
                 ' (calendário ' + (dateRange.account_timezone || account.timezone_name || 'conta') + ')' +
