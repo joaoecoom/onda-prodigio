@@ -1,5 +1,6 @@
 (function () {
     var TOKEN_KEY = 'onda-metrics-token';
+    var METRICS_PAGE = document.body.getAttribute('data-metrics-page') || 'dashboard';
 
     var loginSection = document.getElementById('metrics-login');
     var dashboardSection = document.getElementById('metrics-dashboard');
@@ -7,7 +8,8 @@
     var passwordInput = document.getElementById('metrics-password');
     var loginError = document.getElementById('metrics-login-error');
     var statusBox = document.getElementById('metrics-status');
-    var summaryRoot = document.getElementById('metrics-summary');
+    var summaryTotalRoot = document.getElementById('metrics-summary-total');
+    var summaryTrafficRoot = document.getElementById('metrics-summary-traffic');
     var funnelRoot = document.getElementById('metrics-funnel');
     var treeRoot = document.getElementById('metrics-tree');
     var recentBody = document.getElementById('metrics-recent-body');
@@ -472,6 +474,10 @@
     }
 
     function renderMetaPanel(payload, metaLoading) {
+        if (!metaPanel) {
+            return;
+        }
+
         var merged = payload && payload.merged;
         var metaConnection = payload && payload.meta_connection;
 
@@ -515,6 +521,10 @@
     }
 
     function renderVturbPanel(payload) {
+        if (!vturbPanel) {
+            return;
+        }
+
         var vturb = payload && payload.vturb;
         var summary = vturb && vturb.summary;
 
@@ -568,6 +578,10 @@
     }
 
     function renderFunnelCards(stripeSummary, mergedSummary, vturbSummary) {
+        if (!funnelRoot) {
+            return;
+        }
+
         if (!mergedSummary) {
             funnelRoot.innerHTML = '';
             return;
@@ -685,17 +699,29 @@
         var vturbSummary = data.vturb && data.vturb.summary ? data.vturb.summary : null;
 
         renderAccountOptions(data.accounts || [], data.active_account_id || getSelectedAccountId());
-        renderSummaryCards(stripe.summary || {}, mergedSummary);
-        renderFunnelCards(stripe.summary || {}, mergedSummary, vturbSummary);
-        renderVturbPanel(data);
-        renderMetaPanel(data, loading);
-        renderTree(stripe.campaigns || []);
-        renderRecentSales(stripe.recent_sales || stripe.sales || []);
-        generatedAt.textContent = stripe.summary && stripe.summary.generated_at
-            ? 'Actualizado ' + formatDate(stripe.summary.generated_at) +
-                (stripe.date_range && stripe.date_range.timezone === 'Europe/Lisbon' ? ' · Fuso vendas: Portugal' : '')
-            : '';
-        noteBox.textContent = stripe.note || '';
+
+        if (METRICS_PAGE === 'analise') {
+            renderMetaPanel(data, loading);
+            renderTree(stripe.campaigns || []);
+
+            if (generatedAt) {
+                generatedAt.textContent = stripe.summary && stripe.summary.generated_at
+                    ? 'Actualizado ' + formatDate(stripe.summary.generated_at) +
+                        (stripe.date_range && stripe.date_range.timezone === 'Europe/Lisbon' ? ' · Fuso vendas: Portugal' : '')
+                    : '';
+            }
+
+            renderRecentSales(stripe.recent_sales || stripe.sales || []);
+        } else {
+            renderTotalSummaryCards(stripe.summary || {}, mergedSummary);
+            renderTrafficSummaryCards(stripe.summary || {}, mergedSummary);
+            renderFunnelCards(stripe.summary || {}, mergedSummary, vturbSummary);
+            renderVturbPanel(data);
+        }
+
+        if (noteBox) {
+            noteBox.textContent = stripe.note || '';
+        }
     }
 
     async function fetchMetrics(options) {
@@ -738,43 +764,46 @@
         }
     }
 
-    function formatRoas(mergedSummary, revenueEur, spendEur) {
-        if (!mergedSummary) {
-            return { value: '—', hint: 'Receita ÷ gasto Meta' };
-        }
-
+    function formatRoas(revenueEur, spendEur, fallbackRoas) {
         if (spendEur > 0) {
-            var roas = mergedSummary.roas_real !== null && mergedSummary.roas_real !== undefined
-                ? mergedSummary.roas_real
-                : Number((revenueEur / spendEur).toFixed(2));
+            if (fallbackRoas !== null && fallbackRoas !== undefined) {
+                return fallbackRoas;
+            }
 
-            return { value: roas, hint: 'Receita ÷ gasto Meta' };
+            return Number((revenueEur / spendEur).toFixed(2));
         }
 
         if (revenueEur > 0) {
-            return { value: '∞', hint: 'Receita sem gasto Meta no período' };
+            return '∞';
         }
 
-        return { value: '0', hint: 'Sem receita nem gasto no período' };
+        return '0';
     }
 
-    function renderSummaryCards(stripeSummary, mergedSummary) {
+    function renderTotalSummaryCards(stripeSummary, mergedSummary) {
+        if (!summaryTotalRoot) {
+            return;
+        }
+
         var revenueEur = Number(stripeSummary.total_revenue_eur || 0);
         var spendEur = mergedSummary ? Number(mergedSummary.meta_spend_eur || 0) : 0;
         var profitEur = Number((revenueEur - spendEur).toFixed(2));
         var profitClass = profitEur >= 0 ? ' metrics-card__value--positive' : ' metrics-card__value--negative';
-        var roas = formatRoas(mergedSummary, revenueEur, spendEur);
+        var roas = formatRoas(revenueEur, spendEur, mergedSummary ? mergedSummary.roas_real : null);
+        var otherHint = Number(stripeSummary.other_sales || 0) > 0
+            ? ('+' + stripeSummary.other_sales + ' fora tráfego · ' + formatMoneyEur(stripeSummary.other_revenue_eur || 0))
+            : '';
 
         var cards = [
             {
                 label: 'Vendas',
                 value: stripeSummary.total_sales || 0,
-                hint: 'Stripe · checkout live',
+                hint: 'Stripe · todas as origens',
             },
             {
                 label: 'Receitas',
                 value: formatMoneyEur(revenueEur),
-                hint: 'EUR cobrado',
+                hint: otherHint || 'EUR cobrado',
             },
             {
                 label: 'Gasto',
@@ -784,25 +813,75 @@
             {
                 label: 'Lucro',
                 value: mergedSummary ? formatMoneyEur(profitEur) : '—',
-                hint: 'Receita Stripe − gasto Meta',
+                hint: 'Receita total − gasto Meta',
                 valueClass: mergedSummary ? profitClass : '',
             },
             {
                 label: 'ROAS',
-                value: roas.value,
-                hint: roas.hint,
+                value: mergedSummary ? roas : '—',
+                hint: 'Receita total ÷ gasto Meta',
             },
         ];
 
-        summaryRoot.innerHTML = cards.map(function (card) {
+        summaryTotalRoot.innerHTML = cards.map(renderPrimaryCard).join('');
+    }
+
+    function renderTrafficSummaryCards(stripeSummary, mergedSummary) {
+        if (!summaryTrafficRoot) {
+            return;
+        }
+
+        var trafficRevenue = Number(stripeSummary.traffic_revenue_eur || 0);
+        var spendEur = mergedSummary ? Number(mergedSummary.meta_spend_eur || 0) : 0;
+        var trafficRoas = formatRoas(trafficRevenue, spendEur, null);
+
+        var cards = [
+            {
+                label: 'Vendas tráfego',
+                value: stripeSummary.traffic_sales || 0,
+                hint: 'Funil + UTMs Meta',
+            },
+            {
+                label: 'Receita tráfego',
+                value: formatMoneyEur(trafficRevenue),
+                hint: 'Atribuídas a campanhas',
+            },
+            {
+                label: 'ROAS tráfego',
+                value: mergedSummary && spendEur > 0 ? trafficRoas : (mergedSummary ? trafficRoas : '—'),
+                hint: 'Receita tráfego ÷ gasto Meta',
+            },
+            {
+                label: 'Fora tráfego',
+                value: stripeSummary.other_sales || 0,
+                hint: formatMoneyEur(stripeSummary.other_revenue_eur || 0) + ' · comunidade/outros',
+            },
+        ];
+
+        summaryTrafficRoot.innerHTML = cards.map(function (card) {
             return (
-                '<article class="metrics-card metrics-card--primary">' +
+                '<article class="metrics-card metrics-card--traffic">' +
                 '<div class="metrics-card__label">' + escapeHtml(card.label) + '</div>' +
-                '<div class="metrics-card__value' + (card.valueClass || '') + '">' + escapeHtml(String(card.value)) + '</div>' +
+                '<div class="metrics-card__value">' + escapeHtml(String(card.value)) + '</div>' +
                 '<div class="metrics-card__hint">' + escapeHtml(card.hint) + '</div>' +
                 '</article>'
             );
         }).join('');
+    }
+
+    function renderPrimaryCard(card) {
+        return (
+            '<article class="metrics-card metrics-card--primary">' +
+            '<div class="metrics-card__label">' + escapeHtml(card.label) + '</div>' +
+            '<div class="metrics-card__value' + (card.valueClass || '') + '">' + escapeHtml(String(card.value)) + '</div>' +
+            '<div class="metrics-card__hint">' + escapeHtml(card.hint) + '</div>' +
+            '</article>'
+        );
+    }
+
+    function renderSummaryCards(stripeSummary, mergedSummary) {
+        renderTotalSummaryCards(stripeSummary, mergedSummary);
+        renderTrafficSummaryCards(stripeSummary, mergedSummary);
     }
 
     function renderAdNode(ad) {
@@ -856,6 +935,10 @@
     }
 
     function renderTree(campaigns) {
+        if (!treeRoot) {
+            return;
+        }
+
         if (!campaigns || !campaigns.length) {
             treeRoot.innerHTML = '<p class="metrics-tree__empty">Ainda não há vendas neste período.</p>';
             return;
@@ -864,9 +947,28 @@
         treeRoot.innerHTML = campaigns.map(renderCampaignNode).join('');
     }
 
+    function renderSourceBadge(sale) {
+        var source = sale.source_label || sale.source || 'Outro';
+        var className = 'metrics-badge';
+
+        if (sale.source === 'funil' || sale.is_traffic) {
+            className += ' metrics-badge--ok';
+        } else if (sale.source === 'comunidade') {
+            className += ' metrics-badge--info';
+        } else {
+            className += ' metrics-badge--warn';
+        }
+
+        return '<span class="' + className + '">' + escapeHtml(source) + '</span>';
+    }
+
     function renderRecentSales(sales) {
+        if (!recentBody) {
+            return;
+        }
+
         if (!sales || !sales.length) {
-            recentBody.innerHTML = '<tr><td colspan="7">Sem vendas neste período.</td></tr>';
+            recentBody.innerHTML = '<tr><td colspan="8">Sem vendas neste período.</td></tr>';
             return;
         }
 
@@ -881,6 +983,7 @@
             return (
                 '<tr>' +
                 '<td>' + escapeHtml(formatDate(sale.created)) + '</td>' +
+                '<td>' + renderSourceBadge(sale) + '</td>' +
                 '<td>' + escapeHtml(sale.campaign_name) + '</td>' +
                 '<td>' + escapeHtml(sale.adset_name) + '</td>' +
                 '<td>' + escapeHtml(sale.ad_name) + '</td>' +
@@ -919,17 +1022,19 @@
         });
     });
 
-    metaBody.addEventListener('click', function (event) {
-        var button = event.target.closest('.metrics-toggle');
+    if (metaBody) {
+        metaBody.addEventListener('click', function (event) {
+            var button = event.target.closest('.metrics-toggle');
 
-        if (!button) {
-            return;
-        }
+            if (!button) {
+                return;
+            }
 
-        event.preventDefault();
-        event.stopPropagation();
-        toggleMetaStatus(button);
-    });
+            event.preventDefault();
+            event.stopPropagation();
+            toggleMetaStatus(button);
+        });
+    }
 
     refreshButton.addEventListener('click', function () {
         fetchMetrics({ refresh: true }).catch(function () {

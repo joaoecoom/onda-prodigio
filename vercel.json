@@ -77,6 +77,10 @@
       "destination": "/metricas/index.html"
     },
     {
+      "source": "/metricas/analise",
+      "destination": "/metricas/analise.html"
+    },
+    {
       "source": "/adm",
       "destination": "/adm/index.html"
     },
