@@ -82,8 +82,8 @@ module.exports = async function handler(req, res) {
         } else {
             var amountCents = parseInt(
                 mode === 'test'
-                    ? (process.env.STRIPE_TEST_CODIGO_AMOUNT_CENTS || process.env.STRIPE_CODIGO_AMOUNT_CENTS || '4700')
-                    : (process.env.STRIPE_CODIGO_AMOUNT_CENTS || '4700'),
+                    ? (process.env.STRIPE_TEST_CODIGO_AMOUNT_CENTS || process.env.STRIPE_CODIGO_AMOUNT_CENTS || '2500')
+                    : (process.env.STRIPE_CODIGO_AMOUNT_CENTS || '2500'),
                 10
             );
 
