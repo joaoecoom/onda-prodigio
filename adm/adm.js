@@ -223,7 +223,9 @@
                     '</td>' +
                     '<td>' + escapeHtml(member.full_name || '—') + '</td>' +
                     '<td><div class="adm-products">' + productsHtml + '</div></td>' +
-                    '<td>' + formatMoney(member.total_paid_eur) + '</td>' +
+                    '<td>' + formatMoney(member.total_paid_eur) +
+                        (member.has_manual_access ? '<div class="adm-muted">incl. manual</div>' : '') +
+                    '</td>' +
                     '<td><span class="adm-progress">' + escapeHtml(String(member.progress_percent || 0)) + '%</span></td>' +
                     '<td>' + escapeHtml(String(member.login_count != null ? member.login_count : '—')) + '</td>' +
                     '<td>' + renderWhatsAppCell(member) + '</td>' +
