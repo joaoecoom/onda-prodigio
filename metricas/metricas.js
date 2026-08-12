@@ -18,6 +18,7 @@
     var noteBox = document.getElementById('metrics-note');
     var refreshButton = document.getElementById('metrics-refresh');
     var pushToggleButton = document.getElementById('metrics-push-toggle');
+    var pushTestButton = document.getElementById('metrics-push-test');
     var logoutButton = document.getElementById('metrics-logout');
     var accountWrap = document.getElementById('metrics-account-wrap');
     var accountSelect = document.getElementById('metrics-account');
@@ -197,10 +198,16 @@
 
         if (!window.MetricsPush.isSupported()) {
             pushToggleButton.hidden = true;
+            if (pushTestButton) {
+                pushTestButton.hidden = true;
+            }
             return;
         }
 
         pushToggleButton.hidden = false;
+        if (pushTestButton) {
+            pushTestButton.hidden = false;
+        }
         var permission = window.MetricsPush.getPermission();
 
         if (permission === 'granted') {
@@ -231,6 +238,9 @@
             if (window.MetricsPush.getPermission() === 'granted') {
                 await window.MetricsPush.subscribe(token, { force: false });
             } else if (forcePrompt) {
+                if (window.MetricsSaleSound) {
+                    window.MetricsSaleSound.prime();
+                }
                 await window.MetricsPush.subscribe(token, { force: true });
             }
         } catch (error) {
@@ -1372,6 +1382,35 @@
             initMetricsPush(true).catch(function () {
                 setStatus('Erro de ligação. Tenta outra vez.', true);
             });
+        });
+    }
+
+    if (pushTestButton) {
+        pushTestButton.addEventListener('click', async function () {
+            var token = getToken();
+
+            if (!token) {
+                return;
+            }
+
+            try {
+                await initMetricsPush(false);
+                var result = await fetchJson('/api/sales-attribution?action=push_test', token);
+
+                if (!result) {
+                    return;
+                }
+
+                if (result.sent > 0) {
+                    setStatus('Notificação de teste enviada.', false);
+                } else if (result.reason === 'no_subscribers') {
+                    setStatus('Primeiro toca «Activar notificações» e depois Teste.', true);
+                } else {
+                    setStatus('Push: ' + (result.reason || 'sem envio'), true);
+                }
+            } catch (error) {
+                setStatus(error.message || 'Teste push falhou.', true);
+            }
         });
     }
 
