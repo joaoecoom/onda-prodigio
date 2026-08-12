@@ -1,0 +1,33 @@
+---
+description: Supabase Onda Prodígio — projecto Angela, migrations e queries
+alwaysApply: true
+---
+
+# Supabase — Onda Prodígio (Angela)
+
+O projecto de produção **NÃO** é o Supabase OAuth genérico (`user-supabase` / conta joaoecoom).
+
+| | Valor |
+|---|---|
+| **Project ref** | `vmyezkbkthguojmxhacw` |
+| **URL** | `https://vmyezkbkthguojmxhacw.supabase.co` |
+| **Conta** | `suporte.angelacampos@gmail.com` |
+| **MCP local** | `.cursor/mcp.json` → `supabase-onda-prodigio` (PAT directo) |
+
+## Quando o OAuth `user-supabase` falha
+
+Erros típicos: *Organization unavailable*, *connection timeout*, projecto errado (`arixmswqxnojnyvokqsv`).
+
+**Não insistir no OAuth.** Aplicar migrations e queries via **Management API**:
+
+```bash
+./scripts/apply-supabase-migration.sh supabase/migrations/NNN_nome.sql
+```
+
+Ou `POST https://api.supabase.com/v1/projects/vmyezkbkthguojmxhacw/database/query` com o PAT de `.cursor/mcp.json`.
+
+## Migrations
+
+- Ficheiros em `supabase/migrations/`
+- Aplicar sempre no projecto `vmyezkbkthguojmxhacw`
+- Confirmar com query a `information_schema` ou `to_regclass()` após aplicar
