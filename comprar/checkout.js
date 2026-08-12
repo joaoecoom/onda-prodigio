@@ -102,7 +102,15 @@
     }
 
     function isPortugalSelected() {
-        return countryField && countryField.value === 'PT';
+        return getSelectedCountryCode() === 'PT';
+    }
+
+    function getSelectedCountryCode() {
+        return countryField ? countryField.value : '';
+    }
+
+    function getSelectedPhoneCountryCode() {
+        return phoneCountryField ? phoneCountryField.value : 'PT';
     }
 
     function syncRegionFields() {
