@@ -144,7 +144,7 @@
         }, AUTO_REFRESH_MS);
     }
 
-    function updateLiveIndicator(range, silent) {
+    function updateLiveIndicator(range) {
         if (!generatedAt) {
             return;
         }
@@ -153,12 +153,10 @@
 
         if (isLiveRange(range) && !dashboardSection.hidden) {
             generatedAt.textContent = baseText + ' · Auto-actualização a cada minuto';
+            startAutoRefresh();
         } else {
             generatedAt.textContent = baseText;
-        }
-
-        if (!silent) {
-            startAutoRefresh();
+            stopAutoRefresh();
         }
     }
 
@@ -409,6 +407,27 @@
         );
     }
 
+    function buildMetaDateContext(dateRange, account) {
+        if (!dateRange) {
+            if (account.timezone_name && account.timezone_name !== 'Europe/Lisbon') {
+                return 'Gastos Meta: fuso ' + account.timezone_name;
+            }
+
+            return '';
+        }
+
+        if (!dateRange.adjusted) {
+            return account.timezone_name && account.timezone_name !== 'Europe/Lisbon'
+                ? 'Gastos Meta: fuso ' + account.timezone_name
+                : 'Gastos Meta: fuso Portugal';
+        }
+
+        return 'Gastos Meta: ' + dateRange.since + ' → ' + dateRange.until +
+            ' (' + (dateRange.account_timezone || account.timezone_name || 'conta') +
+            ') · alinhado a Portugal ' + dateRange.requested_from +
+            (dateRange.requested_to !== dateRange.requested_from ? ' → ' + dateRange.requested_to : '');
+    }
+
     function renderMetaPanel(payload, metaLoading) {
         var merged = payload && payload.merged;
         var metaConnection = payload && payload.meta_connection;
@@ -439,10 +458,8 @@
 
         metaContext.textContent = [
             account.name || account.label || ('Conta ' + account.id),
-            'Preset J.Ecoom · Vendas Stripe: fuso Portugal',
-            account.timezone_name && account.timezone_name !== 'Europe/Lisbon'
-                ? 'Gastos Meta: fuso ' + account.timezone_name
-                : '',
+            'Vendas Stripe: fuso Portugal',
+            buildMetaDateContext(data.merged && data.merged.date_range, account),
         ].filter(Boolean).join(' · ');
 
         metaGeneratedAt.textContent = payload.stripe && payload.stripe.summary && payload.stripe.summary.generated_at
@@ -664,7 +681,7 @@
 
             latestPayload = data;
             renderDashboard(data, false);
-            updateLiveIndicator(range, silent);
+            updateLiveIndicator(range);
 
             if (!silent) {
                 setStatus('', false);
