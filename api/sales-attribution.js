@@ -493,6 +493,11 @@ module.exports = async function handler(req, res) {
             return handlePushConfig(res);
         }
 
+        if (action === 'push_test') {
+            var testResult = await pushNotify.notifyTestSale();
+            return res.status(200).json(testResult);
+        }
+
         if (action === 'meta') {
             return handleMeta(req, res);
         }
