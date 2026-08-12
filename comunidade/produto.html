@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/comunidade/comunidade.css">
+    <link rel="stylesheet" href="/comunidade/comunidade.css?v=20260812a">
     <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('comunidade-theme') === 'light' ? 'light' : 'dark');</script>
 </head>
 <body>
@@ -19,7 +19,10 @@
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
                 </button>
                 <div class="comunidade-topbar__identity">
-                    <div class="comunidade-topbar__brand">Onda Prodígio <span>· Comunidade</span></div>
+                    <div class="comunidade-topbar__brand">
+                        <img src="/comunidade/assets/mascot.png" alt="" class="comunidade-brand-mark" width="32" height="32">
+                        Onda Prodígio <span>· Comunidade</span>
+                    </div>
                     <div class="comunidade-topbar__user" id="topbar-user"></div>
                 </div>
                 <button type="button" class="comunidade-theme-toggle comunidade-topbar__theme" data-theme-toggle aria-label="Alternar tema">

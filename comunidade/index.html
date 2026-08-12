@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/comunidade/comunidade.css?v=20260810c">
+    <link rel="stylesheet" href="/comunidade/comunidade.css?v=20260812a">
     <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('comunidade-theme') === 'light' ? 'light' : 'dark');</script>
 </head>
 <body>
@@ -16,7 +16,10 @@
         <header class="comunidade-topbar">
             <div class="comunidade-topbar__row comunidade-topbar__row--main">
                 <div class="comunidade-topbar__identity">
-                    <div class="comunidade-topbar__brand">Onda Prodígio <span>· Comunidade</span></div>
+                    <div class="comunidade-topbar__brand">
+                        <img src="/comunidade/assets/mascot.png" alt="" class="comunidade-brand-mark" width="32" height="32">
+                        Onda Prodígio <span>· Comunidade</span>
+                    </div>
                 </div>
                 <a class="comunidade-profile-chip" id="topbar-profile" href="/comunidade/perfil" hidden>
                     <span class="comunidade-profile-chip__avatar" id="topbar-avatar" aria-hidden="true">?</span>
@@ -57,6 +60,9 @@
                         </div>
 
                         <div class="comunidade-roadmap" id="comunidade-roadmap" aria-label="Progresso da jornada"></div>
+                    </div>
+                    <div class="comunidade-hero__visual" aria-hidden="true">
+                        <img src="/comunidade/assets/mascot.png" alt="" class="comunidade-hero__mascot" width="480" height="480">
                     </div>
                 </div>
             </section>

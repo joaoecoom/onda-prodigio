@@ -242,6 +242,7 @@
             '<div class="comunidade-survey">' +
                 previewBanner +
                 '<div class="comunidade-survey__hero">' +
+                    '<img src="/comunidade/assets/mascot.png" alt="Dr. Turbay, mascote Onda Prodígio" class="comunidade-mascot comunidade-mascot--survey" width="320" height="320">' +
                     '<h2 class="comunidade-survey__title">Questionário de Boas-vindas: Onda Prodígio</h2>' +
                     '<p class="comunidade-survey__intro">Damos-te as boas-vindas à família Onda Prodígio!</p>' +
                     '<p class="comunidade-survey__intro">Um grande cumprimento da professora Angela Campos e do Dr. Turbay. Queremos agradecer-te de coração a confiança que depositaste em nós para acompanhar o futuro do teu filho.</p>' +
