@@ -10,6 +10,7 @@
     var statusBox = document.getElementById('metrics-status');
     var summaryTotalRoot = document.getElementById('metrics-summary-total');
     var summaryTrafficRoot = document.getElementById('metrics-summary-traffic');
+    var profitsRoot = document.getElementById('metrics-profits');
     var funnelRoot = document.getElementById('metrics-funnel');
     var treeRoot = document.getElementById('metrics-tree');
     var recentBody = document.getElementById('metrics-recent-body');
@@ -713,6 +714,7 @@
 
             renderRecentSales(stripe.recent_sales || stripe.sales || []);
         } else {
+            renderProfitCards(stripe.summary || {}, mergedSummary);
             renderTotalSummaryCards(stripe.summary || {}, mergedSummary);
             renderTrafficSummaryCards(stripe.summary || {}, mergedSummary);
             renderFunnelCards(stripe.summary || {}, mergedSummary, vturbSummary);
@@ -780,6 +782,48 @@
         return '0';
     }
 
+    function renderProfitCards(stripeSummary, mergedSummary) {
+        if (!profitsRoot) {
+            return;
+        }
+
+        if (!mergedSummary) {
+            profitsRoot.innerHTML = '';
+            return;
+        }
+
+        var spendEur = Number(mergedSummary.meta_spend_eur || 0);
+        var totalRevenue = Number(stripeSummary.total_revenue_eur || 0);
+        var trafficRevenue = Number(stripeSummary.traffic_revenue_eur || 0);
+        var otherRevenue = Number(stripeSummary.other_revenue_eur || 0);
+        var trafficProfit = Number((trafficRevenue - spendEur).toFixed(2));
+        var totalProfit = Number((totalRevenue - spendEur).toFixed(2));
+        var trafficClass = trafficProfit >= 0 ? ' metrics-profit-card__value--positive' : ' metrics-profit-card__value--negative';
+        var totalClass = totalProfit >= 0 ? ' metrics-profit-card__value--positive' : ' metrics-profit-card__value--negative';
+
+        var bridgeHtml = '';
+        if (otherRevenue > 0) {
+            bridgeHtml =
+                '<div class="metrics-profits__bridge">' +
+                '<span class="metrics-profits__bridge-label">+ fora tráfego</span>' +
+                '<span class="metrics-profits__bridge-value">' + escapeHtml(formatMoneyEur(otherRevenue)) + '</span>' +
+                '</div>';
+        }
+
+        profitsRoot.innerHTML =
+            '<article class="metrics-profit-card metrics-profit-card--traffic">' +
+            '<div class="metrics-profit-card__label">Lucro tráfego</div>' +
+            '<div class="metrics-profit-card__value' + trafficClass + '">' + escapeHtml(formatMoneyEur(trafficProfit)) + '</div>' +
+            '<div class="metrics-profit-card__hint">Receita funil − gasto Meta · ' + escapeHtml(formatMoneyEur(trafficRevenue)) + ' − ' + escapeHtml(formatMoneyEur(spendEur)) + '</div>' +
+            '</article>' +
+            bridgeHtml +
+            '<article class="metrics-profit-card metrics-profit-card--total">' +
+            '<div class="metrics-profit-card__label">Lucro total</div>' +
+            '<div class="metrics-profit-card__value' + totalClass + '">' + escapeHtml(formatMoneyEur(totalProfit)) + '</div>' +
+            '<div class="metrics-profit-card__hint">Receita total − gasto Meta · ' + escapeHtml(formatMoneyEur(totalRevenue)) + ' − ' + escapeHtml(formatMoneyEur(spendEur)) + '</div>' +
+            '</article>';
+    }
+
     function renderTotalSummaryCards(stripeSummary, mergedSummary) {
         if (!summaryTotalRoot) {
             return;
@@ -787,8 +831,6 @@
 
         var revenueEur = Number(stripeSummary.total_revenue_eur || 0);
         var spendEur = mergedSummary ? Number(mergedSummary.meta_spend_eur || 0) : 0;
-        var profitEur = Number((revenueEur - spendEur).toFixed(2));
-        var profitClass = profitEur >= 0 ? ' metrics-card__value--positive' : ' metrics-card__value--negative';
         var roas = formatRoas(revenueEur, spendEur, mergedSummary ? mergedSummary.roas_real : null);
         var otherHint = Number(stripeSummary.other_sales || 0) > 0
             ? ('+' + stripeSummary.other_sales + ' fora tráfego · ' + formatMoneyEur(stripeSummary.other_revenue_eur || 0))
@@ -809,12 +851,6 @@
                 label: 'Gasto',
                 value: mergedSummary ? formatMoneyEur(spendEur) : '—',
                 hint: mergedSummary ? formatMetaExchangeHint(mergedSummary) : 'Meta Ads',
-            },
-            {
-                label: 'Lucro',
-                value: mergedSummary ? formatMoneyEur(profitEur) : '—',
-                hint: 'Receita total − gasto Meta',
-                valueClass: mergedSummary ? profitClass : '',
             },
             {
                 label: 'ROAS',
@@ -851,11 +887,6 @@
                 value: mergedSummary && spendEur > 0 ? trafficRoas : (mergedSummary ? trafficRoas : '—'),
                 hint: 'Receita tráfego ÷ gasto Meta',
             },
-            {
-                label: 'Fora tráfego',
-                value: stripeSummary.other_sales || 0,
-                hint: formatMoneyEur(stripeSummary.other_revenue_eur || 0) + ' · comunidade/outros',
-            },
         ];
 
         summaryTrafficRoot.innerHTML = cards.map(function (card) {
@@ -880,6 +911,7 @@
     }
 
     function renderSummaryCards(stripeSummary, mergedSummary) {
+        renderProfitCards(stripeSummary, mergedSummary);
         renderTotalSummaryCards(stripeSummary, mergedSummary);
         renderTrafficSummaryCards(stripeSummary, mergedSummary);
     }

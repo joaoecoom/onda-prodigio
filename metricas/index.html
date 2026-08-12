@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/metricas/metricas.css?v=10">
+    <link rel="stylesheet" href="/metricas/metricas.css?v=11">
 </head>
 <body>
     <noscript>
@@ -54,12 +54,20 @@
             <div class="metrics-status" id="metrics-status" hidden></div>
             <div class="metrics-meta-banner" id="metrics-meta-banner" hidden></div>
 
+            <section class="metrics-section metrics-section--profits">
+                <div class="metrics-section__head">
+                    <h2>Lucros do dia</h2>
+                    <p>Tráfego pago vs resultado global (inclui vendas fora do funil).</p>
+                </div>
+                <div class="metrics-profits" id="metrics-profits"></div>
+            </section>
+
             <section class="metrics-section">
                 <div class="metrics-section__head">
                     <h2>Resultados totais</h2>
                     <p>Todas as vendas Stripe — funil, comunidade e upsells.</p>
                 </div>
-                <div class="metrics-summary" id="metrics-summary-total"></div>
+                <div class="metrics-summary metrics-summary--total" id="metrics-summary-total"></div>
             </section>
 
             <section class="metrics-section">
@@ -94,6 +102,6 @@
     </div>
 
     <script src="/metricas/date-range-picker.js?v=3" defer></script>
-    <script src="/metricas/metricas.js?v=20" defer></script>
+    <script src="/metricas/metricas.js?v=21" defer></script>
 </body>
 </html>
