@@ -286,6 +286,14 @@
         return formatMoney(value, currency);
     }
 
+    function formatOptionalMoneyEur(value) {
+        if (value === null || value === undefined || value === '') {
+            return '—';
+        }
+
+        return formatMoneyEur(value);
+    }
+
     function formatOptionalNumber(value) {
         if (value === null || value === undefined || value === '') {
             return '—';
@@ -294,31 +302,53 @@
         return formatNumber(value);
     }
 
-    function renderSpendLabel(node, currency) {
-        if (currency === 'EUR') {
-            return formatMoneyEur(node.spend_eur);
+    function formatMetaExchangeHint(mergedSummary) {
+        if (!mergedSummary || mergedSummary.meta_currency === 'EUR') {
+            return 'Meta Ads';
         }
 
-        return formatMoney(node.spend_original, currency) + ' (' + formatMoneyEur(node.spend_eur) + ')';
+        var rate = Number(mergedSummary.meta_eur_per_unit || 0);
+
+        if (!rate) {
+            return 'Meta · ' + mergedSummary.meta_currency + ' convertido para EUR';
+        }
+
+        return 'Meta ' + mergedSummary.meta_currency + ' → EUR (1 ' + mergedSummary.meta_currency + ' = ' +
+            rate.toFixed(4).replace('.', ',') + ' €)';
+    }
+
+    function buildMetaExchangeContext(mergedSummary) {
+        if (!mergedSummary || mergedSummary.meta_currency === 'EUR') {
+            return '';
+        }
+
+        var rate = Number(mergedSummary.meta_eur_per_unit || 0);
+
+        if (!rate) {
+            return 'Valores Meta convertidos para EUR';
+        }
+
+        return 'Valores Meta convertidos para EUR (1 ' + mergedSummary.meta_currency + ' = ' +
+            rate.toFixed(4).replace('.', ',') + ' €)';
     }
 
     var META_TABLE_COLUMNS = [
         { key: 'name', label: 'Campanha', type: 'name' },
-        { key: 'spend_original', label: 'Gasto', type: 'money' },
+        { key: 'spend_eur', label: 'Gasto', type: 'money_eur' },
         { key: 'impressions', label: 'Impressões', type: 'number' },
-        { key: 'cpm', label: 'CPM', type: 'money' },
+        { key: 'cpm_eur', label: 'CPM', type: 'money_eur' },
         { key: 'reach', label: 'Alcance', type: 'number' },
         { key: 'frequency', label: 'Freq.', type: 'decimal' },
-        { key: 'cpc_all', label: 'CPC (tudo)', type: 'money' },
-        { key: 'cpc_link', label: 'CPC (lig.)', type: 'money' },
+        { key: 'cpc_all_eur', label: 'CPC (tudo)', type: 'money_eur' },
+        { key: 'cpc_link_eur', label: 'CPC (lig.)', type: 'money_eur' },
         { key: 'ctr_all', label: 'CTR (tudo)', type: 'percent' },
         { key: 'ctr_link', label: 'CTR (lig.)', type: 'percent' },
         { key: 'inline_link_clicks', label: 'Cliques lig.', type: 'number' },
         { key: 'landing_page_views', label: 'LPV', type: 'number' },
-        { key: 'cost_per_landing_page_view', label: 'Custo/LPV', type: 'money' },
+        { key: 'cost_per_landing_page_view_eur', label: 'Custo/LPV', type: 'money_eur' },
         { key: 'initiate_checkout', label: 'IC', type: 'number' },
         { key: 'meta_purchases', label: 'Compras Meta', type: 'number' },
-        { key: 'meta_purchase_value_original', label: 'Valor Meta', type: 'money' },
+        { key: 'meta_purchase_value_eur', label: 'Valor Meta', type: 'money_eur' },
         { key: 'stripe_sales', label: 'Stripe', type: 'number' },
         { key: 'stripe_revenue_eur', label: 'Receita Stripe', type: 'money_eur' },
         { key: 'roas_real', label: 'ROAS', type: 'decimal' },
@@ -340,7 +370,7 @@
         }
 
         if (column.type === 'money_eur') {
-            return escapeHtml(formatMoneyEur(value || 0));
+            return escapeHtml(formatOptionalMoneyEur(value));
         }
 
         if (column.type === 'percent') {
@@ -472,6 +502,7 @@
         metaContext.textContent = [
             account.name || account.label || ('Conta ' + account.id),
             'Vendas Stripe: fuso Portugal',
+            buildMetaExchangeContext(merged.summary),
             buildMetaDateContext(merged.date_range, account),
         ].filter(Boolean).join(' · ');
 
@@ -748,9 +779,7 @@
             {
                 label: 'Gasto',
                 value: mergedSummary ? formatMoneyEur(spendEur) : '—',
-                hint: mergedSummary && mergedSummary.meta_currency !== 'EUR'
-                    ? 'Meta · ' + mergedSummary.meta_currency + ' convertido'
-                    : 'Meta Ads',
+                hint: mergedSummary ? formatMetaExchangeHint(mergedSummary) : 'Meta Ads',
             },
             {
                 label: 'Lucro',
