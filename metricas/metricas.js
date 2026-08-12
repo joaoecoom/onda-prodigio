@@ -17,6 +17,7 @@
     var generatedAt = document.getElementById('metrics-generated-at');
     var noteBox = document.getElementById('metrics-note');
     var refreshButton = document.getElementById('metrics-refresh');
+    var pushToggleButton = document.getElementById('metrics-push-toggle');
     var logoutButton = document.getElementById('metrics-logout');
     var accountWrap = document.getElementById('metrics-account-wrap');
     var accountSelect = document.getElementById('metrics-account');
@@ -186,13 +187,59 @@
     }
 
     function maybeRequestNotificationPermission() {
-        if (!window.Notification || Notification.permission !== 'default') {
+        initMetricsPush(false);
+    }
+
+    function updatePushButtonState() {
+        if (!pushToggleButton || !window.MetricsPush) {
             return;
         }
 
-        Notification.requestPermission().catch(function () {
-            // Permissão recusada ou indisponível.
-        });
+        if (!window.MetricsPush.isSupported()) {
+            pushToggleButton.hidden = true;
+            return;
+        }
+
+        pushToggleButton.hidden = false;
+        var permission = window.MetricsPush.getPermission();
+
+        if (permission === 'granted') {
+            pushToggleButton.textContent = 'Notificações ✓';
+            pushToggleButton.classList.add('metrics-button--push-active');
+        } else if (permission === 'denied') {
+            pushToggleButton.textContent = 'Notificações bloqueadas';
+            pushToggleButton.classList.remove('metrics-button--push-active');
+        } else {
+            pushToggleButton.textContent = 'Activar notificações';
+            pushToggleButton.classList.remove('metrics-button--push-active');
+        }
+    }
+
+    async function initMetricsPush(forcePrompt) {
+        if (!window.MetricsPush || !window.MetricsPush.isSupported()) {
+            updatePushButtonState();
+            return;
+        }
+
+        var token = getToken();
+
+        if (!token || dashboardSection.hidden) {
+            return;
+        }
+
+        try {
+            if (window.MetricsPush.getPermission() === 'granted') {
+                await window.MetricsPush.subscribe(token, { force: false });
+            } else if (forcePrompt) {
+                await window.MetricsPush.subscribe(token, { force: true });
+            }
+        } catch (error) {
+            if (forcePrompt) {
+                setStatus(error.message || 'Não foi possível activar notificações.', true);
+            }
+        }
+
+        updatePushButtonState();
     }
 
     function showSaleToast(sale) {
@@ -1312,9 +1359,22 @@
         });
     });
 
+    if (pushToggleButton) {
+        pushToggleButton.addEventListener('click', function () {
+            initMetricsPush(true).catch(function () {
+                setStatus('Erro de ligação. Tenta outra vez.', true);
+            });
+        });
+    }
+
     logoutButton.addEventListener('click', function () {
         stopAutoRefresh();
         stopSalesPulse();
+
+        if (window.MetricsPush) {
+            window.MetricsPush.unsubscribe(getToken()).catch(function () {});
+        }
+
         setToken('');
         passwordInput.value = '';
         showLogin();

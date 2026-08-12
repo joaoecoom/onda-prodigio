@@ -1,0 +1,26 @@
+{
+    "name": "Métricas Onda Prodígio",
+    "short_name": "Métricas",
+    "description": "Dashboard interno — vendas Stripe e tráfego Meta.",
+    "start_url": "/metricas/",
+    "scope": "/metricas/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#0f1419",
+    "theme_color": "#0f1419",
+    "lang": "pt-PT",
+    "icons": [
+        {
+            "src": "/comunidade/assets/onda-prodigio.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/comunidade/assets/onda-prodigio.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

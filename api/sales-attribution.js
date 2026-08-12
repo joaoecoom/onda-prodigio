@@ -10,6 +10,8 @@ var adminMembers = require('../lib/admin/members');
 var stripeFailedPayments = require('../lib/metrics/stripe-failed-payments');
 var failedPaymentQueue = require('../lib/comunidade/failed-payment-recovery-queue');
 var vturbAnalytics = require('../lib/metrics/vturb-analytics');
+var pushNotify = require('../lib/metrics/push-notify');
+var pushSubscriptions = require('../lib/metrics/push-subscriptions');
 
 async function readJsonBody(req) {
     if (req.body && typeof req.body === 'object') {
@@ -381,6 +383,47 @@ async function handleAdminPost(req, res, action) {
     }
 }
 
+async function handlePushConfig(res) {
+    return res.status(200).json({
+        enabled: pushNotify.isPushConfigured(),
+        vapid_public_key: pushNotify.getPublicKey(),
+    });
+}
+
+async function handlePushSubscribe(req, res) {
+    var body = await readJsonBody(req);
+    var subscription = body.subscription;
+
+    if (!subscription || !subscription.endpoint) {
+        return res.status(400).json({ error: 'Subscrição push em falta.' });
+    }
+
+    try {
+        var result = await pushSubscriptions.upsertSubscription(
+            subscription,
+            req.headers['user-agent'] || ''
+        );
+
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(500).json({ error: error.message || 'Push falhou.' });
+    }
+}
+
+async function handlePushUnsubscribe(req, res) {
+    var body = await readJsonBody(req);
+    var endpoint = body.subscription && body.subscription.endpoint
+        ? body.subscription.endpoint
+        : body.endpoint;
+
+    try {
+        var result = await pushSubscriptions.removeSubscription(endpoint);
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(500).json({ error: error.message || 'Push falhou.' });
+    }
+}
+
 module.exports = async function handler(req, res) {
     if (!metricsAuth.isAuthorized(req)) {
         return res.status(401).json({ error: 'Não autorizado.' });
@@ -391,6 +434,14 @@ module.exports = async function handler(req, res) {
     if (req.method === 'POST') {
         if (action === 'meta_status') {
             return handleMetaStatus(req, res);
+        }
+
+        if (action === 'push_subscribe') {
+            return handlePushSubscribe(req, res);
+        }
+
+        if (action === 'push_unsubscribe') {
+            return handlePushUnsubscribe(req, res);
         }
 
         if (action.indexOf('admin_') === 0) {
@@ -436,6 +487,10 @@ module.exports = async function handler(req, res) {
         if (action === 'sales_pulse') {
             var pulseReport = await stripeSales.buildSalesPulse(req.query);
             return res.status(200).json(pulseReport);
+        }
+
+        if (action === 'push_config') {
+            return handlePushConfig(res);
         }
 
         if (action === 'meta') {

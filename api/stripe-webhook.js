@@ -61,6 +61,16 @@ module.exports = async function handler(req, res) {
             } catch (accessError) {
                 console.error('Erro ao criar acesso à comunidade:', accessError);
             }
+
+            if (metadata.stripe_mode !== 'test' && metadata.checkout !== 'checkout9-test') {
+                try {
+                    var pushNotify = require('../lib/metrics/push-notify');
+                    var pushResult = await pushNotify.notifySaleFromPaymentIntent(event.data.object);
+                    console.log('Metrics push:', event.data.object.id, JSON.stringify(pushResult));
+                } catch (pushError) {
+                    console.error('Erro ao enviar push métricas:', pushError);
+                }
+            }
         }
 
         if (event.type === 'checkout.session.completed') {
