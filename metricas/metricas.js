@@ -491,6 +491,7 @@
         vturbContext.textContent = [
             'Player ' + (vturb.player_id || ''),
             vturb.date_range && vturb.date_range.timezone ? 'Fuso ' + vturb.date_range.timezone : '',
+            vturb.player_meta && vturb.player_meta.pitch_time ? 'Pitch ' + vturb.player_meta.pitch_time + 's' : '',
         ].filter(Boolean).join(' · ');
 
         vturbGeneratedAt.textContent = vturb.generated_at
@@ -693,11 +694,32 @@
         }
     }
 
+    function formatRoas(mergedSummary, revenueEur, spendEur) {
+        if (!mergedSummary) {
+            return { value: '—', hint: 'Receita ÷ gasto Meta' };
+        }
+
+        if (spendEur > 0) {
+            var roas = mergedSummary.roas_real !== null && mergedSummary.roas_real !== undefined
+                ? mergedSummary.roas_real
+                : Number((revenueEur / spendEur).toFixed(2));
+
+            return { value: roas, hint: 'Receita ÷ gasto Meta' };
+        }
+
+        if (revenueEur > 0) {
+            return { value: '∞', hint: 'Receita sem gasto Meta no período' };
+        }
+
+        return { value: '0', hint: 'Sem receita nem gasto no período' };
+    }
+
     function renderSummaryCards(stripeSummary, mergedSummary) {
         var revenueEur = Number(stripeSummary.total_revenue_eur || 0);
         var spendEur = mergedSummary ? Number(mergedSummary.meta_spend_eur || 0) : 0;
         var profitEur = Number((revenueEur - spendEur).toFixed(2));
         var profitClass = profitEur >= 0 ? ' metrics-card__value--positive' : ' metrics-card__value--negative';
+        var roas = formatRoas(mergedSummary, revenueEur, spendEur);
 
         var cards = [
             {
@@ -725,8 +747,8 @@
             },
             {
                 label: 'ROAS',
-                value: mergedSummary && mergedSummary.roas_real !== null ? mergedSummary.roas_real : '—',
-                hint: 'Receita ÷ gasto Meta',
+                value: roas.value,
+                hint: roas.hint,
             },
         ];
 
