@@ -433,6 +433,11 @@ module.exports = async function handler(req, res) {
             return handleCombined(req, res);
         }
 
+        if (action === 'sales_pulse') {
+            var pulseReport = await stripeSales.buildSalesPulse(req.query);
+            return res.status(200).json(pulseReport);
+        }
+
         if (action === 'meta') {
             return handleMeta(req, res);
         }

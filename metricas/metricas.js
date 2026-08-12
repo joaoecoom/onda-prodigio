@@ -34,6 +34,11 @@
     var latestPayload = null;
     var autoRefreshTimer = null;
     var AUTO_REFRESH_MS = 60 * 1000;
+    var salesPulseTimer = null;
+    var SALES_PULSE_MS = 15 * 1000;
+    var salesPulseSeeded = false;
+    var SEEN_SALES_KEY = 'onda-metrics-seen-sales';
+    var toastsRoot = document.getElementById('metrics-toasts');
     var datePickerRoot = document.getElementById('metrics-date-picker-root');
     var datePicker = window.MetricsDateRangePicker.create({
         root: datePickerRoot,
@@ -59,6 +64,7 @@
 
     function showLogin() {
         stopAutoRefresh();
+        stopSalesPulse();
         loginSection.hidden = false;
         dashboardSection.hidden = true;
     }
@@ -123,6 +129,177 @@
         }
     }
 
+    function getSeenSalesStorageKey(range) {
+        var day = range && range.from ? range.from : getTodayIsoLocal();
+        return SEEN_SALES_KEY + ':' + day;
+    }
+
+    function loadSeenSaleIds(range) {
+        try {
+            var raw = window.sessionStorage.getItem(getSeenSalesStorageKey(range));
+
+            return raw ? JSON.parse(raw) : [];
+        } catch (error) {
+            return [];
+        }
+    }
+
+    function saveSeenSaleIds(range, ids) {
+        try {
+            window.sessionStorage.setItem(getSeenSalesStorageKey(range), JSON.stringify(ids.slice(0, 100)));
+        } catch (error) {
+            // Ignorar quota.
+        }
+    }
+
+    function stopSalesPulse() {
+        if (salesPulseTimer) {
+            window.clearInterval(salesPulseTimer);
+            salesPulseTimer = null;
+        }
+
+        salesPulseSeeded = false;
+    }
+
+    function startSalesPulse() {
+        stopSalesPulse();
+
+        if (dashboardSection.hidden || !getToken()) {
+            return;
+        }
+
+        var range = datePicker.getAppliedRange();
+
+        if (!isLiveRange(range)) {
+            return;
+        }
+
+        pollSalesPulse(true);
+
+        salesPulseTimer = window.setInterval(function () {
+            if (document.hidden || dashboardSection.hidden || !getToken()) {
+                return;
+            }
+
+            pollSalesPulse(false);
+        }, SALES_PULSE_MS);
+    }
+
+    function maybeRequestNotificationPermission() {
+        if (!window.Notification || Notification.permission !== 'default') {
+            return;
+        }
+
+        Notification.requestPermission().catch(function () {
+            // Permissão recusada ou indisponível.
+        });
+    }
+
+    function showSaleToast(sale) {
+        if (!toastsRoot || !sale) {
+            return;
+        }
+
+        var toast = document.createElement('div');
+        toast.className = 'metrics-toast';
+        toast.innerHTML =
+            '<div class="metrics-toast__icon" aria-hidden="true">€</div>' +
+            '<div class="metrics-toast__body">' +
+            '<div class="metrics-toast__title">Nova venda</div>' +
+            '<div class="metrics-toast__amount">' + escapeHtml(formatMoneyEur(sale.amount_eur)) + '</div>' +
+            '<div class="metrics-toast__meta">' +
+            escapeHtml(sale.source_label || 'Stripe') +
+            ' · ' + escapeHtml(sale.campaign_name || 'Desconhecido') +
+            '</div>' +
+            '</div>';
+
+        toastsRoot.appendChild(toast);
+
+        window.requestAnimationFrame(function () {
+            toast.classList.add('metrics-toast--visible');
+        });
+
+        window.setTimeout(function () {
+            toast.classList.remove('metrics-toast--visible');
+
+            window.setTimeout(function () {
+                toast.remove();
+            }, 320);
+        }, 8000);
+
+        if (window.Notification && Notification.permission === 'granted') {
+            try {
+                new Notification('Nova venda · ' + formatMoneyEur(sale.amount_eur), {
+                    body: (sale.source_label || 'Stripe') + ' · ' + (sale.campaign_name || 'Desconhecido'),
+                    tag: sale.payment_intent,
+                });
+            } catch (error) {
+                // Notificações indisponíveis neste browser.
+            }
+        }
+    }
+
+    async function pollSalesPulse(seedOnly) {
+        var token = getToken();
+        var range = datePicker.getAppliedRange();
+
+        if (!token || !isLiveRange(range)) {
+            return;
+        }
+
+        try {
+            var data = await fetchJson(
+                '/api/sales-attribution?' + buildQuery(range, 'sales_pulse', {}),
+                token
+            );
+
+            if (!data || !Array.isArray(data.sales)) {
+                return;
+            }
+
+            var seenIds = loadSeenSaleIds(range);
+            var seenSet = {};
+
+            seenIds.forEach(function (id) {
+                seenSet[id] = true;
+            });
+
+            if (seedOnly || !salesPulseSeeded) {
+                data.sales.forEach(function (sale) {
+                    if (sale.payment_intent) {
+                        seenSet[sale.payment_intent] = true;
+                    }
+                });
+                salesPulseSeeded = true;
+                saveSeenSaleIds(range, Object.keys(seenSet));
+                return;
+            }
+
+            var newSales = data.sales.filter(function (sale) {
+                return sale.payment_intent && !seenSet[sale.payment_intent];
+            }).sort(function (a, b) {
+                return new Date(a.created).getTime() - new Date(b.created).getTime();
+            });
+
+            if (!newSales.length) {
+                return;
+            }
+
+            newSales.forEach(function (sale) {
+                showSaleToast(sale);
+                seenSet[sale.payment_intent] = true;
+            });
+
+            saveSeenSaleIds(range, Object.keys(seenSet));
+
+            fetchMetrics({ refresh: true, silent: true }).catch(function () {
+                // Mantém toasts mesmo se o refresh falhar.
+            });
+        } catch (error) {
+            // Poll silencioso — não bloquear o dashboard.
+        }
+    }
+
     function startAutoRefresh() {
         stopAutoRefresh();
 
@@ -148,18 +325,22 @@
     }
 
     function updateLiveIndicator(range) {
-        if (!generatedAt) {
-            return;
+        if (generatedAt) {
+            var baseText = generatedAt.textContent.replace(/ · Auto-actualização.*$/, '');
+
+            if (isLiveRange(range) && !dashboardSection.hidden) {
+                generatedAt.textContent = baseText + ' · Auto-actualização a cada minuto';
+            } else {
+                generatedAt.textContent = baseText;
+            }
         }
 
-        var baseText = generatedAt.textContent.replace(/ · Auto-actualização.*$/, '');
-
         if (isLiveRange(range) && !dashboardSection.hidden) {
-            generatedAt.textContent = baseText + ' · Auto-actualização a cada minuto';
             startAutoRefresh();
+            startSalesPulse();
         } else {
-            generatedAt.textContent = baseText;
             stopAutoRefresh();
+            stopSalesPulse();
         }
     }
 
@@ -814,6 +995,8 @@
             if (!silent) {
                 setStatus('', false);
             }
+
+            maybeRequestNotificationPermission();
         } catch (error) {
             if (!silent) {
                 setStatus(error.message || 'Erro ao carregar métricas.', true);
@@ -1131,6 +1314,7 @@
 
     logoutButton.addEventListener('click', function () {
         stopAutoRefresh();
+        stopSalesPulse();
         setToken('');
         passwordInput.value = '';
         showLogin();
@@ -1139,12 +1323,14 @@
     document.addEventListener('visibilitychange', function () {
         if (document.hidden) {
             stopAutoRefresh();
+            stopSalesPulse();
             return;
         }
 
         if (!dashboardSection.hidden && getToken()) {
             fetchMetrics({ refresh: true, silent: true }).catch(function () {});
             startAutoRefresh();
+            startSalesPulse();
         }
     });
 
