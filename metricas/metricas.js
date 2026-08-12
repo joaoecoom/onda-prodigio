@@ -17,8 +17,10 @@
     var generatedAt = document.getElementById('metrics-generated-at');
     var noteBox = document.getElementById('metrics-note');
     var refreshButton = document.getElementById('metrics-refresh');
-    var pushToggleButton = document.getElementById('metrics-push-toggle');
-    var pushTestButton = document.getElementById('metrics-push-test');
+    var pushBanner = document.getElementById('metrics-push-banner');
+    var pushBannerText = document.getElementById('metrics-push-banner-text');
+    var pushBannerToggle = document.getElementById('metrics-push-banner-toggle');
+    var pushBannerTest = document.getElementById('metrics-push-banner-test');
     var logoutButton = document.getElementById('metrics-logout');
     var accountWrap = document.getElementById('metrics-account-wrap');
     var accountSelect = document.getElementById('metrics-account');
@@ -74,6 +76,7 @@
     function showDashboard() {
         loginSection.hidden = true;
         dashboardSection.hidden = false;
+        updatePushButtonState();
     }
 
     function setStatus(message, isError) {
@@ -191,34 +194,78 @@
         initMetricsPush(false);
     }
 
+    function isStandalonePwa() {
+        return window.matchMedia('(display-mode: standalone)').matches ||
+            window.navigator.standalone === true;
+    }
+
     function updatePushButtonState() {
-        if (!pushToggleButton || !window.MetricsPush) {
+        if (!pushBanner) {
             return;
         }
 
-        if (!window.MetricsPush.isSupported()) {
-            pushToggleButton.hidden = true;
-            if (pushTestButton) {
-                pushTestButton.hidden = true;
+        if (dashboardSection.hidden || !getToken()) {
+            pushBanner.hidden = true;
+            return;
+        }
+
+        pushBanner.hidden = false;
+
+        if (!window.MetricsPush) {
+            if (pushBannerText) {
+                pushBannerText.textContent = 'A carregar alertas…';
             }
             return;
         }
 
-        pushToggleButton.hidden = false;
-        if (pushTestButton) {
-            pushTestButton.hidden = false;
+        if (!window.MetricsPush.isSupported()) {
+            if (pushBannerText) {
+                pushBannerText.textContent = isStandalonePwa()
+                    ? 'Este browser não suporta push. Actualiza o iOS (16.4+) ou abre noutro dispositivo.'
+                    : 'No iPhone: Safari → Partilhar → «Adicionar ao Ecrã Principal». Abre a app «Métricas» e volta aqui.';
+            }
+            if (pushBannerToggle) {
+                pushBannerToggle.hidden = true;
+            }
+            if (pushBannerTest) {
+                pushBannerTest.hidden = true;
+            }
+            return;
         }
+
+        if (pushBannerToggle) {
+            pushBannerToggle.hidden = false;
+        }
+        if (pushBannerTest) {
+            pushBannerTest.hidden = false;
+        }
+
         var permission = window.MetricsPush.getPermission();
 
         if (permission === 'granted') {
-            pushToggleButton.textContent = 'Notificações ✓';
-            pushToggleButton.classList.add('metrics-button--push-active');
+            if (pushBannerToggle) {
+                pushBannerToggle.textContent = 'Notificações activas ✓';
+                pushBannerToggle.classList.add('metrics-button--push-active');
+            }
+            if (pushBannerText) {
+                pushBannerText.textContent = 'Vais receber alerta + som quando entrar uma venda (mesmo com a app fechada).';
+            }
         } else if (permission === 'denied') {
-            pushToggleButton.textContent = 'Notificações bloqueadas';
-            pushToggleButton.classList.remove('metrics-button--push-active');
+            if (pushBannerToggle) {
+                pushBannerToggle.textContent = 'Notificações bloqueadas';
+                pushBannerToggle.classList.remove('metrics-button--push-active');
+            }
+            if (pushBannerText) {
+                pushBannerText.textContent = 'Activa nas Definições do iPhone → Notificações → Métricas.';
+            }
         } else {
-            pushToggleButton.textContent = 'Activar notificações';
-            pushToggleButton.classList.remove('metrics-button--push-active');
+            if (pushBannerToggle) {
+                pushBannerToggle.textContent = 'Activar notificações';
+                pushBannerToggle.classList.remove('metrics-button--push-active');
+            }
+            if (pushBannerText) {
+                pushBannerText.textContent = 'Recebe «ka-ching» e notificação quando entra uma venda Stripe.';
+            }
         }
     }
 
@@ -1377,16 +1424,16 @@
         });
     });
 
-    if (pushToggleButton) {
-        pushToggleButton.addEventListener('click', function () {
+    if (pushBannerToggle) {
+        pushBannerToggle.addEventListener('click', function () {
             initMetricsPush(true).catch(function () {
                 setStatus('Erro de ligação. Tenta outra vez.', true);
             });
         });
     }
 
-    if (pushTestButton) {
-        pushTestButton.addEventListener('click', async function () {
+    if (pushBannerTest) {
+        pushBannerTest.addEventListener('click', async function () {
             var token = getToken();
 
             if (!token) {
@@ -1403,6 +1450,9 @@
 
                 if (result.sent > 0) {
                     setStatus('Notificação de teste enviada.', false);
+                    if (window.MetricsSaleSound) {
+                        window.MetricsSaleSound.play();
+                    }
                 } else if (result.reason === 'no_subscribers') {
                     setStatus('Primeiro toca «Activar notificações» e depois Teste.', true);
                 } else {

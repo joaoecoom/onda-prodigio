@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/metricas/metricas.css?v=13">
+    <link rel="stylesheet" href="/metricas/metricas.css?v=14">
 </head>
 <body>
     <noscript>
@@ -52,8 +52,6 @@
                         <select id="metrics-account"></select>
                     </label>
                     <div id="metrics-date-picker-root"></div>
-                    <button class="metrics-button metrics-button--ghost metrics-button--push" type="button" id="metrics-push-toggle" hidden>Notificações</button>
-                    <button class="metrics-button metrics-button--ghost" type="button" id="metrics-push-test" hidden>Teste</button>
                     <button class="metrics-button metrics-button--ghost" type="button" id="metrics-refresh">Actualizar</button>
                     <button class="metrics-button metrics-button--ghost" type="button" id="metrics-logout">Sair</button>
                 </div>
@@ -61,6 +59,17 @@
 
             <div class="metrics-status" id="metrics-status" hidden></div>
             <div class="metrics-meta-banner" id="metrics-meta-banner" hidden></div>
+
+            <section class="metrics-push-banner" id="metrics-push-banner" hidden>
+                <div class="metrics-push-banner__copy">
+                    <strong>Alertas de vendas</strong>
+                    <p id="metrics-push-banner-text">Recebe «ka-ching» e notificação quando entra uma venda Stripe.</p>
+                </div>
+                <div class="metrics-push-banner__actions">
+                    <button class="metrics-button metrics-button--push-primary" type="button" id="metrics-push-banner-toggle">Activar notificações</button>
+                    <button class="metrics-button metrics-button--ghost" type="button" id="metrics-push-banner-test">Teste</button>
+                </div>
+            </section>
 
             <section class="metrics-section metrics-section--profits">
                 <div class="metrics-section__head">
@@ -114,6 +123,6 @@
     <script src="/metricas/sale-sound.js?v=1" defer></script>
     <script src="/metricas/push.js?v=1" defer></script>
     <script src="/metricas/date-range-picker.js?v=3" defer></script>
-    <script src="/metricas/metricas.js?v=29" defer></script>
+    <script src="/metricas/metricas.js?v=30" defer></script>
 </body>
 </html>
