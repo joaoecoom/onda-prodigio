@@ -248,7 +248,7 @@
                 pushBannerToggle.classList.add('metrics-button--push-active');
             }
             if (pushBannerText) {
-                pushBannerText.textContent = 'Vais receber alerta + som quando entrar uma venda (mesmo com a app fechada).';
+                pushBannerText.textContent = 'Vais receber alerta quando entrar uma venda. Ka-ching ao abrir a app; no iPhone bloqueado usa som do sistema (limitação Apple).';
             }
         } else if (permission === 'denied') {
             if (pushBannerToggle) {

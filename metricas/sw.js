@@ -28,9 +28,11 @@ self.addEventListener('push', function (event) {
                 tag: payload.tag || 'onda-sale',
                 renotify: true,
                 silent: false,
+                sound: payload.sound || '/metricas/sounds/ka-ching.wav',
                 vibrate: [120, 60, 120],
                 data: {
                     url: payload.url || '/metricas/',
+                    playSound: true,
                 },
             });
         })
