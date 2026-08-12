@@ -123,6 +123,8 @@
             regionOtherField.required = Boolean(countryField.value) && !isPortugal;
             regionOtherField.disabled = isPortugal || !countryField.value;
         }
+
+        syncBillingDefaults();
     }
 
     function getRegionValue() {
@@ -193,6 +195,121 @@
 
         paymentMessage.textContent = text || '';
         paymentMessage.className = 'payment-message' + (type ? ' payment-message--' + type : '');
+    }
+
+    function normalizePhone(value) {
+        return String(value || '').replace(/\D/g, '');
+    }
+
+    function formatPhoneE164(phone, countryCode) {
+        var digits = normalizePhone(phone);
+
+        if (!digits) {
+            return undefined;
+        }
+
+        if (digits.indexOf('00') === 0) {
+            return '+' + digits.slice(2);
+        }
+
+        var country = getCountryConfig(countryCode || getSelectedPhoneCountryCode());
+
+        if (!country) {
+            return '+' + digits;
+        }
+
+        var dial = country.dial;
+
+        if (digits.indexOf(dial) === 0 && digits.length > dial.length + 5) {
+            return '+' + digits;
+        }
+
+        if (countryCode === 'PT' && digits.length === 9) {
+            return '+351' + digits;
+        }
+
+        return '+' + dial + digits;
+    }
+
+    function getBillingDefaults() {
+        var email = form.email ? form.email.value.trim() : '';
+        var fullName = form.full_name ? form.full_name.value.trim() : '';
+        var phone = form.phone ? form.phone.value : '';
+        var country = getSelectedCountryCode();
+        var phoneCountry = getSelectedPhoneCountryCode();
+        var region = getRegionValue();
+
+        return {
+            billingDetails: {
+                email: email || undefined,
+                name: fullName || undefined,
+                phone: formatPhoneE164(phone, phoneCountry),
+                address: {
+                    country: country || undefined,
+                    state: region || undefined,
+                },
+            },
+        };
+    }
+
+    function syncBillingDefaults() {
+        if (!elements) {
+            return;
+        }
+
+        elements.update(getBillingDefaults());
+    }
+
+    function getConfirmParams(payload) {
+        return {
+            return_url: getReturnUrl(),
+            receipt_email: payload.email,
+            payment_method_data: {
+                billing_details: {
+                    name: payload.full_name,
+                    email: payload.email,
+                    phone: formatPhoneE164(payload.phone, payload.phone_country),
+                    address: {
+                        country: payload.country,
+                        state: payload.region || undefined,
+                    },
+                },
+            },
+        };
+    }
+
+    async function waitForMbWayConfirmation() {
+        var attempts = 0;
+        var maxAttempts = 60;
+
+        showMessage('Confirma o pagamento na app MB WAY no teu telemóvel.', 'info');
+
+        while (attempts < maxAttempts) {
+            await new Promise(function (resolve) {
+                setTimeout(resolve, 2000);
+            });
+
+            try {
+                var retrieved = await stripe.retrievePaymentIntent(clientSecret);
+                var status = retrieved.paymentIntent ? retrieved.paymentIntent.status : '';
+
+                if (status === 'succeeded') {
+                    redirectToSuccess();
+                    return;
+                }
+
+                if (status === 'canceled' || status === 'requires_payment_method') {
+                    showMessage('O pagamento não foi concluído. Tenta novamente.', 'error');
+                    return;
+                }
+            } catch (error) {
+                // continua a tentar
+            }
+
+            attempts += 1;
+        }
+
+        showMessage('Pagamento pendente. Abre a app MB WAY e confirma, ou tenta outra vez.', 'info');
     }
 
     function hidePaymentPlaceholder() {
@@ -510,6 +627,11 @@
                 spacedAccordionItems: true,
             },
             paymentMethodOrder: ['mb_way', 'card', 'klarna'],
+            wallets: {
+                applePay: 'never',
+                googlePay: 'never',
+                link: 'never',
+            },
             fields: {
                 billingDetails: {
                     email: 'never',
@@ -518,9 +640,11 @@
                     address: { country: 'never' },
                 },
             },
+            defaultValues: getBillingDefaults(),
         });
 
         await paymentElement.mount('#payment-element');
+        syncBillingDefaults();
         isReady = true;
         submitBtn.disabled = false;
         submitBtn.textContent = getPayButtonLabel();
@@ -634,11 +758,22 @@
 
             await ensurePaymentIntentReady(payload);
 
+            if (!elements || !clientSecret || !isReady) {
+                throw new Error('Os métodos de pagamento ainda não estão prontos. Tenta novamente.');
+            }
+
+            syncBillingDefaults();
+            await syncPaymentIntent(payload, { paymentAttempt: true });
+
+            var submitResult = await elements.submit();
+
+            if (submitResult.error) {
+                throw new Error(submitResult.error.message || 'Verifica o método de pagamento seleccionado.');
+            }
+
             var result = await stripe.confirmPayment({
                 elements: elements,
-                confirmParams: {
-                    return_url: getReturnUrl(),
-                },
+                confirmParams: getConfirmParams(payload),
                 redirect: 'if_required',
             });
 
@@ -646,12 +781,20 @@
                 throw new Error(result.error.message || 'Pagamento recusado.');
             }
 
-            if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+            var status = result.paymentIntent ? result.paymentIntent.status : '';
+
+            if (status === 'succeeded') {
                 redirectToSuccess();
                 return;
             }
 
-            showMessage('Confirma o pagamento no teu dispositivo, se necessário.', 'info');
+            if (status === 'requires_action' || status === 'processing') {
+                setSubmitLoading(false);
+                await waitForMbWayConfirmation();
+                return;
+            }
+
+            showMessage('Não foi possível concluir o pagamento. Tenta novamente.', 'error');
         } catch (error) {
             showMessage(error.message || 'Erro ao processar o pagamento.', 'error');
         } finally {
@@ -668,6 +811,9 @@
             field.addEventListener('input', schedulePaymentIntentPrepare);
             field.addEventListener('change', schedulePaymentIntentPrepare);
             field.addEventListener('blur', schedulePaymentIntentPrepare);
+            field.addEventListener('input', syncBillingDefaults);
+            field.addEventListener('change', syncBillingDefaults);
+            field.addEventListener('blur', syncBillingDefaults);
         });
 
         if (countryField) {
