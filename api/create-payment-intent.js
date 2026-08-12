@@ -1,4 +1,5 @@
 var stripeEnv = require('../lib/stripe-env');
+var productCheckoutConfig = require('../lib/product-checkout-config');
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -25,13 +26,46 @@ module.exports = async function handler(req, res) {
     var phoneCountry = typeof body.phone_country === 'string' ? body.phone_country.trim().toUpperCase() : '';
     var tracking = body.tracking && typeof body.tracking === 'object' ? body.tracking : {};
     var userAgent = req.headers['user-agent'] || '';
-    var amount = stripeClient.settings.amountCents;
+    var productId = typeof body.product_id === 'string' ? body.product_id.trim() : '';
+    var standaloneProduct = productId ? productCheckoutConfig.getProduct(productId) : null;
+    var amount = standaloneProduct
+        ? productCheckoutConfig.getAmountCentsForMode(productId, mode)
+        : stripeClient.settings.amountCents;
+
+    if (standaloneProduct && standaloneProduct.billingType === 'subscription') {
+        return res.status(400).json({ error: 'Este produto usa checkout por subscrição.' });
+    }
 
     if (!Number.isFinite(amount) || amount < 50) {
         return res.status(500).json({ error: 'Valor de pagamento inválido.' });
     }
 
     try {
+        var metadata = standaloneProduct ? {
+            product: standaloneProduct.name,
+            product_id: productId,
+            checkout_type: 'standalone',
+            full_name: fullName || '',
+            phone: phone || '',
+            region: region || '',
+            country: country || '',
+            phone_country: phoneCountry || '',
+            email: email || '',
+            checkout: 'comprar-' + productId,
+            stripe_mode: mode,
+        } : {
+            product: 'Onda Prodígio',
+            price_id: process.env.STRIPE_PRICE_ID || '',
+            full_name: fullName || '',
+            phone: phone || '',
+            region: region || '',
+            country: country || '',
+            phone_country: phoneCountry || '',
+            email: email || '',
+            checkout: stripeClient.settings.checkoutId,
+            stripe_mode: mode,
+        };
+
         var paymentIntent = await stripeClient.stripe.paymentIntents.create({
             amount: amount,
             currency: 'eur',
@@ -41,21 +75,10 @@ module.exports = async function handler(req, res) {
             },
             excluded_payment_method_types: ['multibanco'],
             receipt_email: email || undefined,
-            description: mode === 'test'
-                ? 'Onda Prodígio — teste de pagamento'
-                : 'Onda Prodígio — acesso digital',
-            metadata: Object.assign({
-                product: 'Onda Prodígio',
-                price_id: process.env.STRIPE_PRICE_ID || '',
-                full_name: fullName || '',
-                phone: phone || '',
-                region: region || '',
-                country: country || '',
-                phone_country: phoneCountry || '',
-                email: email || '',
-                checkout: stripeClient.settings.checkoutId,
-                stripe_mode: mode,
-            }, serverEvents.buildStripeTrackingMetadata(tracking, userAgent)),
+            description: standaloneProduct
+                ? standaloneProduct.name + ' — Onda Prodígio'
+                : (mode === 'test' ? 'Onda Prodígio — teste de pagamento' : 'Onda Prodígio — acesso digital'),
+            metadata: Object.assign(metadata, serverEvents.buildStripeTrackingMetadata(tracking, userAgent)),
         });
 
         await stripeClient.stripe.paymentIntents.update(paymentIntent.id, {

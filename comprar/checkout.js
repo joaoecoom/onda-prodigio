@@ -289,7 +289,7 @@
 
     async function loadProductConfig() {
         var response = await fetch(withModeQuery(
-            getApiBase() + '/api/product-checkout-config?product_id=' + encodeURIComponent(productId)
+            getApiBase() + '/api/config?product_id=' + encodeURIComponent(productId)
         ));
         var data = await response.json();
 
@@ -308,7 +308,7 @@
     }
 
     async function createPaymentIntent(payload) {
-        var response = await fetch(getApiBase() + '/api/create-product-payment-intent', {
+        var response = await fetch(getApiBase() + '/api/create-payment-intent', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(withModePayload(Object.assign({}, payload, {
@@ -330,7 +330,7 @@
             return;
         }
 
-        var response = await fetch(getApiBase() + '/api/update-product-payment-intent', {
+        var response = await fetch(getApiBase() + '/api/update-payment-intent', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(withModePayload({
@@ -466,11 +466,12 @@
     }
 
     async function startSubscriptionCheckout(payload) {
-        var response = await fetch(getApiBase() + '/api/create-product-checkout-session', {
+        var response = await fetch(getApiBase() + '/api/create-upsell-checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(withModePayload(Object.assign({}, payload, {
                 product_id: productId,
+                checkout_type: 'standalone',
                 tracking: getTrackingPayload(),
             }))),
         });
