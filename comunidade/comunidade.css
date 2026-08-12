@@ -1710,7 +1710,7 @@ html[data-theme="light"] .comunidade-module-card__upsell-cta {
 
 .comunidade-hero__grid {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) min(240px, 36%);
+    grid-template-columns: minmax(0, 1fr) min(200px, 32%);
     gap: 0.5rem 1.25rem;
     align-items: end;
 }
@@ -1720,15 +1720,16 @@ html[data-theme="light"] .comunidade-module-card__upsell-cta {
     justify-content: center;
     align-items: flex-end;
     pointer-events: none;
-    margin: -0.35rem -0.35rem -1.15rem 0;
+    margin: -0.5rem -0.5rem -1.15rem 0;
 }
 
 .comunidade-hero__mascot {
     width: 100%;
-    max-width: 240px;
+    max-width: 200px;
     height: auto;
     display: block;
-    filter: drop-shadow(0 16px 32px rgba(0, 0, 0, 0.28));
+    border-radius: 14px;
+    filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.35));
 }
 
 .comunidade-hero__eyebrow {
@@ -2859,15 +2860,15 @@ html[data-theme="light"] .comunidade-btn--danger:hover:not(:disabled) {
 
 .comunidade-mascot {
     display: block;
-    width: min(100%, 200px);
+    width: min(100%, 220px);
     height: auto;
-    margin: 0 auto 1rem;
-    border-radius: 14px;
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+    margin: 0 auto 1.1rem;
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
 }
 
 .comunidade-mascot--survey {
-    max-width: 160px;
+    max-width: 180px;
     margin-bottom: 0.85rem;
 }
 
