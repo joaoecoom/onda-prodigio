@@ -19,8 +19,6 @@
     var refreshButton = document.getElementById('metrics-refresh');
     var pushBanner = document.getElementById('metrics-push-banner');
     var pushBannerText = document.getElementById('metrics-push-banner-text');
-    var pushBannerToggle = document.getElementById('metrics-push-banner-toggle');
-    var pushBannerTest = document.getElementById('metrics-push-banner-test');
     var logoutButton = document.getElementById('metrics-logout');
     var accountWrap = document.getElementById('metrics-account-wrap');
     var accountSelect = document.getElementById('metrics-account');
@@ -76,7 +74,7 @@
     function showDashboard() {
         loginSection.hidden = true;
         dashboardSection.hidden = false;
-        updatePushButtonState();
+        updatePushBannerState();
     }
 
     function setStatus(message, isError) {
@@ -191,7 +189,7 @@
     }
 
     function maybeRequestNotificationPermission() {
-        initMetricsPush(false);
+        initMetricsPush();
     }
 
     function isStandalonePwa() {
@@ -199,7 +197,7 @@
             window.navigator.standalone === true;
     }
 
-    function updatePushButtonState() {
+    function updatePushBannerState() {
         if (!pushBanner) {
             return;
         }
@@ -209,9 +207,8 @@
             return;
         }
 
-        pushBanner.hidden = false;
-
         if (!window.MetricsPush) {
+            pushBanner.hidden = false;
             if (pushBannerText) {
                 pushBannerText.textContent = 'A carregar alertas…';
             }
@@ -219,59 +216,36 @@
         }
 
         if (!window.MetricsPush.isSupported()) {
+            pushBanner.hidden = false;
             if (pushBannerText) {
                 pushBannerText.textContent = isStandalonePwa()
                     ? 'Este browser não suporta push. Actualiza o iOS (16.4+) ou abre noutro dispositivo.'
                     : 'No iPhone: Safari → Partilhar → «Adicionar ao Ecrã Principal». Abre a app «Métricas» e volta aqui.';
             }
-            if (pushBannerToggle) {
-                pushBannerToggle.hidden = true;
-            }
-            if (pushBannerTest) {
-                pushBannerTest.hidden = true;
-            }
             return;
-        }
-
-        if (pushBannerToggle) {
-            pushBannerToggle.hidden = false;
-        }
-        if (pushBannerTest) {
-            pushBannerTest.hidden = false;
         }
 
         var permission = window.MetricsPush.getPermission();
 
         if (permission === 'granted') {
-            if (pushBannerToggle) {
-                pushBannerToggle.textContent = 'Notificações activas ✓';
-                pushBannerToggle.classList.add('metrics-button--push-active');
-            }
+            pushBanner.hidden = true;
+            return;
+        }
+
+        pushBanner.hidden = false;
+
+        if (permission === 'denied') {
             if (pushBannerText) {
-                pushBannerText.textContent = 'Vais receber alerta quando entrar uma venda. Ka-ching ao abrir a app; no iPhone bloqueado usa som do sistema (limitação Apple).';
+                pushBannerText.textContent = 'Notificações bloqueadas. Activa nas Definições do iPhone → Notificações → Métricas.';
             }
-        } else if (permission === 'denied') {
-            if (pushBannerToggle) {
-                pushBannerToggle.textContent = 'Notificações bloqueadas';
-                pushBannerToggle.classList.remove('metrics-button--push-active');
-            }
-            if (pushBannerText) {
-                pushBannerText.textContent = 'Activa nas Definições do iPhone → Notificações → Métricas.';
-            }
-        } else {
-            if (pushBannerToggle) {
-                pushBannerToggle.textContent = 'Activar notificações';
-                pushBannerToggle.classList.remove('metrics-button--push-active');
-            }
-            if (pushBannerText) {
-                pushBannerText.textContent = 'Recebe o som Shopify e notificação quando entra uma venda Stripe.';
-            }
+        } else if (pushBannerText) {
+            pushBannerText.textContent = 'A pedir permissão para alertas de vendas…';
         }
     }
 
-    async function initMetricsPush(forcePrompt) {
+    async function initMetricsPush() {
         if (!window.MetricsPush || !window.MetricsPush.isSupported()) {
-            updatePushButtonState();
+            updatePushBannerState();
             return;
         }
 
@@ -281,22 +255,22 @@
             return;
         }
 
+        var permission = window.MetricsPush.getPermission();
+
         try {
-            if (window.MetricsPush.getPermission() === 'granted') {
+            if (permission === 'granted') {
                 await window.MetricsPush.subscribe(token, { force: false });
-            } else if (forcePrompt) {
+            } else if (permission === 'default') {
                 if (window.MetricsSaleSound) {
                     window.MetricsSaleSound.prime();
                 }
                 await window.MetricsPush.subscribe(token, { force: true });
             }
         } catch (error) {
-            if (forcePrompt) {
-                setStatus(error.message || 'Não foi possível activar notificações.', true);
-            }
+            // Permissão recusada ou push indisponível — banner mostra estado.
         }
 
-        updatePushButtonState();
+        updatePushBannerState();
     }
 
     function showSaleToast(sale) {
@@ -1423,46 +1397,6 @@
             setStatus('Erro de ligação. Tenta outra vez.', true);
         });
     });
-
-    if (pushBannerToggle) {
-        pushBannerToggle.addEventListener('click', function () {
-            initMetricsPush(true).catch(function () {
-                setStatus('Erro de ligação. Tenta outra vez.', true);
-            });
-        });
-    }
-
-    if (pushBannerTest) {
-        pushBannerTest.addEventListener('click', async function () {
-            var token = getToken();
-
-            if (!token) {
-                return;
-            }
-
-            try {
-                await initMetricsPush(false);
-                var result = await fetchJson('/api/sales-attribution?action=push_test', token);
-
-                if (!result) {
-                    return;
-                }
-
-                if (result.sent > 0) {
-                    setStatus('Notificação de teste enviada.', false);
-                    if (window.MetricsSaleSound) {
-                        window.MetricsSaleSound.play();
-                    }
-                } else if (result.reason === 'no_subscribers') {
-                    setStatus('Primeiro toca «Activar notificações» e depois Teste.', true);
-                } else {
-                    setStatus('Push: ' + (result.reason || 'sem envio'), true);
-                }
-            } catch (error) {
-                setStatus(error.message || 'Teste push falhou.', true);
-            }
-        });
-    }
 
     logoutButton.addEventListener('click', function () {
         stopAutoRefresh();
