@@ -183,6 +183,10 @@
             params.push('refresh=1');
         }
 
+        if (options && options.skipVturb) {
+            params.push('skip_vturb=1');
+        }
+
         return params.join('&');
     }
 
@@ -694,7 +698,8 @@
             .replace(/"/g, '&quot;');
     }
 
-    function renderDashboard(data, loading) {
+    function renderDashboard(data, loading, options) {
+        var stripeOnly = Boolean(options && options.stripeOnly);
         var stripe = data.stripe || data;
         var mergedSummary = data.merged && data.merged.summary ? data.merged.summary : null;
         var vturbSummary = data.vturb && data.vturb.summary ? data.vturb.summary : null;
@@ -702,8 +707,8 @@
         renderAccountOptions(data.accounts || [], data.active_account_id || getSelectedAccountId());
 
         if (METRICS_PAGE === 'analise') {
-            renderMetaPanel(data, loading);
             renderTree(stripe.campaigns || []);
+            renderRecentSales(stripe.recent_sales || stripe.sales || []);
 
             if (generatedAt) {
                 generatedAt.textContent = stripe.summary && stripe.summary.generated_at
@@ -712,7 +717,25 @@
                     : '';
             }
 
-            renderRecentSales(stripe.recent_sales || stripe.sales || []);
+            if (stripeOnly) {
+                if (metaPanel) {
+                    metaPanel.hidden = false;
+                    if (metaContext) {
+                        metaContext.textContent = 'A carregar gastos e ROAS do Meta Ads…';
+                    }
+                    if (metaBody) {
+                        metaBody.innerHTML = '<tr><td colspan="20">A carregar Meta Ads…</td></tr>';
+                    }
+                }
+            } else {
+                renderMetaPanel(data, loading);
+            }
+        } else if (stripeOnly) {
+            renderTotalSummaryCards(stripe.summary || {}, null);
+            renderTrafficSummaryCards(stripe.summary || {}, null);
+            if (profitsRoot) {
+                profitsRoot.innerHTML = '<p class="metrics-tree__empty">A carregar lucros…</p>';
+            }
         } else {
             renderProfitCards(stripe.summary || {}, mergedSummary);
             renderTotalSummaryCards(stripe.summary || {}, mergedSummary);
@@ -731,6 +754,7 @@
         var range = datePicker.getAppliedRange();
         var refresh = Boolean(options && options.refresh);
         var silent = Boolean(options && options.silent);
+        var shouldRefresh = refresh;
 
         if (!token) {
             showLogin();
@@ -738,13 +762,37 @@
         }
 
         if (!silent) {
-            setStatus('A carregar métricas…', false);
+            setStatus('A carregar vendas…', false);
         }
 
         try {
-            var shouldRefresh = refresh || isLiveRange(range);
+            var stripePayload = await fetchJson(
+                '/api/sales-attribution?' + buildQuery(range, 'stripe', { refresh: shouldRefresh }),
+                token
+            );
+
+            if (!stripePayload) {
+                return;
+            }
+
+            renderDashboard({
+                stripe: stripePayload,
+                accounts: stripePayload.accounts,
+                active_account_id: stripePayload.active_account_id,
+            }, false, { stripeOnly: true });
+
+            if (!silent) {
+                setStatus('A carregar Meta Ads…', false);
+            }
+
+            var combinedOptions = { refresh: shouldRefresh };
+
+            if (METRICS_PAGE === 'analise') {
+                combinedOptions.skipVturb = true;
+            }
+
             var data = await fetchJson(
-                '/api/sales-attribution?' + buildQuery(range, 'combined', { refresh: shouldRefresh }),
+                '/api/sales-attribution?' + buildQuery(range, 'combined', combinedOptions),
                 token
             );
 

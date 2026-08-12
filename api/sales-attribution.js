@@ -139,6 +139,7 @@ async function handleCombined(req, res) {
     var from = dateRange.from;
     var to = dateRange.to;
     var skipCache = String(req.query.refresh || '') === '1';
+    var skipVturb = String(req.query.skip_vturb || '') === '1';
     var hasToken = Boolean(metaClient.getAccessToken());
 
     var metaPromise = hasToken && metaConfig.isAllowedAccountId(accountId)
@@ -152,7 +153,9 @@ async function handleCombined(req, res) {
     var results = await Promise.all([
         stripeSales.buildStripeReport(req.query),
         metaPromise,
-        vturbAnalytics.buildVturbReport(req.query),
+        skipVturb
+            ? Promise.resolve({ ok: false, configured: false, skipped: true, summary: null })
+            : vturbAnalytics.buildVturbReport(req.query),
     ]);
 
     var stripeReport = results[0];
