@@ -17,12 +17,78 @@
     <link rel="stylesheet" href="/comprar/checkout.css">
 </head>
 <body>
-    <div class="checkout-page comprar-page">
-        <main class="checkout-form-section comprar-form-section" aria-label="Checkout">
-            <div class="checkout-hero__grid comprar-form-grid">
+    <div class="checkout-page">
+        <aside class="scarcity-bar" id="scarcity-bar" aria-live="polite" aria-label="Tempo restante da oferta">
+            <div class="scarcity-bar__inner">
+                <div class="scarcity-bar__timer" id="countdown-timer">
+                    <span class="scarcity-bar__segment" id="countdown-min">10</span>
+                    <span class="scarcity-bar__sep" aria-hidden="true">:</span>
+                    <span class="scarcity-bar__segment" id="countdown-sec">00</span>
+                    <span class="scarcity-bar__sep" aria-hidden="true">:</span>
+                    <span class="scarcity-bar__segment" id="countdown-cs">00</span>
+                </div>
+
+                <div class="scarcity-bar__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 13c0-4.4 3.6-8 8-8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <path d="M4 10V13H7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="13" r="7.5" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="M12 9v4.5l2.5 1.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+
+                <p class="scarcity-bar__text">Oferta por tempo limitado — garante a tua vaga agora</p>
+            </div>
+        </aside>
+
+        <main class="checkout-hero">
+            <div class="checkout-hero__grid">
+                <section class="offer-banner" aria-label="Resumo da oferta">
+                    <img
+                        class="offer-banner__img"
+                        id="offer-banner-image"
+                        src=""
+                        alt=""
+                        width="680"
+                        height="420"
+                        loading="eager"
+                    >
+                </section>
+
+                <aside class="testimonial-card" aria-label="Testemunho de cliente">
+                    <img
+                        class="testimonial-card__avatar"
+                        src="/checkout9/assets/julia-avatar.jpg"
+                        alt="Julia M."
+                        width="100"
+                        height="100"
+                        loading="lazy"
+                    >
+                    <p class="testimonial-card__name">Julia M. — Portugal</p>
+                    <div class="testimonial-card__stars" aria-label="5 em 5 estrelas">
+                        <span aria-hidden="true">★★★★★</span>
+                    </div>
+                    <blockquote class="testimonial-card__quote">
+                        <p>Na escola já o tinham marcado como o «miúdo lento» da turma. Aquele que fica sempre em último, o que nunca percebe a primeira instrução. Dava-me uma impotência vê-lo assim, como um zombie, com o olhar perdido.</p>
+                        <p>Começámos o método e hoje, pela primeira vez, levantou a mão para participar. Vê-lo entrar na sala de cabeça erguida, seguro de que a sua mente o vai apoiar, não tem preço.</p>
+                    </blockquote>
+                </aside>
+            </div>
+        </main>
+
+        <section class="checkout-form-section" aria-label="Dados de faturação">
+            <div class="checkout-hero__grid">
                 <div class="checkout-form-panel">
                     <div class="product-summary" id="product-summary">
-                        <img class="product-summary__thumb" id="product-summary-image" src="" alt="" width="72" height="72" loading="eager">
+                        <img
+                            class="product-summary__thumb"
+                            id="product-summary-image"
+                            src=""
+                            alt=""
+                            width="72"
+                            height="72"
+                            loading="lazy"
+                        >
                         <div class="product-summary__info">
                             <p class="product-summary__title" id="product-summary-title">A carregar…</p>
                             <p class="product-summary__author">Autor: TerraCommerce LLC</p>
@@ -49,6 +115,7 @@
                             <select class="form-field__input form-field__select" id="country" name="country" required autocomplete="country">
                                 <option value="" selected disabled>Selecione o seu país</option>
                             </select>
+                            <p class="form-field__hint">O país de residência pode ser diferente da nacionalidade ou do método de pagamento.</p>
                         </div>
 
                         <div class="form-field">
@@ -77,6 +144,7 @@
                                 <option value="madeira">Madeira</option>
                             </select>
                             <input class="form-field__input" type="text" id="region-other" name="region_other" placeholder="Região, estado ou província" autocomplete="address-level1" hidden>
+                            <p class="form-field__hint" id="region-hint">Usamos esta informação para recolher os impostos certos de acordo com a sua localização.</p>
                         </div>
 
                         <div class="form-field">
@@ -90,34 +158,76 @@
                                 <select class="form-field__phone-prefix" id="phone-country" name="phone_country" aria-label="Indicativo do telemóvel" required></select>
                                 <input class="form-field__input form-field__input--phone" type="tel" id="phone" name="phone" placeholder="" autocomplete="tel-national" inputmode="tel" required>
                             </div>
+                            <p class="form-field__hint">O indicativo do telemóvel pode ser diferente do país onde vive.</p>
                         </div>
+
+                        <div class="checkout-form__divider" aria-hidden="true"></div>
 
                         <section class="order-summary" id="order-summary" aria-label="Detalhes da compra">
                             <h2 class="checkout-form__title">Detalhes da compra</h2>
                             <div class="order-summary__table">
                                 <div class="order-summary__lines" id="order-summary-lines"></div>
                                 <div class="order-summary__row order-summary__row--total">
-                                    <span class="order-summary__label">Total</span>
+                                    <span class="order-summary__label">Total a pagar</span>
                                     <span class="order-summary__value" id="order-summary-total"></span>
                                 </div>
+                                <p class="order-summary__note">IVA incluído nos valores apresentados.</p>
                             </div>
                         </section>
 
                         <div class="checkout-form__divider" aria-hidden="true"></div>
 
-                        <div id="checkout-payment-block">
-                            <div class="payment-placeholder" id="payment-placeholder">
-                                <p>Preenche os dados pessoais para ver os métodos de pagamento.</p>
-                            </div>
-                            <div id="payment-element"></div>
-                            <p class="payment-message" id="payment-message" role="status" aria-live="polite"></p>
-                        </div>
+                        <div class="checkout-payment-block" id="checkout-payment-block">
+                            <h2 class="checkout-form__title">Selecionar método de pagamento</h2>
 
-                        <button type="submit" class="checkout-submit" id="submit-payment" disabled>Pagar</button>
+                            <p id="payment-placeholder" class="checkout-form__hint checkout-form__hint--payment">
+                                Preenche os dados pessoais acima para veres os métodos de pagamento.
+                            </p>
+
+                            <p class="checkout-form__hint checkout-form__hint--payment" id="payment-subscription-hint" hidden>
+                                Após preencher os dados, serás redireccionada para a subscrição segura da Stripe.
+                            </p>
+
+                            <p class="checkout-form__hint checkout-form__hint--payment" id="payment-mbway-hint" hidden>
+                                No MB WAY, escolhe o método e confirma o número de telemóvel que aparece em baixo (deve ser o da tua app).
+                            </p>
+
+                            <div id="payment-element" class="payment-element" aria-live="polite"></div>
+                            <p id="payment-message" class="payment-message" role="alert"></p>
+
+                            <div class="checkout-form__actions">
+                                <button class="checkout-btn checkout-btn--primary" type="button" id="submit-payment" disabled>
+                                    Pagar
+                                </button>
+                            </div>
+
+                            <p class="payment-secure">
+                                Pagamento processado de forma segura pela Stripe. Os teus dados bancários nunca passam pelos nossos servidores.
+                            </p>
+                        </div>
                     </form>
                 </div>
+
+                <aside class="testimonial-card" aria-label="Testemunho de cliente">
+                    <img
+                        class="testimonial-card__avatar"
+                        src="/checkout9/assets/marcos-avatar.jpg"
+                        alt="Marcos Q."
+                        width="100"
+                        height="100"
+                        loading="lazy"
+                    >
+                    <p class="testimonial-card__name">Marcos Q. — Portugal</p>
+                    <div class="testimonial-card__stars" aria-label="5 em 5 estrelas">
+                        <span aria-hidden="true">★★★★★</span>
+                    </div>
+                    <blockquote class="testimonial-card__quote">
+                        <p>Não me deixava dormir pensar no que seria dele quando crescesse. Se hoje sofre para entender um parágrafo, como se ia defender num mundo com tanta competição? Aterrava-me que o deixassem para trás.</p>
+                        <p>Mas depois de experimentar a Onda Prodígio, essa preocupação desapareceu — vê-lo hoje a analisar tudo e a resolver problemas que antes o bloqueavam... é outra criança. Passou de ser o miúdo invisível que não conseguia nada, a ser aquele que tem as respostas mais rápidas. Agora sei que tem futuro.</p>
+                    </blockquote>
+                </aside>
             </div>
-        </main>
+        </section>
     </div>
 
     <script src="https://js.stripe.com/v3/"></script>

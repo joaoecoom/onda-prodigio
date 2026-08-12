@@ -13,6 +13,14 @@
     var productSummaryVat = document.getElementById('product-summary-vat');
     var orderSummaryLines = document.getElementById('order-summary-lines');
     var orderSummaryTotal = document.getElementById('order-summary-total');
+    var offerBannerImage = document.getElementById('offer-banner-image');
+    var paymentSubscriptionHint = document.getElementById('payment-subscription-hint');
+    var paymentMbwayHint = document.getElementById('payment-mbway-hint');
+
+    if (productId === 'onda-prodigio') {
+        window.location.replace('/checkout9/');
+        return;
+    }
 
     if (!form || !productId) {
         if (productSummaryTitle) {
@@ -49,6 +57,10 @@
         { code: 'GB', label: 'Reino Unido', dial: '44', flag: '🇬🇧' },
         { code: 'IE', label: 'Irlanda', dial: '353', flag: '🇮🇪' },
         { code: 'BR', label: 'Brasil', dial: '55', flag: '🇧🇷' },
+        { code: 'AO', label: 'Angola', dial: '244', flag: '🇦🇴' },
+        { code: 'MZ', label: 'Moçambique', dial: '258', flag: '🇲🇿' },
+        { code: 'US', label: 'Estados Unidos', dial: '1', flag: '🇺🇸' },
+        { code: 'CA', label: 'Canadá', dial: '1', flag: '🇨🇦' },
     ];
 
     function getCountryConfig(code) {
@@ -226,19 +238,112 @@
             return;
         }
 
+        var bannerSrc = productConfig.banner || productConfig.image;
+        var priceLabel = formatEuro(productConfig.amountCents);
+
         document.title = 'Checkout — ' + productConfig.name;
         productSummaryTitle.textContent = productConfig.name;
         productSummaryImage.src = productConfig.image;
         productSummaryImage.alt = productConfig.name;
-        productSummaryPrice.textContent = formatEuro(productConfig.amountCents);
+        productSummaryPrice.textContent = priceLabel;
+
+        if (offerBannerImage && bannerSrc) {
+            offerBannerImage.src = bannerSrc;
+            offerBannerImage.alt = 'Compra 100% segura — ' + productConfig.name + ', ' + priceLabel;
+        }
 
         if (productConfig.billingType === 'subscription') {
             productSummaryVat.textContent = productConfig.billingNote || 'Subscrição mensal';
+
+            if (paymentPlaceholder) {
+                paymentPlaceholder.hidden = true;
+            }
+
+            if (paymentSubscriptionHint) {
+                paymentSubscriptionHint.hidden = false;
+            }
+
+            if (paymentMbwayHint) {
+                paymentMbwayHint.hidden = true;
+            }
+        } else {
+            productSummaryVat.textContent = 'IVA incluído';
+
+            if (paymentMbwayHint) {
+                paymentMbwayHint.hidden = false;
+            }
         }
 
         renderSummary();
         submitBtn.textContent = getPayButtonLabel();
-        submitBtn.disabled = false;
+        submitBtn.disabled = productConfig.billingType === 'subscription' ? false : true;
+    }
+
+    function startCountdown() {
+        var bar = document.getElementById('scarcity-bar');
+        var minEl = document.getElementById('countdown-min');
+        var secEl = document.getElementById('countdown-sec');
+        var csEl = document.getElementById('countdown-cs');
+
+        if (!bar || !minEl || !secEl || !csEl) {
+            return;
+        }
+
+        var DURATION_MS = 10 * 60 * 1000;
+        var STORAGE_KEY = 'onda-comprar-countdown-' + productId;
+
+        function pad2(n) {
+            return n < 10 ? '0' + n : String(n);
+        }
+
+        function getEndTime() {
+            var stored = sessionStorage.getItem(STORAGE_KEY);
+            var end = stored ? parseInt(stored, 10) : NaN;
+
+            if (!stored || isNaN(end) || end <= Date.now()) {
+                end = Date.now() + DURATION_MS;
+                sessionStorage.setItem(STORAGE_KEY, String(end));
+            }
+
+            return end;
+        }
+
+        function render(msLeft) {
+            if (msLeft <= 0) {
+                minEl.textContent = '00';
+                secEl.textContent = '00';
+                csEl.textContent = '00';
+                bar.classList.add('is-expired');
+                return;
+            }
+
+            bar.classList.remove('is-expired');
+
+            var totalCs = Math.floor(msLeft / 10);
+            var cs = totalCs % 100;
+            var totalSec = Math.floor(totalCs / 100);
+            var sec = totalSec % 60;
+            var min = Math.floor(totalSec / 60);
+
+            minEl.textContent = pad2(min);
+            secEl.textContent = pad2(sec);
+            csEl.textContent = pad2(cs);
+        }
+
+        var endTime = getEndTime();
+
+        function tick() {
+            var msLeft = endTime - Date.now();
+            render(msLeft);
+
+            if (msLeft <= 0) {
+                return;
+            }
+
+            requestAnimationFrame(tick);
+        }
+
+        tick();
     }
 
     function getTrackingPayload() {
@@ -376,15 +481,34 @@
                 theme: 'stripe',
                 variables: {
                     colorPrimary: '#0077c8',
+                    colorBackground: '#ffffff',
+                    colorText: '#111111',
+                    colorDanger: '#b42318',
                     borderRadius: '4px',
-                    fontFamily: 'Inter, sans-serif',
+                    fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif',
+                    spacingUnit: '4px',
+                },
+                rules: {
+                    '.AccordionItem': {
+                        border: '1px solid #cfd8e3',
+                        boxShadow: 'none',
+                        marginBottom: '0.65rem',
+                    },
+                    '.AccordionItem--selected': {
+                        border: '1px solid #0077c8',
+                    },
                 },
             },
         });
 
         paymentElementHost.innerHTML = '';
         paymentElement = elements.create('payment', {
-            layout: { type: 'accordion', defaultCollapsed: false, radios: true },
+            layout: {
+                type: 'accordion',
+                defaultCollapsed: false,
+                radios: true,
+                spacedAccordionItems: true,
+            },
             paymentMethodOrder: ['mb_way', 'card', 'klarna'],
             fields: {
                 billingDetails: {
@@ -485,7 +609,9 @@
     }
 
     async function submitPayment(event) {
-        event.preventDefault();
+        if (event && event.preventDefault) {
+            event.preventDefault();
+        }
 
         if (isSubmitting) {
             return;
@@ -554,17 +680,13 @@
         populatePhoneCountrySelect();
         syncRegionFields();
         setupWatchers();
-        form.addEventListener('submit', submitPayment);
+        submitBtn.addEventListener('click', submitPayment);
 
         try {
+            startCountdown();
             await loadProductConfig();
 
-            if (productConfig.billingType === 'subscription') {
-                showPaymentPlaceholder();
-                if (paymentPlaceholder) {
-                    paymentPlaceholder.innerHTML = '<p>Após preencher os dados, serás redireccionada para a subscrição segura da Stripe.</p>';
-                }
-            } else {
+            if (productConfig.billingType !== 'subscription') {
                 showPaymentPlaceholder();
             }
         } catch (error) {
