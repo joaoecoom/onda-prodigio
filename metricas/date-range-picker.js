@@ -106,7 +106,7 @@
                 return { from: startOfMonth(lastMonth), to: endOfMonth(lastMonth), presetId: id };
             }
             case 'max':
-                return { from: null, to: null, presetId: id };
+                return { from: addDays(today, -729), to: today, presetId: id };
             default:
                 return getPresetRange('today');
         }
@@ -398,13 +398,9 @@
         }
 
         function getAppliedRange() {
-            if (appliedRange.presetId === 'max') {
-                return { from: '', to: '', presetId: 'max' };
-            }
-
             return {
-                from: toIso(appliedRange.from),
-                to: toIso(appliedRange.to),
+                from: appliedRange.from ? toIso(appliedRange.from) : '',
+                to: appliedRange.to ? toIso(appliedRange.to) : '',
                 presetId: appliedRange.presetId || detectPreset(appliedRange.from, appliedRange.to),
             };
         }

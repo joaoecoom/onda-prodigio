@@ -12,6 +12,7 @@ var failedPaymentQueue = require('../lib/comunidade/failed-payment-recovery-queu
 var vturbAnalytics = require('../lib/metrics/vturb-analytics');
 var pushNotify = require('../lib/metrics/push-notify');
 var pushSubscriptions = require('../lib/metrics/push-subscriptions');
+var reportingRange = require('../lib/metrics/reporting-range');
 
 async function readJsonBody(req) {
     if (req.body && typeof req.body === 'object') {
@@ -104,20 +105,7 @@ async function handleMetaAccounts(res) {
 }
 
 async function resolveDateRange(query) {
-    var bounds = stripeSales.resolveDateBounds(query);
-    var from = bounds.from;
-    var to = bounds.to;
-
-    if (!from || !to) {
-        var today = new Date();
-        var fallbackTo = today.toISOString().slice(0, 10);
-        var fallbackFromDate = new Date(today);
-        fallbackFromDate.setDate(fallbackFromDate.getDate() - 29);
-        from = from || fallbackFromDate.toISOString().slice(0, 10);
-        to = to || fallbackTo;
-    }
-
-    return { from: from, to: to };
+    return reportingRange.resolveReportingRange(query || {});
 }
 
 function getActiveAccountId(query) {

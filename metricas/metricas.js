@@ -34,8 +34,6 @@
     var vturbGeneratedAt = document.getElementById('metrics-vturb-generated-at');
     var ACCOUNT_KEY = 'onda-metrics-account';
     var latestPayload = null;
-    var autoRefreshTimer = null;
-    var AUTO_REFRESH_MS = 60 * 1000;
     var salesPulseTimer = null;
     var SALES_PULSE_MS = 15 * 1000;
     var salesPulseSeeded = false;
@@ -65,7 +63,6 @@
     }
 
     function showLogin() {
-        stopAutoRefresh();
         stopSalesPulse();
         loginSection.hidden = false;
         dashboardSection.hidden = true;
@@ -126,10 +123,7 @@
     }
 
     function stopAutoRefresh() {
-        if (autoRefreshTimer) {
-            window.clearInterval(autoRefreshTimer);
-            autoRefreshTimer = null;
-        }
+        stopSalesPulse();
     }
 
     function getSeenSalesStorageKey(range) {
@@ -373,55 +367,15 @@
             });
 
             saveSeenSaleIds(range, Object.keys(seenSet));
-
-            fetchMetrics({ refresh: true, silent: true }).catch(function () {
-                // Mantém toasts mesmo se o refresh falhar.
-            });
         } catch (error) {
             // Poll silencioso — não bloquear o dashboard.
         }
     }
 
-    function startAutoRefresh() {
-        stopAutoRefresh();
-
-        if (dashboardSection.hidden || !getToken()) {
-            return;
-        }
-
-        var range = datePicker.getAppliedRange();
-
-        if (!isLiveRange(range)) {
-            return;
-        }
-
-        autoRefreshTimer = window.setInterval(function () {
-            if (document.hidden || dashboardSection.hidden || !getToken()) {
-                return;
-            }
-
-            fetchMetrics({ refresh: true, silent: true }).catch(function () {
-                // Mantém o último snapshot visível se um poll falhar.
-            });
-        }, AUTO_REFRESH_MS);
-    }
-
     function updateLiveIndicator(range) {
-        if (generatedAt) {
-            var baseText = generatedAt.textContent.replace(/ · Auto-actualização.*$/, '');
-
-            if (isLiveRange(range) && !dashboardSection.hidden) {
-                generatedAt.textContent = baseText + ' · Auto-actualização a cada minuto';
-            } else {
-                generatedAt.textContent = baseText;
-            }
-        }
-
         if (isLiveRange(range) && !dashboardSection.hidden) {
-            startAutoRefresh();
             startSalesPulse();
         } else {
-            stopAutoRefresh();
             stopSalesPulse();
         }
     }
@@ -432,8 +386,6 @@
         if (range.from && range.to) {
             params.push('from=' + encodeURIComponent(range.from));
             params.push('to=' + encodeURIComponent(range.to));
-        } else {
-            params.push('days=0');
         }
 
         var accountId = getSelectedAccountId();
@@ -1004,7 +956,7 @@
                 profitsRoot.innerHTML = '<p class="metrics-tree__empty">A carregar lucros…</p>';
             }
         } else {
-            renderProfitCards(stripe.summary || {}, mergedSummary);
+            renderProfitCards(stripe.summary || {}, mergedSummary, data.date_range || stripe.date_range);
             renderTotalSummaryCards(stripe.summary || {}, mergedSummary);
             renderTrafficSummaryCards(stripe.summary || {}, mergedSummary);
             renderFunnelCards(stripe.summary || {}, mergedSummary, vturbSummary);
@@ -1029,29 +981,14 @@
         }
 
         if (!silent) {
-            setStatus('A carregar vendas…', false);
+            setStatus('A carregar métricas…', false);
+
+            if (profitsRoot && METRICS_PAGE !== 'analise') {
+                profitsRoot.innerHTML = '<p class="metrics-tree__empty">A carregar lucros…</p>';
+            }
         }
 
         try {
-            var stripePayload = await fetchJson(
-                '/api/sales-attribution?' + buildQuery(range, 'stripe', { refresh: shouldRefresh }),
-                token
-            );
-
-            if (!stripePayload) {
-                return;
-            }
-
-            renderDashboard({
-                stripe: stripePayload,
-                accounts: stripePayload.accounts,
-                active_account_id: stripePayload.active_account_id,
-            }, false, { stripeOnly: true });
-
-            if (!silent) {
-                setStatus(METRICS_PAGE === 'analise' ? 'A carregar campanhas Meta…' : 'A carregar gastos Meta…', false);
-            }
-
             var combinedOptions = { refresh: shouldRefresh };
 
             if (METRICS_PAGE === 'analise') {
@@ -1102,7 +1039,19 @@
         return '0';
     }
 
-    function renderProfitCards(stripeSummary, mergedSummary) {
+    function formatDateRangeHint(dateRange) {
+        if (!dateRange || !dateRange.from || !dateRange.to) {
+            return '';
+        }
+
+        if (dateRange.from === dateRange.to) {
+            return ' · ' + dateRange.from;
+        }
+
+        return ' · ' + dateRange.from + ' → ' + dateRange.to;
+    }
+
+    function renderProfitCards(stripeSummary, mergedSummary, dateRange) {
         if (!profitsRoot) {
             return;
         }
@@ -1130,17 +1079,19 @@
                 '</div>';
         }
 
+        var rangeHint = formatDateRangeHint(dateRange);
+
         profitsRoot.innerHTML =
             '<article class="metrics-profit-card metrics-profit-card--traffic">' +
             '<div class="metrics-profit-card__label">Lucro tráfego</div>' +
             '<div class="metrics-profit-card__value' + trafficClass + '">' + escapeHtml(formatMoneyEur(trafficProfit)) + '</div>' +
-            '<div class="metrics-profit-card__hint">Receita funil − gasto Meta · ' + escapeHtml(formatMoneyEur(trafficRevenue)) + ' − ' + escapeHtml(formatMoneyEur(spendEur)) + '</div>' +
+            '<div class="metrics-profit-card__hint">Receita funil − gasto Meta · ' + escapeHtml(formatMoneyEur(trafficRevenue)) + ' − ' + escapeHtml(formatMoneyEur(spendEur)) + escapeHtml(rangeHint) + '</div>' +
             '</article>' +
             bridgeHtml +
             '<article class="metrics-profit-card metrics-profit-card--total">' +
             '<div class="metrics-profit-card__label">Lucro total</div>' +
             '<div class="metrics-profit-card__value' + totalClass + '">' + escapeHtml(formatMoneyEur(totalProfit)) + '</div>' +
-            '<div class="metrics-profit-card__hint">Receita total − gasto Meta · ' + escapeHtml(formatMoneyEur(totalRevenue)) + ' − ' + escapeHtml(formatMoneyEur(spendEur)) + '</div>' +
+            '<div class="metrics-profit-card__hint">Receita total − gasto Meta · ' + escapeHtml(formatMoneyEur(totalRevenue)) + ' − ' + escapeHtml(formatMoneyEur(spendEur)) + escapeHtml(rangeHint) + '</div>' +
             '</article>';
     }
 
@@ -1399,7 +1350,6 @@
     });
 
     logoutButton.addEventListener('click', function () {
-        stopAutoRefresh();
         stopSalesPulse();
 
         if (window.MetricsPush) {
@@ -1413,15 +1363,12 @@
 
     document.addEventListener('visibilitychange', function () {
         if (document.hidden) {
-            stopAutoRefresh();
             stopSalesPulse();
             return;
         }
 
         if (!dashboardSection.hidden && getToken()) {
-            fetchMetrics({ refresh: true, silent: true }).catch(function () {});
-            startAutoRefresh();
-            startSalesPulse();
+            updateLiveIndicator(datePicker.getAppliedRange());
         }
     });
 
