@@ -1071,6 +1071,20 @@
         return ' · ' + dateRange.from + ' → ' + dateRange.to;
     }
 
+    function renderProfitCard(options) {
+        var valueClass = options.valueClass || '';
+        var modifier = options.modifier ? ' metrics-profit-card--' + options.modifier : '';
+
+        return (
+            '<article class="metrics-profit-card' + modifier + '">' +
+            '<div class="metrics-profit-card__label">' + escapeHtml(options.label) + '</div>' +
+            '<div class="metrics-profit-card__value' + valueClass + '">' + escapeHtml(String(options.value)) + '</div>' +
+            '<div class="metrics-profit-card__hint">' + options.hint + '</div>' +
+            (options.detail ? '<div class="metrics-profit-card__detail">' + options.detail + '</div>' : '') +
+            '</article>'
+        );
+    }
+
     function renderProfitCards(stripeSummary, mergedSummary, dateRange) {
         if (!profitsRoot) {
             return;
@@ -1085,34 +1099,49 @@
         var totalRevenue = Number(stripeSummary.total_revenue_eur || 0);
         var trafficRevenue = Number(stripeSummary.traffic_revenue_eur || 0);
         var otherRevenue = Number(stripeSummary.other_revenue_eur || 0);
+        var otherSales = Number(stripeSummary.other_sales || 0);
         var trafficProfit = Number((trafficRevenue - spendEur).toFixed(2));
         var totalProfit = Number((totalRevenue - spendEur).toFixed(2));
         var trafficClass = trafficProfit >= 0 ? ' metrics-profit-card__value--positive' : ' metrics-profit-card__value--negative';
         var totalClass = totalProfit >= 0 ? ' metrics-profit-card__value--positive' : ' metrics-profit-card__value--negative';
+        var trafficRoas = formatRoas(trafficRevenue, spendEur, null);
+        var totalRoas = formatRoas(totalRevenue, spendEur, mergedSummary.roas_real);
+        var rangeHint = formatDateRangeHint(dateRange);
+        var exchangeHint = escapeHtml(formatMetaExchangeHint(mergedSummary));
 
-        var bridgeHtml = '';
+        var organicDetail = '';
         if (otherRevenue > 0) {
-            bridgeHtml =
-                '<div class="metrics-profits__bridge">' +
-                '<span class="metrics-profits__bridge-label">+ orgânico</span>' +
-                '<span class="metrics-profits__bridge-value">' + escapeHtml(formatMoneyEur(otherRevenue)) + '</span>' +
-                '</div>';
+            organicDetail =
+                '<span class="metrics-profit-card__extra">+' + escapeHtml(formatMoneyEur(otherRevenue)) +
+                ' fora do funil · ' + otherSales + ' venda' + (otherSales === 1 ? '' : 's') + '</span>';
         }
 
-        var rangeHint = formatDateRangeHint(dateRange);
-
         profitsRoot.innerHTML =
-            '<article class="metrics-profit-card metrics-profit-card--traffic">' +
-            '<div class="metrics-profit-card__label">Lucro tráfego</div>' +
-            '<div class="metrics-profit-card__value' + trafficClass + '">' + escapeHtml(formatMoneyEur(trafficProfit)) + '</div>' +
-            '<div class="metrics-profit-card__hint">Receita funil − gasto Meta · ' + escapeHtml(formatMoneyEur(trafficRevenue)) + ' − ' + escapeHtml(formatMoneyEur(spendEur)) + escapeHtml(rangeHint) + '</div>' +
-            '</article>' +
-            bridgeHtml +
-            '<article class="metrics-profit-card metrics-profit-card--total">' +
-            '<div class="metrics-profit-card__label">Lucro total</div>' +
-            '<div class="metrics-profit-card__value' + totalClass + '">' + escapeHtml(formatMoneyEur(totalProfit)) + '</div>' +
-            '<div class="metrics-profit-card__hint">Receita total − gasto Meta · ' + escapeHtml(formatMoneyEur(totalRevenue)) + ' − ' + escapeHtml(formatMoneyEur(spendEur)) + escapeHtml(rangeHint) + '</div>' +
-            '</article>';
+            renderProfitCard({
+                label: 'Gasto tráfego',
+                value: formatMoneyEur(spendEur),
+                modifier: 'spend',
+                valueClass: ' metrics-profit-card__value--spend',
+                hint: exchangeHint + escapeHtml(rangeHint),
+                detail: 'Investido em Meta Ads no período',
+            }) +
+            renderProfitCard({
+                label: 'Lucro tráfego',
+                value: formatMoneyEur(trafficProfit),
+                modifier: 'traffic',
+                valueClass: trafficClass,
+                hint: escapeHtml(formatMoneyEur(trafficRevenue)) + ' receita funil − ' + escapeHtml(formatMoneyEur(spendEur)) + ' gasto',
+                detail: spendEur > 0 ? 'ROAS funil · ' + escapeHtml(String(trafficRoas)) + '×' : 'Sem gasto Meta no período',
+            }) +
+            renderProfitCard({
+                label: 'Lucro total',
+                value: formatMoneyEur(totalProfit),
+                modifier: 'total',
+                valueClass: totalClass,
+                hint: escapeHtml(formatMoneyEur(totalRevenue)) + ' receita total − ' + escapeHtml(formatMoneyEur(spendEur)) + ' gasto',
+                detail: (organicDetail || 'Todas as vendas Onda Prodígio') +
+                    (spendEur > 0 ? ' · ROAS total · ' + escapeHtml(String(totalRoas)) + '×' : ''),
+            });
     }
 
     function renderTotalSummaryCards(stripeSummary, mergedSummary) {

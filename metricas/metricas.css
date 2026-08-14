@@ -432,7 +432,7 @@ body {
 
 .metrics-profits {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.85rem;
     align-items: stretch;
 }
@@ -442,6 +442,12 @@ body {
     border: 1px solid #334155;
     border-radius: 16px;
     padding: 1.15rem 1.25rem;
+    min-height: 100%;
+}
+
+.metrics-profit-card--spend {
+    border-color: #7c2d12;
+    background: linear-gradient(180deg, #241812 0%, #17120f 100%);
 }
 
 .metrics-profit-card--traffic {
@@ -477,34 +483,26 @@ body {
     color: #fca5a5;
 }
 
+.metrics-profit-card__value--spend {
+    color: #fdba74;
+}
+
 .metrics-profit-card__hint {
     font-size: 0.78rem;
     color: #64748b;
     line-height: 1.35;
 }
 
-.metrics-profits__bridge {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.2rem;
-    padding: 0 0.35rem;
-    min-width: 5.5rem;
-    text-align: center;
+.metrics-profit-card__detail {
+    margin-top: 0.55rem;
+    font-size: 0.76rem;
+    color: #94a3b8;
+    line-height: 1.35;
 }
 
-.metrics-profits__bridge-label {
-    font-size: 0.72rem;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-}
-
-.metrics-profits__bridge-value {
-    font-size: 0.95rem;
-    font-weight: 700;
+.metrics-profit-card__extra {
     color: #7dd3fc;
+    font-weight: 600;
 }
 
 .metrics-summary--total {
@@ -1017,13 +1015,6 @@ body {
 
     .metrics-profits {
         grid-template-columns: 1fr;
-    }
-
-    .metrics-profits__bridge {
-        flex-direction: row;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0.35rem 0;
     }
 
     .metrics-summary--vturb {
