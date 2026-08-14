@@ -1074,7 +1074,7 @@
         if (otherRevenue > 0) {
             bridgeHtml =
                 '<div class="metrics-profits__bridge">' +
-                '<span class="metrics-profits__bridge-label">+ fora tráfego</span>' +
+                '<span class="metrics-profits__bridge-label">+ orgânico</span>' +
                 '<span class="metrics-profits__bridge-value">' + escapeHtml(formatMoneyEur(otherRevenue)) + '</span>' +
                 '</div>';
         }
@@ -1104,14 +1104,14 @@
         var spendEur = mergedSummary ? Number(mergedSummary.meta_spend_eur || 0) : 0;
         var roas = formatRoas(revenueEur, spendEur, mergedSummary ? mergedSummary.roas_real : null);
         var otherHint = Number(stripeSummary.other_sales || 0) > 0
-            ? ('+' + stripeSummary.other_sales + ' fora tráfego · ' + formatMoneyEur(stripeSummary.other_revenue_eur || 0))
+            ? ('+' + stripeSummary.other_sales + ' orgânico · ' + formatMoneyEur(stripeSummary.other_revenue_eur || 0))
             : '';
 
         var cards = [
             {
                 label: 'Vendas',
                 value: stripeSummary.total_sales || 0,
-                hint: 'Stripe · todas as origens',
+                hint: 'Onda Prodígio · checkout9',
             },
             {
                 label: 'Receitas',
