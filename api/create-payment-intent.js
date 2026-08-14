@@ -9,7 +9,8 @@ module.exports = async function handler(req, res) {
 
     var body = req.body || {};
     var mode = stripeEnv.resolveStripeMode(req, body);
-    var stripeClient = stripeEnv.getStripeClient(mode);
+    var checkoutId = stripeEnv.resolveCheckoutId(req, body);
+    var stripeClient = stripeEnv.getStripeClient(mode, checkoutId);
 
     if (stripeClient.error || !stripeClient.stripe) {
         return res.status(500).json({ error: stripeClient.error || 'Stripe não configurado.' });
@@ -55,7 +56,7 @@ module.exports = async function handler(req, res) {
             stripe_mode: mode,
         } : {
             product: 'Onda Prodígio',
-            price_id: process.env.STRIPE_PRICE_ID || '',
+            price_id: stripeClient.settings.priceId || '',
             full_name: fullName || '',
             phone: phone || '',
             region: region || '',

@@ -21,6 +21,10 @@
       "destination": "/checkout9-test/index.html"
     },
     {
+      "source": "/checkout19",
+      "destination": "/checkout19/index.html"
+    },
+    {
       "source": "/obgd/",
       "destination": "/obgd/index.html"
     },

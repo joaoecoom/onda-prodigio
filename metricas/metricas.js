@@ -22,6 +22,7 @@
     var logoutButton = document.getElementById('metrics-logout');
     var accountWrap = document.getElementById('metrics-account-wrap');
     var accountSelect = document.getElementById('metrics-account');
+    var checkoutVariantSelect = document.getElementById('metrics-checkout-variant');
     var metaBanner = document.getElementById('metrics-meta-banner');
     var metaPanel = document.getElementById('metrics-meta-panel');
     var metaContext = document.getElementById('metrics-meta-context');
@@ -33,6 +34,7 @@
     var vturbSummary = document.getElementById('metrics-vturb-summary');
     var vturbGeneratedAt = document.getElementById('metrics-vturb-generated-at');
     var ACCOUNT_KEY = 'onda-metrics-account';
+    var CHECKOUT_VARIANT_KEY = 'onda-metrics-checkout-variant';
     var latestPayload = null;
     var salesPulseTimer = null;
     var SALES_PULSE_MS = 15 * 1000;
@@ -94,6 +96,35 @@
 
     function formatMoneyEur(value) {
         return formatMoney(value, 'EUR');
+    }
+
+    function getSelectedCheckoutVariant() {
+        if (!checkoutVariantSelect) {
+            return 'all';
+        }
+
+        return checkoutVariantSelect.value || window.sessionStorage.getItem(CHECKOUT_VARIANT_KEY) || 'all';
+    }
+
+    function setSelectedCheckoutVariant(value) {
+        if (!checkoutVariantSelect) {
+            return;
+        }
+
+        checkoutVariantSelect.value = value || 'all';
+        window.sessionStorage.setItem(CHECKOUT_VARIANT_KEY, checkoutVariantSelect.value);
+    }
+
+    function getCheckoutFilterLabel(variant) {
+        if (variant === 'checkout9') {
+            return 'Onda Prodígio · €9';
+        }
+
+        if (variant === 'checkout19') {
+            return 'Onda Prodígio · €19';
+        }
+
+        return 'Onda Prodígio · €9 + €19';
     }
 
     function getSelectedAccountId() {
@@ -404,6 +435,12 @@
 
         if (options && options.metaMode) {
             params.push('meta_mode=' + encodeURIComponent(options.metaMode));
+        }
+
+        var checkoutVariant = getSelectedCheckoutVariant();
+
+        if (checkoutVariant && checkoutVariant !== 'all') {
+            params.push('checkout_variant=' + encodeURIComponent(checkoutVariant));
         }
 
         return params.join('&');
@@ -1107,11 +1144,12 @@
         var totalRoas = formatRoas(totalRevenue, spendEur, mergedSummary.roas_real);
         var rangeHint = formatDateRangeHint(dateRange);
 
+        var checkoutLabel = getCheckoutFilterLabel(getSelectedCheckoutVariant());
         var faturadoHint = totalSales + ' venda' + (totalSales === 1 ? '' : 's');
         if (otherRevenue > 0) {
             faturadoHint += ' · funil ' + formatMoneyEur(trafficRevenue) + ' + extra ' + formatMoneyEur(otherRevenue);
         } else {
-            faturadoHint += ' · checkout9';
+            faturadoHint += ' · ' + checkoutLabel;
         }
 
         var trafficHint = formatMoneyEur(trafficRevenue) + ' − ' + formatMoneyEur(spendEur);
@@ -1170,11 +1208,12 @@
             ? ('+' + stripeSummary.other_sales + ' orgânico · ' + formatMoneyEur(stripeSummary.other_revenue_eur || 0))
             : '';
 
+        var checkoutLabel = getCheckoutFilterLabel(getSelectedCheckoutVariant());
         var cards = [
             {
                 label: 'Vendas',
                 value: stripeSummary.total_sales || 0,
-                hint: 'Onda Prodígio · checkout9',
+                hint: checkoutLabel,
             },
             {
                 label: 'Receitas',
@@ -1391,6 +1430,17 @@
             setStatus('Erro de ligação. Tenta outra vez.', true);
         });
     });
+
+    if (checkoutVariantSelect) {
+        setSelectedCheckoutVariant(window.sessionStorage.getItem(CHECKOUT_VARIANT_KEY) || 'all');
+
+        checkoutVariantSelect.addEventListener('change', function () {
+            setSelectedCheckoutVariant(checkoutVariantSelect.value);
+            fetchMetrics().catch(function () {
+                setStatus('Erro de ligação. Tenta outra vez.', true);
+            });
+        });
+    }
 
     if (metaBody) {
         metaBody.addEventListener('click', function (event) {

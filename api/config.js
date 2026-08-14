@@ -3,7 +3,8 @@ var productCheckoutConfig = require('../lib/product-checkout-config');
 
 module.exports = async function handler(req, res) {
     var mode = stripeEnv.resolveStripeMode(req, null);
-    var settings = stripeEnv.getStripeSettings(mode);
+    var checkoutId = stripeEnv.resolveCheckoutId(req, null);
+    var settings = stripeEnv.getStripeSettings(mode, checkoutId);
     var productId = typeof req.query.product_id === 'string' ? req.query.product_id.trim() : '';
 
     if (!settings.publishableKey) {
@@ -30,7 +31,8 @@ module.exports = async function handler(req, res) {
         currency: 'eur',
         productName: 'Onda Prodígio',
         mode: settings.mode,
-        checkoutPath: settings.checkoutId === 'checkout9-test' ? '/checkout9-test/' : '/checkout9/',
+        checkoutId: settings.checkoutId,
+        checkoutPath: settings.checkoutPath,
         thankYouPath: settings.thankYouPath,
     });
 };

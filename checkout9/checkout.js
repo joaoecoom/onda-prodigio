@@ -142,12 +142,20 @@
         return regionOtherField ? regionOtherField.value.trim() : '';
     }
 
+    function getCheckoutId() {
+        return document.documentElement.getAttribute('data-checkout-id') || 'checkout9';
+    }
+
     function getCheckoutAmountCents() {
         if (window.CheckoutOrderBumps) {
             return window.CheckoutOrderBumps.getTotalCents();
         }
 
-        return 900;
+        if (window.CheckoutOrderBumps && window.CheckoutOrderBumps.BASE_AMOUNT_CENTS) {
+            return window.CheckoutOrderBumps.BASE_AMOUNT_CENTS;
+        }
+
+        return getCheckoutId() === 'checkout19' ? 1900 : 900;
     }
 
     function getOrderBumpIds() {
@@ -163,7 +171,8 @@
             return 'Pagar ' + window.CheckoutOrderBumps.formatEuro(getCheckoutAmountCents());
         }
 
-        return 'Pagar 9,00 €';
+        var fallbackCents = getCheckoutId() === 'checkout19' ? 1900 : 900;
+        return 'Pagar ' + (fallbackCents / 100).toFixed(2).replace('.', ',') + ' €';
     }
 
     function getStripeMode() {
@@ -174,7 +183,16 @@
         return getStripeMode() === 'test';
     }
 
+    function withCheckoutQuery(url) {
+        var checkoutId = getCheckoutId();
+        var separator = url.indexOf('?') >= 0 ? '&' : '?';
+
+        return url + separator + 'checkout=' + encodeURIComponent(checkoutId);
+    }
+
     function withModeQuery(url) {
+        url = withCheckoutQuery(url);
+
         if (!isTestMode()) {
             return url;
         }
@@ -184,6 +202,8 @@
 
     function withModePayload(payload) {
         var body = Object.assign({}, payload || {});
+
+        body.checkout_id = getCheckoutId();
 
         if (isTestMode()) {
             body.mode = 'test';
