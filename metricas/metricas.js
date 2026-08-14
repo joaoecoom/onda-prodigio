@@ -415,7 +415,15 @@
                 Authorization: 'Bearer ' + token,
             },
         });
-        var data = await response.json();
+        var data;
+        var contentType = response.headers.get('content-type') || '';
+
+        if (contentType.indexOf('application/json') !== -1) {
+            data = await response.json();
+        } else {
+            var text = await response.text();
+            throw new Error(text.trim().slice(0, 120) || 'Resposta inválida do servidor.');
+        }
 
         if (response.status === 401) {
             setToken('');

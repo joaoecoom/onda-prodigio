@@ -469,7 +469,7 @@ module.exports = async function handler(req, res) {
         }
 
         if (action === 'combined') {
-            return handleCombined(req, res);
+            return await handleCombined(req, res);
         }
 
         if (action === 'sales_pulse') {
