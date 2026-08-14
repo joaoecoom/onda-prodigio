@@ -1079,8 +1079,7 @@
             '<article class="metrics-profit-card' + modifier + '">' +
             '<div class="metrics-profit-card__label">' + escapeHtml(options.label) + '</div>' +
             '<div class="metrics-profit-card__value' + valueClass + '">' + escapeHtml(String(options.value)) + '</div>' +
-            '<div class="metrics-profit-card__hint">' + options.hint + '</div>' +
-            (options.detail ? '<div class="metrics-profit-card__detail">' + options.detail + '</div>' : '') +
+            (options.hint ? '<div class="metrics-profit-card__hint">' + options.hint + '</div>' : '') +
             '</article>'
         );
     }
@@ -1099,7 +1098,7 @@
         var totalRevenue = Number(stripeSummary.total_revenue_eur || 0);
         var trafficRevenue = Number(stripeSummary.traffic_revenue_eur || 0);
         var otherRevenue = Number(stripeSummary.other_revenue_eur || 0);
-        var otherSales = Number(stripeSummary.other_sales || 0);
+        var totalSales = Number(stripeSummary.total_sales || 0);
         var trafficProfit = Number((trafficRevenue - spendEur).toFixed(2));
         var totalProfit = Number((totalRevenue - spendEur).toFixed(2));
         var trafficClass = trafficProfit >= 0 ? ' metrics-profit-card__value--positive' : ' metrics-profit-card__value--negative';
@@ -1107,13 +1106,25 @@
         var trafficRoas = formatRoas(trafficRevenue, spendEur, null);
         var totalRoas = formatRoas(totalRevenue, spendEur, mergedSummary.roas_real);
         var rangeHint = formatDateRangeHint(dateRange);
-        var exchangeHint = escapeHtml(formatMetaExchangeHint(mergedSummary));
 
-        var organicDetail = '';
+        var faturadoHint = totalSales + ' venda' + (totalSales === 1 ? '' : 's');
         if (otherRevenue > 0) {
-            organicDetail =
-                '<span class="metrics-profit-card__extra">+' + escapeHtml(formatMoneyEur(otherRevenue)) +
-                ' fora do funil · ' + otherSales + ' venda' + (otherSales === 1 ? '' : 's') + '</span>';
+            faturadoHint += ' · funil ' + formatMoneyEur(trafficRevenue) + ' + extra ' + formatMoneyEur(otherRevenue);
+        } else {
+            faturadoHint += ' · checkout9';
+        }
+
+        var trafficHint = formatMoneyEur(trafficRevenue) + ' − ' + formatMoneyEur(spendEur);
+        if (spendEur > 0) {
+            trafficHint += ' · ROAS ' + trafficRoas + '×';
+        }
+
+        var totalHint = formatMoneyEur(totalRevenue) + ' − ' + formatMoneyEur(spendEur);
+        if (spendEur > 0) {
+            totalHint += ' · ROAS ' + totalRoas + '×';
+        }
+        if (otherRevenue > 0) {
+            totalHint += ' · inclui extra ' + formatMoneyEur(otherRevenue);
         }
 
         profitsRoot.innerHTML =
@@ -1122,25 +1133,28 @@
                 value: formatMoneyEur(spendEur),
                 modifier: 'spend',
                 valueClass: ' metrics-profit-card__value--spend',
-                hint: exchangeHint + escapeHtml(rangeHint),
-                detail: 'Investido em Meta Ads no período',
+                hint: escapeHtml(formatMetaExchangeHint(mergedSummary)) + escapeHtml(rangeHint),
             }) +
             renderProfitCard({
-                label: 'Lucro tráfego',
+                label: 'Faturado',
+                value: formatMoneyEur(totalRevenue),
+                modifier: 'revenue',
+                valueClass: ' metrics-profit-card__value--revenue',
+                hint: escapeHtml(faturadoHint),
+            }) +
+            renderProfitCard({
+                label: 'ROI c/ tráfego',
                 value: formatMoneyEur(trafficProfit),
                 modifier: 'traffic',
                 valueClass: trafficClass,
-                hint: escapeHtml(formatMoneyEur(trafficRevenue)) + ' receita funil − ' + escapeHtml(formatMoneyEur(spendEur)) + ' gasto',
-                detail: spendEur > 0 ? 'ROAS funil · ' + escapeHtml(String(trafficRoas)) + '×' : 'Sem gasto Meta no período',
+                hint: escapeHtml(trafficHint),
             }) +
             renderProfitCard({
-                label: 'Lucro total',
+                label: 'ROI total',
                 value: formatMoneyEur(totalProfit),
                 modifier: 'total',
                 valueClass: totalClass,
-                hint: escapeHtml(formatMoneyEur(totalRevenue)) + ' receita total − ' + escapeHtml(formatMoneyEur(spendEur)) + ' gasto',
-                detail: (organicDetail || 'Todas as vendas Onda Prodígio') +
-                    (spendEur > 0 ? ' · ROAS total · ' + escapeHtml(String(totalRoas)) + '×' : ''),
+                hint: escapeHtml(totalHint),
             });
     }
 
