@@ -529,18 +529,30 @@
     }
 
     function formatMetaExchangeHint(mergedSummary) {
+        var parts = [];
+
+        if (mergedSummary && (mergedSummary.meta_timezone || mergedSummary.timezone_name)) {
+            var tz = mergedSummary.meta_timezone || mergedSummary.timezone_name;
+            if (tz && tz !== 'Europe/Lisbon') {
+                parts.push('Fuso conta Meta: ' + tz);
+            }
+        }
+
         if (!mergedSummary || mergedSummary.meta_currency === 'EUR') {
-            return 'Meta Ads';
+            return parts.length ? parts.join(' · ') : 'Meta Ads';
         }
 
         var rate = Number(mergedSummary.meta_eur_per_unit || 0);
 
         if (!rate) {
-            return 'Meta · ' + mergedSummary.meta_currency + ' convertido para EUR';
+            parts.push('Meta · ' + mergedSummary.meta_currency + ' → EUR');
+            return parts.join(' · ');
         }
 
-        return 'Meta ' + mergedSummary.meta_currency + ' → EUR (1 ' + mergedSummary.meta_currency + ' = ' +
-            rate.toFixed(4).replace('.', ',') + ' €)';
+        parts.push('Meta ' + mergedSummary.meta_currency + ' → EUR (1 ' + mergedSummary.meta_currency + ' = ' +
+            rate.toFixed(4).replace('.', ',') + ' €)');
+
+        return parts.join(' · ');
     }
 
     function buildMetaExchangeContext(mergedSummary) {
