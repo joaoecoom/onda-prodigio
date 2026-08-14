@@ -412,6 +412,64 @@ async function handlePushUnsubscribe(req, res) {
     }
 }
 
+async function handleSetupCheckout19Price(res) {
+    var Stripe = require('stripe');
+    var CHECKOUT9_PRODUCT_ID = 'prod_Usue5319DfN1il';
+    var CHECKOUT19_LOOKUP_KEY = 'onda-prodigio-checkout19';
+    var secretKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!secretKey) {
+        return res.status(500).json({ error: 'STRIPE_SECRET_KEY em falta.' });
+    }
+
+    var stripe = new Stripe(secretKey);
+
+    try {
+        var existing = await stripe.prices.list({
+            limit: 20,
+            active: true,
+            lookup_keys: [CHECKOUT19_LOOKUP_KEY],
+        });
+
+        if (existing.data && existing.data.length) {
+            var current = existing.data[0];
+
+            return res.status(200).json({
+                ok: true,
+                existed: true,
+                product_id: current.product,
+                price_id: current.id,
+                unit_amount: current.unit_amount,
+                lookup_key: current.lookup_key,
+            });
+        }
+
+        var price = await stripe.prices.create({
+            product: CHECKOUT9_PRODUCT_ID,
+            unit_amount: 1900,
+            currency: 'eur',
+            lookup_key: CHECKOUT19_LOOKUP_KEY,
+            metadata: {
+                checkout: 'checkout19',
+            },
+        });
+
+        return res.status(200).json({
+            ok: true,
+            existed: false,
+            product_id: price.product,
+            price_id: price.id,
+            unit_amount: price.unit_amount,
+            lookup_key: price.lookup_key,
+        });
+    } catch (error) {
+        console.error('Setup checkout19 price falhou:', error);
+        return res.status(500).json({
+            error: error.message || 'Não foi possível criar o preço €19.',
+        });
+    }
+}
+
 module.exports = async function handler(req, res) {
     if (!metricsAuth.isAuthorized(req)) {
         return res.status(401).json({ error: 'Não autorizado.' });
@@ -430,6 +488,10 @@ module.exports = async function handler(req, res) {
 
         if (action === 'push_unsubscribe') {
             return handlePushUnsubscribe(req, res);
+        }
+
+        if (action === 'setup_checkout19_price') {
+            return handleSetupCheckout19Price(res);
         }
 
         if (action.indexOf('admin_') === 0) {
