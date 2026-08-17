@@ -12,3 +12,4 @@ stripe-config.env
 .cursor/mcp.json
 .env.prod.tmp
 env.vercel.prod
+.env.push-test
