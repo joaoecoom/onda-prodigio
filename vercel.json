@@ -95,6 +95,18 @@
     {
       "source": "/adm/",
       "destination": "/adm/index.html"
+    },
+    {
+      "source": "/hub",
+      "destination": "/hub/index.html"
+    },
+    {
+      "source": "/hub/",
+      "destination": "/hub/index.html"
+    },
+    {
+      "source": "/hub/:module",
+      "destination": "/hub/index.html"
     }
   ],
     "headers": [

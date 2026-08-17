@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="pt-PT" data-page-type="internal">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b0f14">
+    <meta name="robots" content="noindex, nofollow">
+    <title>HUB DR Ecoom</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/hub/hub.css?v=2">
+</head>
+<body>
+    <noscript>
+        <p style="padding:2rem;font-family:Inter,sans-serif;">Activa JavaScript para usar o HUB DR Ecoom.</p>
+    </noscript>
+
+    <div class="hub-app" id="hub-app">
+        <section class="hub-login" id="hub-login">
+            <div class="hub-login__card">
+                <p class="hub-login__eyebrow">DR Ecoom</p>
+                <h1>HUB</h1>
+                <p class="hub-login__text">Plataforma unificada — Dashboard, Tracking, Recupera, Impulsiona e mais.</p>
+                <form class="hub-login__form" id="hub-login-form">
+                    <label class="hub-login__label" for="hub-password">Palavra-passe</label>
+                    <input class="hub-login__input" id="hub-password" type="password" autocomplete="current-password" required>
+                    <button class="hub-login__button" type="submit">Entrar</button>
+                    <p class="hub-login__error" id="hub-login-error" hidden></p>
+                </form>
+            </div>
+        </section>
+
+        <section class="hub-shell" id="hub-shell" hidden>
+            <header class="hub-header">
+                <div class="hub-header__brand">
+                    <p class="hub-header__eyebrow">HUB DR Ecoom</p>
+                    <h1>Ofertas</h1>
+                    <p class="hub-header__sub">Gerir cada funil e os respectivos módulos num só sítio.</p>
+                </div>
+                <div class="hub-header__actions">
+                    <button class="hub-button hub-button--ghost" type="button" id="hub-refresh">Actualizar</button>
+                    <button class="hub-button hub-button--ghost" type="button" id="hub-logout">Sair</button>
+                </div>
+            </header>
+
+            <div class="hub-status" id="hub-status" hidden></div>
+
+            <section class="hub-section" aria-labelledby="hub-offers-title">
+                <div class="hub-section__head">
+                    <h2 id="hub-offers-title">Ofertas</h2>
+                    <p class="hub-section__sub" id="hub-offers-count">A carregar…</p>
+                </div>
+                <div class="hub-offers" id="hub-offers" aria-label="Lista de ofertas"></div>
+            </section>
+
+            <section class="hub-section" aria-labelledby="hub-modules-title">
+                <div class="hub-section__head">
+                    <h2 id="hub-modules-title">Módulos</h2>
+                    <p class="hub-section__sub" id="hub-offer-sub">Selecciona uma oferta acima.</p>
+                </div>
+                <div class="hub-modules" id="hub-modules" aria-label="Módulos da oferta"></div>
+            </section>
+
+            <footer class="hub-footer">
+                <p>hub.dr.ecoom.pt · Fase 1 — schema + shell</p>
+            </footer>
+        </section>
+    </div>
+
+    <script src="/hub/hub.js?v=2"></script>
+</body>
+</html>
