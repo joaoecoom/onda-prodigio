@@ -1,5 +1,5 @@
 (function () {
-    var TOKEN_KEY = 'hub-dr-ecoom-token';
+    var TOKEN_KEY = 'onda-metrics-token';
     var OFFER_KEY = 'hub-selected-offer';
 
     var loginSection = document.getElementById('hub-login');
@@ -45,21 +45,21 @@
         statusEl.style.color = isError ? '#fca5a5' : '#9aa4b2';
     }
 
-    function authHeaders() {
+    function authHeaders(tokenOverride) {
         return {
-            Authorization: 'Bearer ' + getToken(),
+            Authorization: 'Bearer ' + (tokenOverride || getToken()),
         };
     }
 
-    async function apiFetch(path) {
+    async function apiFetch(path, tokenOverride) {
         var response = await fetch(path, {
-            headers: authHeaders(),
+            headers: authHeaders(tokenOverride),
         });
 
         if (response.status === 401) {
             clearToken();
             showShell(false);
-            throw new Error('Sessão expirada. Entra outra vez.');
+            throw new Error('Palavra-passe incorrecta.');
         }
 
         var payload = await response.json();
@@ -202,8 +202,11 @@
         return state.offers[0] ? state.offers[0].slug : '';
     }
 
-    async function loadOfferDetail(slug) {
-        var payload = await apiFetch('/api/sales-attribution?action=hub_offer&slug=' + encodeURIComponent(slug));
+    async function loadOfferDetail(slug, tokenOverride) {
+        var payload = await apiFetch(
+            '/api/sales-attribution?action=hub_offer&slug=' + encodeURIComponent(slug),
+            tokenOverride
+        );
         state.currentOffer = payload.offer;
         sessionStorage.setItem(OFFER_KEY, payload.offer.slug);
 
@@ -224,11 +227,11 @@
         await loadOfferDetail(slug);
     }
 
-    async function bootstrapShell() {
+    async function bootstrapShell(tokenOverride) {
         showShell(true);
         showStatus('A carregar ofertas…');
 
-        var payload = await apiFetch('/api/sales-attribution?action=hub_offers');
+        var payload = await apiFetch('/api/sales-attribution?action=hub_offers', tokenOverride);
         state.offers = payload.offers || [];
 
         if (!state.offers.length) {
@@ -239,7 +242,7 @@
         }
 
         var slug = getInitialSlug();
-        await loadOfferDetail(slug);
+        await loadOfferDetail(slug, tokenOverride);
     }
 
     loginForm.addEventListener('submit', async function (event) {
@@ -257,7 +260,7 @@
         setToken(password);
 
         try {
-            await bootstrapShell();
+            await bootstrapShell(password);
             passwordInput.value = '';
         } catch (error) {
             clearToken();
