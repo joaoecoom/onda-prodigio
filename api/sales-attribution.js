@@ -498,6 +498,10 @@ module.exports = async function handler(req, res) {
             return handleAdminPost(req, res, action);
         }
 
+        if (action === 'hub_create_offer') {
+            return require('../lib/hub/handlers/create-offer')(req, res);
+        }
+
         res.setHeader('Allow', 'GET, POST');
         return res.status(405).json({ error: 'Método não permitido.' });
     }

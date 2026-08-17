@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/hub/hub.css?v=3">
+    <link rel="stylesheet" href="/hub/hub.css?v=4">
 </head>
 <body>
     <noscript>
@@ -21,7 +21,7 @@
             <div class="hub-login__card">
                 <p class="hub-login__eyebrow">DR Ecoom</p>
                 <h1>HUB</h1>
-                <p class="hub-login__text">Plataforma central DR Ecoom — entras aqui, geres Onda Prodígio e todas as ofertas.</p>
+                <p class="hub-login__text">Plataforma central — cada oferta é um espaço completo com funil, métricas, tracking e automações.</p>
                 <form class="hub-login__form" id="hub-login-form">
                     <label class="hub-login__label" for="hub-password">Palavra-passe</label>
                     <input class="hub-login__input" id="hub-password" type="password" autocomplete="current-password" required>
@@ -35,10 +35,11 @@
             <header class="hub-header">
                 <div class="hub-header__brand">
                     <p class="hub-header__eyebrow">HUB DR Ecoom</p>
-                    <h1>Ofertas</h1>
-                    <p class="hub-header__sub">Cada oferta tem o seu domínio de funil. Tu acedes e geres tudo a partir deste HUB.</p>
+                    <h1 id="hub-page-title">Ofertas</h1>
+                    <p class="hub-header__sub" id="hub-page-sub">Selecciona uma oferta para gerir tudo dentro dela.</p>
                 </div>
                 <div class="hub-header__actions">
+                    <button class="hub-button hub-button--ghost" type="button" id="hub-back" hidden>← Ofertas</button>
                     <button class="hub-button hub-button--ghost" type="button" id="hub-refresh">Actualizar</button>
                     <button class="hub-button hub-button--ghost" type="button" id="hub-logout">Sair</button>
                 </div>
@@ -46,19 +47,16 @@
 
             <div class="hub-status" id="hub-status" hidden></div>
 
-            <section class="hub-section" aria-labelledby="hub-offers-title">
+            <section class="hub-view" id="hub-view-list">
                 <div class="hub-section__head">
-                    <h2 id="hub-offers-title">Ofertas</h2>
+                    <h2>Ofertas</h2>
                     <p class="hub-section__sub" id="hub-offers-count">A carregar…</p>
                 </div>
                 <div class="hub-offers" id="hub-offers" aria-label="Lista de ofertas"></div>
             </section>
 
-            <section class="hub-section" aria-labelledby="hub-modules-title">
-                <div class="hub-section__head">
-                    <h2 id="hub-modules-title">Módulos</h2>
-                    <p class="hub-section__sub" id="hub-offer-sub">Selecciona uma oferta acima.</p>
-                </div>
+            <section class="hub-view hub-view--offer" id="hub-view-offer" hidden>
+                <div class="hub-offer-head" id="hub-offer-head"></div>
                 <div class="hub-modules" id="hub-modules" aria-label="Módulos da oferta"></div>
             </section>
 
@@ -69,6 +67,6 @@
     </div>
 
     <script>window.HUB_PLATFORM_HOST = 'hub-dr-ecoom.vercel.app';</script>
-    <script src="/hub/hub.js?v=7"></script>
+    <script src="/hub/hub.js?v=8"></script>
 </body>
 </html>

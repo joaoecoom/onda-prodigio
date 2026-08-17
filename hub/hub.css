@@ -41,8 +41,18 @@ select {
 }
 
 .hub-login[hidden],
-.hub-shell[hidden] {
+.hub-shell[hidden],
+.hub-view[hidden] {
     display: none !important;
+}
+
+.hub-view--offer {
+    animation: hub-fade-in 0.2s ease;
+}
+
+@keyframes hub-fade-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .hub-login {
@@ -246,6 +256,11 @@ select {
     color: var(--hub-success);
 }
 
+.hub-offer__badge--draft {
+    background: rgba(251, 191, 36, 0.12);
+    color: var(--hub-warning);
+}
+
 .hub-offer__name {
     margin: 0;
     font-size: 22px;
@@ -267,6 +282,60 @@ select {
     color: var(--hub-muted);
     font-size: 13px;
     font-weight: 600;
+}
+
+.hub-offer__cta {
+    margin-top: 8px;
+    color: var(--hub-accent);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.hub-offer--create {
+    border-style: dashed;
+    cursor: default;
+    min-height: 280px;
+}
+
+.hub-offer--create:hover {
+    transform: none;
+}
+
+.hub-create-form {
+    display: grid;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.hub-create-form__error {
+    margin: 0;
+    color: #fca5a5;
+    font-size: 13px;
+}
+
+.hub-offer-head {
+    margin-bottom: 20px;
+    padding: 20px;
+    border: 1px solid var(--hub-border);
+    border-radius: var(--hub-radius);
+    background: linear-gradient(180deg, rgba(124, 108, 255, 0.08), var(--hub-panel));
+}
+
+.hub-offer-head__name {
+    margin: 10px 0 6px;
+    font-size: clamp(24px, 4vw, 32px);
+}
+
+.hub-offer-head__sub,
+.hub-offer-head__hint {
+    margin: 0;
+    color: var(--hub-muted);
+    line-height: 1.55;
+}
+
+.hub-offer-head__hint {
+    margin-top: 10px;
+    font-size: 14px;
 }
 
 .hub-empty {
