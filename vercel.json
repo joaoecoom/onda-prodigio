@@ -10,6 +10,66 @@
   "rewrites": [
     {
       "source": "/",
+      "destination": "/hub/index.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "hub.dr.ecoom.pt"
+        }
+      ]
+    },
+    {
+      "source": "/tracking",
+      "destination": "/hub/index.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "hub.dr.ecoom.pt"
+        }
+      ]
+    },
+    {
+      "source": "/recupera",
+      "destination": "/hub/index.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "hub.dr.ecoom.pt"
+        }
+      ]
+    },
+    {
+      "source": "/impulsiona",
+      "destination": "/hub/index.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "hub.dr.ecoom.pt"
+        }
+      ]
+    },
+    {
+      "source": "/integracoes",
+      "destination": "/hub/index.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "hub.dr.ecoom.pt"
+        }
+      ]
+    },
+    {
+      "source": "/funil",
+      "destination": "/hub/index.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "hub.dr.ecoom.pt"
+        }
+      ]
+    },
+    {
+      "source": "/",
       "destination": "/index.html"
     },
     {
@@ -109,7 +169,7 @@
       "destination": "/hub/index.html"
     }
   ],
-    "headers": [
+  "headers": [
     {
       "source": "/metricas/sw.js",
       "headers": [

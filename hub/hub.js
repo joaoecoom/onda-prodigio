@@ -1,6 +1,7 @@
 (function () {
     var TOKEN_KEY = 'onda-metrics-token';
     var OFFER_KEY = 'hub-selected-offer';
+    var HUB_HOST = String(window.HUB_PLATFORM_HOST || 'hub.dr.ecoom.pt').toLowerCase();
 
     var loginSection = document.getElementById('hub-login');
     var shellSection = document.getElementById('hub-shell');
@@ -92,6 +93,19 @@
         return { text: 'Fase 2', className: 'hub-module__badge' };
     }
 
+    function isHubPlatformHost() {
+        var host = window.location.hostname.toLowerCase();
+        return host === HUB_HOST || host === 'localhost' || host === '127.0.0.1';
+    }
+
+    function getFunnelHost(offer) {
+        if (offer.funnel_domain) {
+            return offer.funnel_domain;
+        }
+
+        return formatSiteHost(offer.funnel_url || offer.site_url);
+    }
+
     function formatSiteHost(url) {
         if (!url) {
             return 'Sem URL';
@@ -136,7 +150,7 @@
                     '<span class="hub-offer__badge hub-offer__badge--live">' + statusLabel + '</span>' +
                 '</div>' +
                 '<h3 class="hub-offer__name">' + offer.name + '</h3>' +
-                '<p class="hub-offer__url">' + formatSiteHost(offer.site_url) + '</p>' +
+                '<p class="hub-offer__url">Funil · ' + getFunnelHost(offer) + '</p>' +
                 '<div class="hub-offer__meta">' +
                     '<span>' + checkoutSummary + '</span>' +
                     '<span>' + metaCount + ' conta Meta</span>' +
@@ -174,6 +188,11 @@
                 card.setAttribute('aria-disabled', 'true');
             }
 
+            if (module.external && module.status === 'live') {
+                card.target = '_blank';
+                card.rel = 'noopener noreferrer';
+            }
+
             card.innerHTML =
                 '<div class="hub-module__top">' +
                     '<div class="hub-module__icon">' + moduleIcon(module.label) + '</div>' +
@@ -182,7 +201,9 @@
                 '<h2>' + module.label + '</h2>' +
                 '<p>' + module.description + '</p>' +
                 '<span class="hub-module__cta">' +
-                    (module.status === 'live' ? 'Abrir módulo →' : 'Disponível na próxima fase') +
+                    (module.status === 'live'
+                        ? (module.external ? 'Abrir funil ↗' : 'Abrir módulo →')
+                        : 'Disponível na próxima fase') +
                 '</span>';
 
             modulesRoot.appendChild(card);
@@ -211,7 +232,7 @@
         sessionStorage.setItem(OFFER_KEY, payload.offer.slug);
 
         modulesTitle.textContent = 'Módulos — ' + payload.offer.name;
-        offerSub.textContent = formatSiteHost(payload.offer.site_url) + ' · ' + formatCheckouts(payload.offer);
+        offerSub.textContent = 'Funil · ' + getFunnelHost(payload.offer) + ' · ' + formatCheckouts(payload.offer);
         renderOffers(payload.offer.slug);
         renderModules(payload.offer.modules || []);
         showStatus('');
@@ -284,6 +305,10 @@
         showShell(false);
         showStatus('');
     });
+
+    if (!isHubPlatformHost()) {
+        showStatus('Estás no domínio do funil. O HUB vive em hub.dr.ecoom.pt — quando o DNS estiver activo, entra por lá.', false);
+    }
 
     if (getToken()) {
         bootstrapShell().catch(function () {

@@ -21,7 +21,7 @@
             <div class="hub-login__card">
                 <p class="hub-login__eyebrow">DR Ecoom</p>
                 <h1>HUB</h1>
-                <p class="hub-login__text">Plataforma unificada — Dashboard, Tracking, Recupera, Impulsiona e mais.</p>
+                <p class="hub-login__text">Plataforma central DR Ecoom — entras aqui, geres Onda Prodígio e todas as ofertas.</p>
                 <form class="hub-login__form" id="hub-login-form">
                     <label class="hub-login__label" for="hub-password">Palavra-passe</label>
                     <input class="hub-login__input" id="hub-password" type="password" autocomplete="current-password" required>
@@ -36,7 +36,7 @@
                 <div class="hub-header__brand">
                     <p class="hub-header__eyebrow">HUB DR Ecoom</p>
                     <h1>Ofertas</h1>
-                    <p class="hub-header__sub">Gerir cada funil e os respectivos módulos num só sítio.</p>
+                    <p class="hub-header__sub">Cada oferta tem o seu domínio de funil. Tu acedes e geres tudo a partir deste HUB.</p>
                 </div>
                 <div class="hub-header__actions">
                     <button class="hub-button hub-button--ghost" type="button" id="hub-refresh">Actualizar</button>
@@ -63,11 +63,12 @@
             </section>
 
             <footer class="hub-footer">
-                <p>hub.dr.ecoom.pt · Fase 1 — schema + shell</p>
+                <p id="hub-footer-host">hub.dr.ecoom.pt</p>
             </footer>
         </section>
     </div>
 
-    <script src="/hub/hub.js?v=4"></script>
+    <script>window.HUB_PLATFORM_HOST = 'hub.dr.ecoom.pt';</script>
+    <script src="/hub/hub.js?v=5"></script>
 </body>
 </html>
