@@ -40,6 +40,11 @@ select {
     min-height: 100vh;
 }
 
+.hub-login[hidden],
+.hub-shell[hidden] {
+    display: none !important;
+}
+
 .hub-login {
     min-height: 100vh;
     display: grid;

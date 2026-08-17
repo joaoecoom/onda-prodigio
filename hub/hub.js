@@ -249,19 +249,20 @@
     }
 
     async function bootstrapShell(tokenOverride) {
-        showShell(true);
         showStatus('A carregar ofertas…');
 
         var payload = await apiFetch('/api/sales-attribution?action=hub_offers', tokenOverride);
         state.offers = payload.offers || [];
 
         if (!state.offers.length) {
+            showShell(true);
             offersRoot.innerHTML = '<p class="hub-empty">Nenhuma oferta encontrada.</p>';
             offersCount.textContent = '0 ofertas';
             showStatus('Nenhuma oferta encontrada.', true);
             return;
         }
 
+        showShell(true);
         var slug = getInitialSlug();
         await loadOfferDetail(slug, tokenOverride);
     }
@@ -285,7 +286,8 @@
             passwordInput.value = '';
         } catch (error) {
             clearToken();
-            loginError.textContent = error.message;
+            showShell(false);
+            loginError.textContent = error.message || 'Não foi possível entrar.';
             loginError.hidden = false;
         }
     });
