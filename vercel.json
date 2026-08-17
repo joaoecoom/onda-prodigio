@@ -7,6 +7,30 @@
       "maxDuration": 60
     }
   },
+  "redirects": [
+    {
+      "source": "/hub",
+      "destination": "https://hub-dr-ecoom.vercel.app/",
+      "permanent": false,
+      "has": [
+        {
+          "type": "host",
+          "value": "onda-prodigio.vercel.app"
+        }
+      ]
+    },
+    {
+      "source": "/hub/:path*",
+      "destination": "https://hub-dr-ecoom.vercel.app/:path*",
+      "permanent": false,
+      "has": [
+        {
+          "type": "host",
+          "value": "onda-prodigio.vercel.app"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/",
@@ -14,7 +38,7 @@
       "has": [
         {
           "type": "host",
-          "value": "hub.dr.ecoom.pt"
+          "value": "hub-dr-ecoom.vercel.app"
         }
       ]
     },
@@ -24,7 +48,7 @@
       "has": [
         {
           "type": "host",
-          "value": "hub.dr.ecoom.pt"
+          "value": "hub-dr-ecoom.vercel.app"
         }
       ]
     },
@@ -34,7 +58,7 @@
       "has": [
         {
           "type": "host",
-          "value": "hub.dr.ecoom.pt"
+          "value": "hub-dr-ecoom.vercel.app"
         }
       ]
     },
@@ -44,7 +68,7 @@
       "has": [
         {
           "type": "host",
-          "value": "hub.dr.ecoom.pt"
+          "value": "hub-dr-ecoom.vercel.app"
         }
       ]
     },
@@ -54,7 +78,7 @@
       "has": [
         {
           "type": "host",
-          "value": "hub.dr.ecoom.pt"
+          "value": "hub-dr-ecoom.vercel.app"
         }
       ]
     },
@@ -64,7 +88,7 @@
       "has": [
         {
           "type": "host",
-          "value": "hub.dr.ecoom.pt"
+          "value": "hub-dr-ecoom.vercel.app"
         }
       ]
     },

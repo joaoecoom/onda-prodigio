@@ -1,7 +1,7 @@
 (function () {
     var TOKEN_KEY = 'onda-metrics-token';
     var OFFER_KEY = 'hub-selected-offer';
-    var HUB_HOST = String(window.HUB_PLATFORM_HOST || 'hub.dr.ecoom.pt').toLowerCase();
+    var HUB_HOST = String(window.HUB_PLATFORM_HOST || 'hub-dr-ecoom.vercel.app').toLowerCase();
 
     var loginSection = document.getElementById('hub-login');
     var shellSection = document.getElementById('hub-shell');
@@ -307,7 +307,7 @@
     });
 
     if (!isHubPlatformHost()) {
-        showStatus('Estás no domínio do funil. O HUB vive em hub.dr.ecoom.pt — quando o DNS estiver activo, entra por lá.', false);
+        showStatus('Estás no domínio do funil. O HUB vive em hub-dr-ecoom.vercel.app — quando o DNS estiver activo, entra por lá.', false);
     }
 
     if (getToken()) {
