@@ -1147,7 +1147,7 @@
         var checkoutLabel = getCheckoutFilterLabel(getSelectedCheckoutVariant());
         var faturadoHint = totalSales + ' venda' + (totalSales === 1 ? '' : 's');
         if (otherRevenue > 0) {
-            faturadoHint += ' · funil ' + formatMoneyEur(trafficRevenue) + ' + extra ' + formatMoneyEur(otherRevenue);
+            faturadoHint += ' · funil ' + formatMoneyEur(trafficRevenue) + ' + fora tráfego ' + formatMoneyEur(otherRevenue);
         } else {
             faturadoHint += ' · ' + checkoutLabel;
         }
@@ -1162,7 +1162,7 @@
             totalHint += ' · ROAS ' + totalRoas + '×';
         }
         if (otherRevenue > 0) {
-            totalHint += ' · inclui extra ' + formatMoneyEur(otherRevenue);
+            totalHint += ' · inclui fora tráfego ' + formatMoneyEur(otherRevenue);
         }
 
         profitsRoot.innerHTML =
@@ -1205,7 +1205,7 @@
         var spendEur = mergedSummary ? Number(mergedSummary.meta_spend_eur || 0) : 0;
         var roas = formatRoas(revenueEur, spendEur, mergedSummary ? mergedSummary.roas_real : null);
         var otherHint = Number(stripeSummary.other_sales || 0) > 0
-            ? ('+' + stripeSummary.other_sales + ' orgânico · ' + formatMoneyEur(stripeSummary.other_revenue_eur || 0))
+            ? ('+' + stripeSummary.other_sales + ' fora tráfego · ' + formatMoneyEur(stripeSummary.other_revenue_eur || 0))
             : '';
 
         var checkoutLabel = getCheckoutFilterLabel(getSelectedCheckoutVariant());

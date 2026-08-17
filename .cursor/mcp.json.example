@@ -13,9 +13,7 @@
         "mcp-remote",
         "https://mcp.stape.ai/mcp",
         "--header",
-        "Authorization:COLOCA_AQUI_A_STAPE_API_KEY",
-        "--header",
-        "X-Stape-Region:EU"
+        "Authorization:COLOCA_AQUI_A_STAPE_API_KEY"
       ]
     },
     "gtm-mcp": {

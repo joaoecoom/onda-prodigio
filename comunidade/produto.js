@@ -1406,6 +1406,8 @@
         btnToggleSidebar.hidden = true;
         state.activeModuleId = null;
         state.activeAulaId = null;
+        state.comments = [];
+        resetReplyTarget();
         updateUrl();
         renderModuleGrid();
     }
@@ -1422,6 +1424,8 @@
         btnToggleSidebar.hidden = true;
         state.activeModuleId = moduleId;
         state.activeAulaId = null;
+        state.comments = [];
+        resetReplyTarget();
         updateUrl();
 
         var moduleIndex = state.modules.findIndex(function (item) {
@@ -1887,6 +1891,9 @@
             updateUrl();
         }
 
+        resetReplyTarget();
+        loadComments();
+
         renderSidebarAulas();
 
         var moduleItem = getActiveModule();
@@ -2045,6 +2052,10 @@
         selectAula(aulas[nextIndex].id);
     }
 
+    function getActiveCommentModuleId() {
+        return state.activeAulaId || state.activeModuleId || null;
+    }
+
     function showCommentsError(message) {
         commentsError.hidden = false;
         commentsError.textContent = message;
@@ -2163,7 +2174,7 @@
         var tree = buildCommentTree(state.comments);
 
         if (!tree.length) {
-            commentsList.innerHTML = '<p class="comunidade-panel__subtitle" style="margin:0;">Ainda não há comentários neste produto. Sê o primeiro(a).</p>';
+            commentsList.innerHTML = '<p class="comunidade-panel__subtitle" style="margin:0;">Ainda não há comentários nesta aula. Sê o primeiro(a).</p>';
             return;
         }
 
@@ -2288,7 +2299,19 @@
     }
 
     async function loadComments() {
-        var response = await window.ComunidadeAuth.apiFetch('/api/comunidade/comments?product_id=' + encodeURIComponent(productId));
+        var moduleId = getActiveCommentModuleId();
+
+        if (!moduleId) {
+            state.comments = [];
+            resetReplyTarget();
+            renderComments();
+            return;
+        }
+
+        var response = await window.ComunidadeAuth.apiFetch(
+            '/api/comunidade/comments?product_id=' + encodeURIComponent(productId) +
+            '&module_id=' + encodeURIComponent(moduleId)
+        );
         var data = await response.json();
 
         if (!response.ok) {
@@ -2395,7 +2418,10 @@
         }
 
         await loadProduct();
-        await loadComments();
+
+        if (getActiveCommentModuleId()) {
+            await loadComments();
+        }
     }
 
     btnPrev.addEventListener('click', function () {
@@ -2473,9 +2499,14 @@
 
         var payload = {
             product_id: productId,
-            module_id: state.activeAulaId || state.activeModuleId,
+            module_id: getActiveCommentModuleId(),
             content: content,
         };
+
+        if (!payload.module_id) {
+            showCommentsError('Abre uma aula para comentar.');
+            return;
+        }
 
         if (state.replyToId) {
             payload.parent_id = state.replyToId;

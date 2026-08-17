@@ -25,21 +25,36 @@ O site carrega o loader GTM **via Stape** (`stapeGtmUrl`), não via googletagman
 
 ## Configurado via API (container `zswotzns`)
 
-- **Custom Loader:** activo (plano Free)
+- **Estado:** `Running` — sGTM `GTM-PHNC98MZ` deployado em `https://zswotzns.eu.stape.io`
+- **Custom Loader:** activo (plano Free) — `gtm.js` responde 200
 - **Web GTM ID:** `GTM-KMMX6RRB` nos code settings
+- **Domínio site:** `onda-prodigio.vercel.app`
 - **Cookie Keeper:** requer plano **Pro+** — container está em Free → API devolve 409
+
+### Container config (obrigatório no Stape)
+
+Colar no Stape o **Container Configuration** do GTM server (Admin → Container Settings → Tagging server), formato:
+
+`id=GTM-PHNC98MZ&env=2&auth=...` (base64 no campo `code` da API)
+
+Após publicar nova versão no GTM server: reautorizar ambiente Live e actualizar o `code` no Stape.
 
 Para Cookie Keeper: Stape → container Onda Prodigio → Upgrade para Pro → Power-ups → Cookie Keeper → Facebook + GA.
 
 ## MCP Cursor
 
-API key em `~/.cursor/mcp.json` e `.cursor/mcp.json`. Após trocar a key: **Reload Window** no Cursor para o MCP Stape voltar a verde.
+API key em `~/.cursor/mcp.json` e `.cursor/mcp.json`. Após trocar a key: **Reload Window** no Cursor.
+
+**Não usar** `X-Stape-Region: EU` no MCP — faz o servidor chamar `api.app.eu.stape.io` que devolve 401. A API key funciona em `api.app.stape.io` (sem header de região).
 
 Header REST directo: `X-AUTH-TOKEN` (não `Authorization`).
 
 ## Container server GTM-PHNC98MZ
 
-Opcional para GA4 server-side. **Sem** tag Meta CAPI Purchase (webhook já envia).
+- **GA4 client** + tag `GA4 - Onda Prodigio` publicados (v2)
+- **Tagging server URL:** `https://zswotzns.eu.stape.io`
+- GA4 browser envia para sGTM via `server_container_url` em `tracking.js`
+- **Sem** tag Meta CAPI Purchase (webhook já envia)
 
 ## Verificação
 

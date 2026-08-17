@@ -926,7 +926,7 @@
         return loadScript(src);
     }
 
-    function loadGa4(measurementId) {
+    function loadGa4(measurementId, serverContainerUrl) {
         if (!measurementId) {
             return Promise.resolve();
         }
@@ -936,10 +936,17 @@
                 window.dataLayer.push(arguments);
             };
 
-            window.gtag('js', new Date());
-            window.gtag('config', measurementId, {
+            var gaConfig = {
                 send_page_view: false,
-            });
+            };
+
+            if (serverContainerUrl) {
+                gaConfig.transport_url = serverContainerUrl;
+                gaConfig.server_container_url = serverContainerUrl;
+            }
+
+            window.gtag('js', new Date());
+            window.gtag('config', measurementId, gaConfig);
         });
     }
 
@@ -982,7 +989,7 @@
                     applyMetaAdvancedMatching();
                     initPageTracking();
 
-                    var loaderTasks = [loadGa4(config.ga4MeasurementId)];
+                    var loaderTasks = [loadGa4(config.ga4MeasurementId, config.serverContainerUrl)];
 
                     if (config.gtmWebEnabled && config.gtmContainerId) {
                         loaderTasks.push(loadGtm(config.gtmContainerId, config.stapeGtmUrl || config.serverContainerUrl));

@@ -25,6 +25,10 @@
       "destination": "/checkout19/index.html"
     },
     {
+      "source": "/vsl19",
+      "destination": "/vsl19/index.html"
+    },
+    {
       "source": "/obgd/",
       "destination": "/obgd/index.html"
     },
