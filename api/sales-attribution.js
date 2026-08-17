@@ -552,6 +552,18 @@ module.exports = async function handler(req, res) {
             return handleMeta(req, res);
         }
 
+        if (action === 'hub_offers') {
+            return require('../lib/hub/handlers/offers-list')(req, res);
+        }
+
+        if (action === 'hub_offer') {
+            return require('../lib/hub/handlers/offer-detail')(req, res);
+        }
+
+        if (action === 'hub_health') {
+            return require('../lib/hub/handlers/health')(req, res);
+        }
+
         return handleStripe(req, res);
     } catch (error) {
         console.error('API métricas falhou:', error);

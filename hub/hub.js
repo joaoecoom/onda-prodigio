@@ -203,7 +203,7 @@
     }
 
     async function loadOfferDetail(slug) {
-        var payload = await apiFetch('/api/hub/offer/' + encodeURIComponent(slug));
+        var payload = await apiFetch('/api/sales-attribution?action=hub_offer&slug=' + encodeURIComponent(slug));
         state.currentOffer = payload.offer;
         sessionStorage.setItem(OFFER_KEY, payload.offer.slug);
 
@@ -228,7 +228,7 @@
         showShell(true);
         showStatus('A carregar ofertas…');
 
-        var payload = await apiFetch('/api/hub/offers');
+        var payload = await apiFetch('/api/sales-attribution?action=hub_offers');
         state.offers = payload.offers || [];
 
         if (!state.offers.length) {
