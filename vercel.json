@@ -94,13 +94,17 @@
     },
     {
       "source": "/",
-      "destination": "/index.html",
+      "destination": "/funnel/index.html",
       "has": [
         {
           "type": "host",
           "value": "onda-prodigio.vercel.app"
         }
       ]
+    },
+    {
+      "source": "/",
+      "destination": "/funnel/index.html"
     },
     {
       "source": "/checkout9",
