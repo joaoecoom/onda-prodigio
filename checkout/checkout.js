@@ -2,6 +2,8 @@
     var params = new URLSearchParams(window.location.search);
     var offerSlug = params.get('offer') || '';
     var productId = params.get('product_id') || '';
+    var funnelSlug = params.get('funnel') || '';
+    var pageSlug = params.get('page') || '';
     var mode = params.get('mode') === 'test' ? 'test' : 'live';
 
     var form = document.getElementById('checkout-form');
@@ -76,6 +78,14 @@
             tracking.offer_id = checkoutConfig.offerId;
         }
 
+        if (funnelSlug) {
+            tracking.funnel_slug = funnelSlug;
+        }
+
+        if (pageSlug) {
+            tracking.page_slug = pageSlug;
+        }
+
         return {
             mode: mode,
             checkout_id: 'main',
@@ -98,6 +108,8 @@
             amountCents: getTotalCents(),
             productId: checkoutConfig.productId || productId,
             offerSlug: offerSlug,
+            funnelSlug: funnelSlug,
+            pageSlug: pageSlug,
             orderBumps: getSelectedBumpIds(),
         });
     }
