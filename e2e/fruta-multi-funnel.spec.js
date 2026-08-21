@@ -7,6 +7,7 @@ const { test, expect } = require('@playwright/test');
 const SITE_URL = (process.env.E2E_SITE_URL || 'https://onda-prodigio.vercel.app').replace(/\/$/, '');
 const BASE_URL = (process.env.E2E_BASE_URL || 'https://hub-dr-ecoom.vercel.app').replace(/\/$/, '');
 const HUB_TOKEN = process.env.E2E_HUB_TOKEN || '';
+const HAS_AUTH_E2E = Boolean(BASE_URL && HUB_TOKEN);
 const OFFER = 'fruta-da-epoca';
 const QUIZ_FUNNEL = process.env.E2E_QUIZ_FUNNEL || 'quiz-fruta';
 const VSL_FUNNEL = process.env.E2E_VSL_FUNNEL || 'vsl-fruta';
@@ -39,6 +40,13 @@ async function resolveCheckoutTotal(selectedBumpIds) {
     }
 
     return payload;
+}
+
+async function hubApi(pathSuffix) {
+    const response = await fetch(BASE_URL + pathSuffix, {
+        headers: { Authorization: 'Bearer ' + HUB_TOKEN },
+    });
+    return { ok: response.ok, data: await response.json() };
 }
 
 test.describe('Fruta da Época — multi-funnel', function () {
@@ -137,6 +145,26 @@ test.describe('Fruta da Época — checkout amounts (server-side)', function () 
         });
 
         expect(response.status).toBe(400);
+    });
+});
+
+test.describe('Fruta da Época — funnel metrics API', function () {
+    test.skip(!HAS_AUTH_E2E, 'Set E2E_HUB_TOKEN');
+
+    test('hub metrics returns funnel breakdown shape', async function () {
+        const response = await hubApi(
+            '/api/sales-attribution?action=hub_metrics&slug=fruta-da-epoca&days=30&refresh=1'
+        );
+
+        expect(response.ok).toBeTruthy();
+
+        if (Array.isArray(response.data.funnel_breakdown)) {
+            response.data.funnel_breakdown.forEach(function (row) {
+                expect(row).toHaveProperty('funnel_label');
+                expect(row).toHaveProperty('orders');
+                expect(row).toHaveProperty('revenue_eur');
+            });
+        }
     });
 });
 

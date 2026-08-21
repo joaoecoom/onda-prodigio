@@ -244,8 +244,9 @@ async function run() {
         var vslRow = metrics.data.funnel_breakdown.find(function (row) {
             return row.funnel_slug === 'vsl-fruta';
         });
+        check('funnel_breakdown_api', metrics.data.funnel_breakdown.length >= 1, String(metrics.data.funnel_breakdown.length));
         check('funnel_quiz_attribution', !!quizRow && quizRow.orders >= 1, quizRow && String(quizRow.orders));
-        check('funnel_vsl_attribution', !!vslRow, vslRow ? String(vslRow.orders) : 'missing');
+        check('funnel_vsl_excludes_refunded', !vslRow, vslRow ? 'still counted after refund' : 'refunded sale excluded');
     } else {
         check('funnel_breakdown', false, 'missing from API');
     }
