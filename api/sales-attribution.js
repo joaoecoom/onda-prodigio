@@ -471,11 +471,13 @@ async function handleSetupCheckout19Price(res) {
 }
 
 module.exports = async function handler(req, res) {
-    if (!metricsAuth.isAuthorized(req)) {
+    var action = String(req.query.action || 'stripe').trim();
+    var isPublicHubPagePreview = req.method === 'GET' && action === 'hub_page_preview';
+    var isPublicHubPageDomain = req.method === 'GET' && action === 'hub_page_domain';
+
+    if (!isPublicHubPagePreview && !isPublicHubPageDomain && !metricsAuth.isAuthorized(req)) {
         return res.status(401).json({ error: 'Não autorizado.' });
     }
-
-    var action = String(req.query.action || 'stripe').trim();
 
     if (req.method === 'POST') {
         if (action === 'meta_status') {
@@ -500,6 +502,74 @@ module.exports = async function handler(req, res) {
 
         if (action === 'hub_create_offer') {
             return require('../lib/hub/handlers/create-offer')(req, res);
+        }
+
+        if (action === 'hub_delete_offer') {
+            return require('../lib/hub/handlers/delete-offer')(req, res);
+        }
+
+        if (action === 'hub_save_offer_settings') {
+            return require('../lib/hub/handlers/save-offer-settings')(req, res);
+        }
+
+        if (action === 'hub_save_integrations') {
+            return require('../lib/hub/handlers/save-integrations')(req, res);
+        }
+
+        if (action === 'hub_save_meta_accounts') {
+            return require('../lib/hub/handlers/save-meta-accounts')(req, res);
+        }
+
+        if (action === 'hub_import_integrations') {
+            return require('../lib/hub/handlers/import-integrations')(req, res);
+        }
+
+        if (action === 'hub_ai_task_create') {
+            return require('../lib/hub/handlers/ai-tasks')(req, res);
+        }
+
+        if (action === 'hub_page_render') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_builder_save') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_builder_cross_offer') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_template_materialize') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_builder_ai') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_builder_ai_agent') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_builder_screenshot') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_builder_publish') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_revision_restore') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_funnel_create') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_create') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
         }
 
         res.setHeader('Allow', 'GET, POST');
@@ -560,12 +630,60 @@ module.exports = async function handler(req, res) {
             return require('../lib/hub/handlers/offers-list')(req, res);
         }
 
+        if (action === 'hub_metrics_overview' || action === 'hub_metrics') {
+            return require('../lib/hub/handlers/metrics-overview')(req, res);
+        }
+
         if (action === 'hub_offer') {
             return require('../lib/hub/handlers/offer-detail')(req, res);
         }
 
         if (action === 'hub_health') {
             return require('../lib/hub/handlers/health')(req, res);
+        }
+
+        if (action === 'hub_launch_health') {
+            return require('../lib/hub/handlers/launch-health')(req, res);
+        }
+
+        if (action === 'hub_module') {
+            return require('../lib/hub/handlers/module-data')(req, res);
+        }
+
+        if (action === 'hub_ai_task') {
+            return require('../lib/hub/handlers/ai-tasks')(req, res);
+        }
+
+        if (action === 'hub_ai_tasks') {
+            return require('../lib/hub/handlers/ai-tasks')(req, res);
+        }
+
+        if (action === 'hub_page_preview') {
+            return require('../lib/hub/handlers/page-preview')(req, res);
+        }
+
+        if (action === 'hub_page_domain') {
+            return require('../lib/hub/handlers/page-domain')(req, res);
+        }
+
+        if (action === 'hub_page_tree') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_funnel_list') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_list') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_templates') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_revisions') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
         }
 
         return handleStripe(req, res);

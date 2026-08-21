@@ -1,5 +1,5 @@
 (function () {
-    var TOKEN_KEY = 'onda-adm-token';
+    var TOKEN_KEY = 'onda-metrics-token';
 
     var loginSection = document.getElementById('adm-login');
     var dashboardSection = document.getElementById('adm-dashboard');
@@ -14,6 +14,7 @@
     var refreshButton = document.getElementById('adm-refresh');
     var resendNeverLoggedInButton = document.getElementById('adm-resend-never-logged-in');
     var logoutButton = document.getElementById('adm-logout');
+    var openCommunityButton = document.getElementById('adm-open-community');
     var addForm = document.getElementById('adm-add-form');
     var addEmailInput = document.getElementById('adm-add-email');
     var addNameInput = document.getElementById('adm-add-name');
@@ -23,9 +24,36 @@
 
     var latestPayload = null;
     var searchTerm = '';
+    var communityAdminMode = false;
+
+    function getHubToken() {
+        try {
+            var own = window.sessionStorage.getItem(TOKEN_KEY);
+
+            if (own) {
+                return own;
+            }
+
+            if (window.parent && window.parent !== window) {
+                var parentToken = window.parent.sessionStorage.getItem(TOKEN_KEY);
+
+                if (parentToken) {
+                    return parentToken;
+                }
+            }
+
+            if (window.top && window.top !== window) {
+                return window.top.sessionStorage.getItem(TOKEN_KEY) || '';
+            }
+        } catch (error) {
+            return '';
+        }
+
+        return '';
+    }
 
     function getToken() {
-        return window.sessionStorage.getItem(TOKEN_KEY) || '';
+        return getHubToken();
     }
 
     function setToken(token) {
@@ -110,8 +138,62 @@
         return '<span class="adm-wa-badge adm-wa-badge--muted" title="Conta manual ou sem compra Stripe">—</span>';
     }
 
+    function getOfferSlugFromQuery() {
+        return new URLSearchParams(window.location.search).get('offer') || 'onda-prodigio';
+    }
+
+    function getCommunityEnterUrl() {
+        return '/comunidade/hub-enter?offer=' + encodeURIComponent(getOfferSlugFromQuery());
+    }
+
+    async function openCommunity() {
+        var token = getHubToken();
+
+        if (!token) {
+            setStatus('Sessão do HUB em falta. Volta ao HUB e entra outra vez.', true);
+            return;
+        }
+
+        setStatus('A preparar acesso de administrador…', false);
+
+        try {
+            var response = await fetch('/api/comunidade/hub-admin-session', {
+                method: 'POST',
+                headers: {
+                    Authorization: 'Bearer ' + token,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ offer: getOfferSlugFromQuery() }),
+            });
+            var data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Não foi possível abrir a comunidade.');
+            }
+
+            var targetUrl = data.enter_url || getCommunityEnterUrl();
+            window.open(targetUrl, '_blank', 'noopener');
+            setStatus('');
+        } catch (error) {
+            setStatus(error.message || 'Não foi possível abrir a comunidade.', true);
+        }
+    }
+
+    function updateCommunityLink() {
+        if (!openCommunityButton) {
+            return;
+        }
+
+        openCommunityButton.href = getCommunityEnterUrl();
+    }
+
     async function fetchJson(path, options) {
         var token = getToken();
+
+        if (!token && window.ComunidadeAuth && window.ComunidadeAuth.getAccessToken) {
+            token = await window.ComunidadeAuth.getAccessToken();
+        }
+
         var config = Object.assign({
             headers: {
                 Authorization: 'Bearer ' + token,
@@ -440,6 +522,13 @@
         showLogin();
     });
 
+    if (openCommunityButton) {
+        openCommunityButton.addEventListener('click', function (event) {
+            event.preventDefault();
+            openCommunity();
+        });
+    }
+
     addForm.addEventListener('submit', function (event) {
         createMember(event).catch(function (error) {
             setStatus(error.message || 'Não foi possível criar o membro.', true);
@@ -480,10 +569,153 @@
         }
     });
 
+    window.AdmPanel = {
+        fetchJson: fetchJson,
+        setStatus: setStatus,
+        getOfferSlug: getOfferSlugFromQuery,
+    };
+
+    var tabButtons = Array.prototype.slice.call(document.querySelectorAll('[data-adm-tab]'));
+    var tabMembers = document.getElementById('adm-tab-members');
+    var tabContent = document.getElementById('adm-tab-content');
+    var contentLoaded = false;
+
+    function switchTab(tabName) {
+        var isMembers = tabName === 'members';
+
+        tabButtons.forEach(function (button) {
+            var active = button.getAttribute('data-adm-tab') === tabName;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+
+        if (tabMembers) {
+            tabMembers.hidden = !isMembers;
+        }
+
+        if (tabContent) {
+            tabContent.hidden = isMembers;
+        }
+
+        if (!isMembers && !contentLoaded && window.AdmContent && window.AdmContent.load) {
+            contentLoaded = true;
+            window.AdmContent.load();
+        }
+
+        if (isMembers && !communityAdminMode) {
+            loadMembers().catch(function (error) {
+                setStatus(error.message || 'Erro de ligação.', true);
+            });
+        }
+    }
+
+    tabButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+            switchTab(button.getAttribute('data-adm-tab') || 'members');
+        });
+    });
+
+    function enableCommunityContentMode() {
+        communityAdminMode = true;
+
+        if (tabMembers) {
+            tabMembers.hidden = true;
+        }
+
+        tabButtons.forEach(function (button) {
+            if (button.getAttribute('data-adm-tab') === 'members') {
+                button.hidden = true;
+            }
+        });
+
+        if (searchInput) {
+            searchInput.hidden = true;
+        }
+
+        if (refreshButton) {
+            refreshButton.hidden = true;
+        }
+
+        if (resendNeverLoggedInButton) {
+            resendNeverLoggedInButton.hidden = true;
+        }
+
+        if (summaryText) {
+            summaryText.textContent = 'Gestão de módulos e aulas da comunidade.';
+        }
+    }
+
+    async function tryCommunityAdminSession() {
+        if (!window.ComunidadeAuth || !window.ComunidadeAuth.getSession) {
+            return false;
+        }
+
+        var session = await window.ComunidadeAuth.getSession();
+
+        if (!session) {
+            return false;
+        }
+
+        var response = await window.ComunidadeAuth.apiFetch('/api/comunidade/me');
+        var data = await response.json();
+
+        if (!response.ok || data.role !== 'admin') {
+            return false;
+        }
+
+        showDashboard();
+        enableCommunityContentMode();
+        switchTab('content');
+        return true;
+    }
+
     if (getToken()) {
         showDashboard();
+        updateCommunityLink();
         loadMembers().catch(function (error) {
             setStatus(error.message || 'Erro de ligação.', true);
         });
+
+        var initialTab = new URLSearchParams(window.location.search).get('tab');
+
+        if (initialTab === 'content') {
+            switchTab('content');
+        }
+    } else {
+        updateCommunityLink();
+        tryCommunityAdminSession().catch(function () {
+            /* mantém login metrics */
+        });
+    }
+
+    var embedMode = new URLSearchParams(window.location.search).get('embed') === '1';
+
+    window.addEventListener('message', function (event) {
+        if (!event.data || event.data.type !== 'onda-hub-adm-token' || !event.data.token) {
+            return;
+        }
+
+        if (getToken()) {
+            return;
+        }
+
+        setToken(String(event.data.token));
+        showDashboard();
+        updateCommunityLink();
+
+        var tabFromQuery = new URLSearchParams(window.location.search).get('tab');
+
+        if (tabFromQuery === 'content') {
+            switchTab('content');
+            return;
+        }
+
+        loadMembers().catch(function (error) {
+            setStatus(error.message || 'Erro de ligação.', true);
+        });
+    });
+
+    if (embedMode && !getToken() && window.parent && window.parent !== window) {
+        window.parent.postMessage({ type: 'onda-adm-ready' }, '*');
     }
 })();

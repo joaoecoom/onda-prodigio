@@ -7,5 +7,13 @@
     "nodemailer": "^6.10.1",
     "stripe": "^17.7.0",
     "web-push": "^3.6.7"
+  },
+  "scripts": {
+    "test": "node --test tests/**/*.test.js",
+    "test:e2e": "playwright test",
+    "test:all": "npm test && npm run test:e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.0"
   }
 }

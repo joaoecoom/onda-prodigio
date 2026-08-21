@@ -12,6 +12,9 @@ var routes = {
     'cron-ai-comments': require('../../lib/comunidade/handlers/cron-ai-comments'),
     survey: require('../../lib/comunidade/handlers/survey'),
     progress: require('../../lib/comunidade/handlers/progress'),
+    'hub-admin-session': require('../../lib/comunidade/handlers/hub-admin-session'),
+    'hub-admin-handoff': require('../../lib/comunidade/handlers/hub-admin-handoff'),
+    'content-admin': require('../../lib/comunidade/handlers/content-admin'),
 };
 
 function getRoute(req) {

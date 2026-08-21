@@ -1,4 +1,4 @@
-var stripeEnv = require('../lib/stripe-env');
+var stripeClient = require('../lib/hub/stripe-client');
 var productCheckoutConfig = require('../lib/product-checkout-config');
 
 module.exports = async function handler(req, res) {
@@ -8,12 +8,14 @@ module.exports = async function handler(req, res) {
     }
 
     var body = req.body || {};
+    var stripeEnv = require('../lib/stripe-env');
     var mode = stripeEnv.resolveStripeMode(req, body);
-    var checkoutId = stripeEnv.resolveCheckoutId(req, body);
-    var stripeClient = stripeEnv.getStripeClient(mode, checkoutId);
+    var stripeContext = await stripeClient.resolveStripeContext(req, body);
+    var stripeClientApi = stripeContext.stripe;
+    var settings = stripeContext.settings;
 
-    if (stripeClient.error || !stripeClient.stripe) {
-        return res.status(500).json({ error: stripeClient.error || 'Stripe não configurado.' });
+    if (stripeContext.error || !stripeClientApi) {
+        return res.status(500).json({ error: stripeContext.error || 'Stripe não configurado.' });
     }
 
     var serverEvents = require('../lib/tracking/server-events');
@@ -34,6 +36,7 @@ module.exports = async function handler(req, res) {
     var userAgent = req.headers['user-agent'] || '';
     var productId = typeof body.product_id === 'string' ? body.product_id.trim() : '';
     var standaloneProduct = productId ? productCheckoutConfig.getProduct(productId) : null;
+    var offerName = settings.offerName || 'Onda Prodígio';
 
     if (!clientSecret) {
         return res.status(400).json({ error: 'Sessão de pagamento inválida.' });
@@ -45,7 +48,7 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ error: 'Sessão de pagamento inválida.' });
     }
 
-    var baseAmount = stripeClient.settings.amountCents;
+    var baseAmount = settings.amountCents;
     var bumpAmount = parseInt(process.env.STRIPE_BUMP_AMOUNT_CENTS || '500', 10);
     var maxBumps = 3;
     var maxAmount = baseAmount + (bumpAmount * maxBumps);
@@ -67,22 +70,28 @@ module.exports = async function handler(req, res) {
             checkout: 'comprar-' + productId,
             stripe_mode: mode,
         } : {
-            product: 'Onda Prodígio',
-            price_id: stripeClient.settings.priceId || '',
+            product: offerName,
+            price_id: settings.priceId || '',
             full_name: fullName || '',
             phone: phone || '',
             region: region || '',
             country: country || '',
             phone_country: phoneCountry || '',
             email: email || '',
-            checkout: stripeClient.settings.checkoutId,
+            checkout: settings.checkoutId,
             stripe_mode: mode,
             order_bumps: orderBumps.join(', '),
         };
 
+        metadata = Object.assign(
+            metadata,
+            stripeClient.buildOfferMetadata(settings),
+            serverEvents.buildStripeTrackingMetadata(tracking, userAgent)
+        );
+
         var updatePayload = {
             receipt_email: email || undefined,
-            metadata: Object.assign(metadata, serverEvents.buildStripeTrackingMetadata(tracking, userAgent)),
+            metadata: metadata,
         };
 
         updatePayload.metadata.purchase_event_id = 'purchase_' + paymentIntentId;
@@ -102,17 +111,17 @@ module.exports = async function handler(req, res) {
             updatePayload.amount = amountCents;
         }
 
-        await stripeClient.stripe.paymentIntents.update(paymentIntentId, updatePayload);
+        await stripeClientApi.paymentIntents.update(paymentIntentId, updatePayload);
 
         var funnelResults = null;
 
         try {
-            var updatedPaymentIntent = await stripeClient.stripe.paymentIntents.retrieve(paymentIntentId);
+            var updatedPaymentIntent = await stripeClientApi.paymentIntents.retrieve(paymentIntentId);
             funnelResults = await serverEvents.sendFunnelMetaEventsIfNeeded(updatedPaymentIntent, req);
             var funnelFlags = serverEvents.getFunnelMetaMetadataFlags(funnelResults || {});
 
             if (Object.keys(funnelFlags).length > 0) {
-                await stripeClient.stripe.paymentIntents.update(paymentIntentId, {
+                await stripeClientApi.paymentIntents.update(paymentIntentId, {
                     metadata: funnelFlags,
                 });
             }

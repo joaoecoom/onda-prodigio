@@ -205,6 +205,18 @@
 
         body.checkout_id = getCheckoutId();
 
+        if (window.OndaTracking && typeof window.OndaTracking.getConfig === 'function') {
+            var trackingConfig = window.OndaTracking.getConfig();
+
+            if (trackingConfig && trackingConfig.offer_slug && !body.offer_slug) {
+                body.offer_slug = trackingConfig.offer_slug;
+            }
+
+            if (trackingConfig && trackingConfig.offer_id && !body.offer_id) {
+                body.offer_id = trackingConfig.offer_id;
+            }
+        }
+
         if (isTestMode()) {
             body.mode = 'test';
         }

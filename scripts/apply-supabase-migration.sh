@@ -41,7 +41,7 @@ print(json.dumps({"query": sql}))
 PY
 )"
 
-echo "A aplicar $(basename "$MIGRATION_PATH") em $PROJECT_REF…"
+echo "A aplicar $(basename "$MIGRATION_PATH") em ${PROJECT_REF}..."
 curl -fsS -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \

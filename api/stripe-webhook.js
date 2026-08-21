@@ -1,6 +1,7 @@
-var Stripe = require('stripe');
 var { buffer } = require('micro');
+var stripeClient = require('../lib/hub/stripe-client');
 var serverEvents = require('../lib/tracking/server-events');
+var commerceEvents = require('../lib/tracking/commerce-events');
 
 module.exports.config = {
     api: {
@@ -8,47 +9,91 @@ module.exports.config = {
     },
 };
 
+async function resolveWebhookStripeClient(event, fallbackStripe) {
+    var metadata = {};
+
+    if (event && event.data && event.data.object && event.data.object.metadata) {
+        metadata = event.data.object.metadata;
+    }
+
+    var offerContextResult = await stripeClient.resolveStripeContextFromMetadata(metadata);
+
+    if (offerContextResult && offerContextResult.stripe) {
+        return offerContextResult.stripe;
+    }
+
+    return fallbackStripe;
+}
+
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
         res.setHeader('Allow', 'POST');
         return res.status(405).json({ error: 'Método não permitido.' });
     }
 
-    var secretKey = process.env.STRIPE_SECRET_KEY;
-    var webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-
-    if (!secretKey) {
-        return res.status(500).json({ error: 'Stripe não configurado.' });
-    }
-
-    if (!webhookSecret) {
-        return res.status(500).json({ error: 'STRIPE_WEBHOOK_SECRET em falta.' });
-    }
-
-    var stripe = new Stripe(secretKey);
     var signature = req.headers['stripe-signature'];
 
     if (!signature) {
         return res.status(400).json({ error: 'Assinatura Stripe em falta.' });
     }
 
-    var event;
+    var rawBody;
+    var verified;
 
     try {
-        var rawBody = await buffer(req);
-        event = stripe.webhooks.constructEvent(rawBody, signature, webhookSecret);
+        rawBody = await buffer(req);
+        verified = await stripeClient.verifyWebhookEvent(rawBody, signature, req);
     } catch (error) {
         console.error('Webhook Stripe inválido:', error.message);
         return res.status(400).json({ error: 'Webhook inválido.' });
     }
 
+    if (verified.error || !verified.event) {
+        console.error('Webhook Stripe inválido:', verified.error || 'evento em falta');
+        return res.status(400).json({ error: verified.error || 'Webhook inválido.' });
+    }
+
+    var event = verified.event;
+    var stripe = verified.stripe;
+
+    if (!stripe) {
+        return res.status(500).json({ error: 'Stripe não configurado.' });
+    }
+
     try {
         var trackingResults = null;
+        var claim = await require('../lib/hub/stripe-events').claimStripeEvent(event);
+
+        if (claim.already_processed) {
+            console.log('Stripe event duplicate skipped:', event.id, event.type);
+            return res.status(200).json({
+                received: true,
+                duplicate: true,
+            });
+        }
+
+        if (event.type === 'charge.refunded') {
+            try {
+                var hubOrdersRefund = require('../lib/hub/orders');
+                var refundResult = await hubOrdersRefund.markOrderRefundedFromCharge(event.data.object);
+                console.log('Hub order refund:', event.data.object.id, JSON.stringify(refundResult));
+            } catch (refundError) {
+                console.error('Erro ao processar refund:', refundError);
+            }
+        }
 
         if (event.type === 'payment_intent.succeeded') {
             var metadata = event.data.object.metadata || {};
 
-            if (metadata.stripe_mode !== 'test' && metadata.checkout !== 'checkout9-test') {
+            try {
+                var hubOrders = require('../lib/hub/orders');
+                var orderResult = await hubOrders.upsertOrderFromPaymentIntent(event.data.object);
+                console.log('Hub order:', event.data.object.id, JSON.stringify(orderResult));
+            } catch (orderError) {
+                console.error('Erro ao guardar order:', orderError);
+            }
+
+            if (commerceEvents.shouldSendPurchaseTracking(metadata)) {
                 trackingResults = await serverEvents.sendPurchaseFromPaymentIntent(event.data.object, req);
                 console.log('Purchase tracking:', event.data.object.id, JSON.stringify(trackingResults));
             }
@@ -62,7 +107,7 @@ module.exports = async function handler(req, res) {
                 console.error('Erro ao criar acesso à comunidade:', accessError);
             }
 
-            if (metadata.stripe_mode !== 'test' && metadata.checkout !== 'checkout9-test') {
+            if (commerceEvents.shouldSendPurchaseTracking(metadata)) {
                 try {
                     var pushNotify = require('../lib/metrics/push-notify');
                     var pushResult = await pushNotify.notifySaleFromPaymentIntent(event.data.object);
@@ -76,6 +121,7 @@ module.exports = async function handler(req, res) {
         if (event.type === 'checkout.session.completed') {
             var session = event.data.object;
             var sessionMetadata = session.metadata || {};
+            stripe = await resolveWebhookStripeClient(event, stripe);
 
             if (sessionMetadata.stripe_mode !== 'test' && sessionMetadata.checkout !== 'checkout9-test') {
                 try {
@@ -98,6 +144,8 @@ module.exports = async function handler(req, res) {
         }
 
         if (event.type === 'customer.subscription.updated' || event.type === 'customer.subscription.deleted') {
+            stripe = await resolveWebhookStripeClient(event, stripe);
+
             try {
                 var grantAccessSubscription = require('../lib/comunidade/grant-access');
                 var subscriptionResult = await grantAccessSubscription.updateSubscriptionAccess(stripe, event.data.object);
@@ -110,6 +158,7 @@ module.exports = async function handler(req, res) {
 
         if (event.type === 'payment_intent.payment_failed') {
             var failedMetadata = event.data.object.metadata || {};
+            stripe = await resolveWebhookStripeClient(event, stripe);
 
             if (failedMetadata.payment_attempted !== 'true') {
                 try {

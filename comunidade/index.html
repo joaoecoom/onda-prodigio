@@ -8,7 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/comunidade/comunidade.css?v=20260812b">
+    <link rel="stylesheet" href="/comunidade/comunidade.css?v=20260821b">
+    <link rel="stylesheet" href="/comunidade/content-editor.css?v=2">
     <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('comunidade-theme') === 'light' ? 'light' : 'dark');</script>
 </head>
 <body>
@@ -34,10 +35,17 @@
                 </button>
             </div>
             <div class="comunidade-topbar__row comunidade-topbar__row--actions">
+                <button class="comunidade-btn comunidade-btn--primary" type="button" id="btn-edit-mode-index" hidden>Modo edição</button>
+                <a class="comunidade-btn comunidade-btn--ghost" id="admin-members-link" href="/adm/" title="Gerir membros e acessos" hidden>Membros</a>
                 <a class="comunidade-btn comunidade-btn--ghost" id="admin-survey-link" href="/respostaquestionario" title="Respostas ao questionário inicial" hidden>Respostas</a>
                 <button class="comunidade-btn comunidade-btn--ghost" type="button" id="btn-logout">Sair</button>
             </div>
         </header>
+
+        <div class="comunidade-admin-bar" id="comunidade-admin-bar" hidden>
+            <p class="comunidade-admin-bar__label">Modo gestor</p>
+            <p class="comunidade-admin-bar__text">Estás a ver a comunidade como administrador — todo o conteúdo está desbloqueado. Usa «Modo edição» ou «Gerir conteúdo» para criar módulos e aulas aqui.</p>
+        </div>
 
         <div class="comunidade-main comunidade-main--dashboard">
             <section class="comunidade-hero" id="comunidade-hero">
@@ -73,11 +81,14 @@
             </div>
 
             <div class="comunidade-grid" id="product-grid"></div>
+
+            <div class="comunidade-main comunidade-content-editor-view" id="view-content-editor-index" hidden></div>
         </div>
     </div>
 
     <script src="/comunidade/theme.js"></script>
     <script src="/comunidade/auth.js"></script>
-    <script src="/comunidade/index.js?v=20260810d"></script>
+    <script src="/comunidade/content-editor.js?v=2"></script>
+    <script src="/comunidade/index.js?v=20260821c"></script>
 </body>
 </html>

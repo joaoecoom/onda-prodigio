@@ -53,6 +53,16 @@
       ]
     },
     {
+      "source": "/ai-agent",
+      "destination": "/hub/index.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "hub-dr-ecoom.vercel.app"
+        }
+      ]
+    },
+    {
       "source": "/recupera",
       "destination": "/hub/index.html",
       "has": [
@@ -107,6 +117,14 @@
       "destination": "/funnel/index.html"
     },
     {
+      "source": "/checkout",
+      "destination": "/checkout/index.html"
+    },
+    {
+      "source": "/checkout/",
+      "destination": "/checkout/index.html"
+    },
+    {
       "source": "/checkout9",
       "destination": "/checkout9/index.html"
     },
@@ -149,6 +167,10 @@
     {
       "source": "/comunidade/login",
       "destination": "/comunidade/login.html"
+    },
+    {
+      "source": "/comunidade/hub-enter",
+      "destination": "/comunidade/hub-enter.html"
     },
     {
       "source": "/comunidade/redefinir-password",
@@ -201,6 +223,28 @@
     {
       "source": "/hub/:module",
       "destination": "/hub/index.html"
+    },
+    {
+      "source": "/preview/:offer/:funnel/:page",
+      "destination": "/api/sales-attribution?action=hub_page_preview&offer=:offer&funnel=:funnel&page=:page&preview=1"
+    },
+    {
+      "source": "/p/:offer/:funnel/:page",
+      "destination": "/api/sales-attribution?action=hub_page_preview&offer=:offer&funnel=:funnel&page=:page"
+    },
+    {
+      "source": "/:funnel/:page",
+      "destination": "/api/sales-attribution?action=hub_page_domain&funnel=:funnel&page=:page",
+      "has": [
+        {
+          "type": "host",
+          "value": "onda-prodigio.vercel.app"
+        }
+      ]
+    },
+    {
+      "source": "/editor/:offer/:funnel/:page",
+      "destination": "/hub/editor.html"
     }
   ],
   "headers": [
@@ -223,6 +267,15 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/adm/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://hub-dr-ecoom.vercel.app"
         }
       ]
     },

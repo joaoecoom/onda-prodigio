@@ -147,3 +147,233 @@
         min-width: 1080px;
     }
 }
+
+.adm-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0 0 1rem;
+    padding: 0.35rem;
+    border-radius: 12px;
+    background: #111827;
+    border: 1px solid #334155;
+    width: fit-content;
+}
+
+.adm-tabs__btn {
+    border: 0;
+    background: transparent;
+    color: #94a3b8;
+    font: inherit;
+    font-weight: 600;
+    padding: 0.55rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.adm-tabs__btn.is-active {
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+.adm-content-panel .metrics-panel__head {
+    align-items: flex-start;
+}
+
+.adm-content-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.adm-content-hint {
+    margin: 0 0 1rem;
+}
+
+.adm-content-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.9fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+@media (max-width: 980px) {
+    .adm-content-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+.adm-content-editor {
+    position: sticky;
+    top: 1rem;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    background: #0f172a;
+    padding: 1rem;
+}
+
+.adm-content-editor__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+
+.adm-content-editor__head h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.adm-content-editor__form {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.adm-content-editor__form .metrics-login__label {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.adm-upload-field {
+    display: grid;
+    gap: 0.35rem;
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+
+.adm-upload-field input[type="file"] {
+    font: inherit;
+    color: #cbd5e1;
+}
+
+.adm-content-editor__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.adm-content-editor__delete {
+    color: #fca5a5 !important;
+}
+
+.adm-content-tree {
+    display: grid;
+    gap: 1rem;
+}
+
+.adm-content-modules {
+    display: grid;
+    gap: 1rem;
+}
+
+.adm-content-module {
+    border: 1px solid #334155;
+    border-radius: 14px;
+    background: #0f172a;
+    overflow: hidden;
+}
+
+.adm-content-module__head {
+    padding: 0.75rem;
+    border-bottom: 1px solid #1e293b;
+}
+
+.adm-content-lessons {
+    list-style: none;
+    margin: 0;
+    padding: 0.5rem;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.adm-content-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: #111827;
+    flex-wrap: wrap;
+}
+
+.adm-content-item__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-left: auto;
+    align-self: center;
+}
+
+.adm-content-item--module {
+    background: transparent;
+    border-color: transparent;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.adm-content-item--lesson {
+    border-color: #1e293b;
+}
+
+.adm-content-item--dragging {
+    opacity: 0.55;
+}
+
+.adm-content-item--over {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 1px #38bdf8;
+}
+
+.adm-content-item__handle {
+    color: #64748b;
+    cursor: grab;
+    user-select: none;
+    padding-top: 0.35rem;
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.adm-content-item__body {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    gap: 0.35rem;
+}
+
+.adm-content-item__title {
+    font-weight: 700;
+    color: #e2e8f0;
+}
+
+.adm-content-item__desc {
+    color: #cbd5e1;
+    resize: vertical;
+    min-height: 2.5rem;
+}
+
+.adm-content-item__meta {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.82rem;
+}
+
+.adm-inline-input {
+    width: 100%;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    background: #0b1220;
+    padding: 0.45rem 0.6rem;
+    font: inherit;
+}
+
+.adm-inline-input:focus {
+    outline: none;
+    border-color: #38bdf8;
+}
+
+.adm-content-add-lesson {
+    align-self: center;
+    white-space: nowrap;
+}

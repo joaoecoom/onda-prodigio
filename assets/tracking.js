@@ -770,15 +770,34 @@
         pushEvent(eventName, payload || {}, { meta: false });
     }
 
+    function getTrackingConfigUrl() {
+        var slug = document.documentElement.getAttribute('data-offer-slug');
+
+        if (slug) {
+            return window.location.origin + '/api/tracking-config?offer=' + encodeURIComponent(slug);
+        }
+
+        return window.location.origin + '/api/tracking-config';
+    }
+
     function getStripeTrackingMetadata() {
         var attribution = getAttribution();
-
-        return Object.assign({
+        var payload = Object.assign({
             fbp: getFbp(),
             fbc: getFbc(),
             purchase_event_id: getPurchaseEventId(),
             ga_client_id: getGaClientId(),
         }, attribution);
+
+        if (config && config.offer_id) {
+            payload.offer_id = config.offer_id;
+        }
+
+        if (config && config.offer_slug) {
+            payload.offer_slug = config.offer_slug;
+        }
+
+        return payload;
     }
 
     function bindLeadTracking() {
@@ -978,7 +997,7 @@
         captureAttribution();
         ensureFbcCookie();
 
-        bootstrapPromise = fetch(window.location.origin + '/api/tracking-config')
+        bootstrapPromise = fetch(getTrackingConfigUrl())
             .then(function (response) {
                 return response.json();
             })
@@ -1028,6 +1047,7 @@
         trackCtaClick: trackCtaClick,
         trackVslEvent: trackVslEvent,
         getStripeTrackingMetadata: getStripeTrackingMetadata,
+        collectPayload: getStripeTrackingMetadata,
         getAttribution: getAttribution,
         captureAttribution: captureAttribution,
         setMetaAdvancedMatching: setMetaAdvancedMatching,

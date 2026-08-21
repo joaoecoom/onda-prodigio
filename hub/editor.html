@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Builder — HUB DR Ecoom</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <meta name="theme-color" content="#0c0a12">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/hub/editor.css?v=2">
+</head>
+<body>
+    <section class="peb-login" id="peb-login">
+        <div class="peb-login__layout">
+            <div class="peb-login__hero">
+                <p class="peb-login__eyebrow">HUB DR Ecoom</p>
+                <h1>Page Builder</h1>
+                <p class="peb-login__lead">Editor visual do Page Engine — arrasta blocos, publica no funil e edita com AI.</p>
+                <ul class="peb-login__trust">
+                    <li>✦ Preview em tempo real</li>
+                    <li>✦ Autosave e histórico</li>
+                    <li>✦ Publicação por domínio</li>
+                </ul>
+            </div>
+            <div class="peb-login__card">
+                <h2>Entrar</h2>
+                <p class="peb-login__sub">Acesso ao editor de pages</p>
+                <form id="peb-login-form">
+                    <input class="peb-input" id="peb-password" type="password" placeholder="Palavra-passe" required autocomplete="current-password">
+                    <button class="peb-button peb-button--primary" type="submit">Abrir editor</button>
+                    <p class="peb-login__error" id="peb-login-error" hidden></p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <div class="peb-app" id="peb-app" hidden>
+        <header class="peb-topbar">
+            <div class="peb-topbar__left">
+                <a class="peb-topbar__back" href="/" id="peb-back-hub">← HUB</a>
+                <div class="peb-topbar__title">
+                    <strong id="peb-page-name">Page</strong>
+                    <span id="peb-page-meta">draft</span>
+                </div>
+            </div>
+            <div class="peb-topbar__center">
+                <div class="peb-device-toggle" id="peb-device-toggle">
+                    <button type="button" data-device="desktop" class="is-active">Desktop</button>
+                    <button type="button" data-device="tablet">Tablet</button>
+                    <button type="button" data-device="mobile">Mobile</button>
+                </div>
+            </div>
+            <div class="peb-topbar__right">
+                <button type="button" class="peb-button peb-button--ghost" id="peb-undo" disabled>Undo</button>
+                <button type="button" class="peb-button peb-button--ghost" id="peb-redo" disabled>Redo</button>
+                <span class="peb-save-status" id="peb-save-status">Saved</span>
+                <button type="button" class="peb-button peb-button--ghost" id="peb-publish">Publish</button>
+                <button type="button" class="peb-button peb-button--primary" id="peb-save">Save</button>
+                <button type="button" class="peb-button peb-button--ghost" id="peb-live" hidden>Live</button>
+                <button type="button" class="peb-button peb-button--ghost" id="peb-preview">Preview</button>
+                <button type="button" class="peb-button peb-button--ghost peb-button--ai" id="peb-ai" title="AI Assistant">AI</button>
+            </div>
+        </header>
+
+        <div class="peb-layout">
+            <aside class="peb-sidebar">
+                <div class="peb-panel">
+                    <div class="peb-panel__head">
+                        <h2>Page tree</h2>
+                        <button type="button" class="peb-link" id="peb-add-section">+ Section</button>
+                    </div>
+                    <div class="peb-tree" id="peb-tree"></div>
+                </div>
+                <div class="peb-panel">
+                    <div class="peb-panel__head">
+                        <h2>Components</h2>
+                    </div>
+                    <div class="peb-components" id="peb-components"></div>
+                </div>
+                <div class="peb-panel">
+                    <div class="peb-panel__head">
+                        <h2>Templates</h2>
+                    </div>
+                    <div class="peb-templates" id="peb-templates">
+                        <p class="peb-empty">A carregar templates…</p>
+                    </div>
+                </div>
+                <div class="peb-panel">
+                    <div class="peb-panel__head">
+                        <h2>History</h2>
+                    </div>
+                    <div class="peb-revisions" id="peb-revisions">
+                        <p class="peb-empty">A carregar histórico…</p>
+                    </div>
+                </div>
+                <div class="peb-panel">
+                    <div class="peb-panel__head">
+                        <h2>Screenshot</h2>
+                    </div>
+                    <div id="peb-screenshot-panel"></div>
+                </div>
+            </aside>
+
+            <main class="peb-canvas-area">
+                <div class="peb-canvas-shell peb-canvas-shell--desktop" id="peb-canvas-shell">
+                    <div class="peb-canvas" id="peb-canvas"></div>
+                </div>
+                <p class="peb-canvas-error" id="peb-canvas-error" hidden></p>
+            </main>
+
+            <aside class="peb-inspector" id="peb-inspector">
+                <div class="peb-panel">
+                    <div class="peb-panel__head">
+                        <h2>Inspector</h2>
+                    </div>
+                    <div class="peb-inspector__body" id="peb-inspector-body">
+                        <p class="peb-empty">Selecciona uma section ou block.</p>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <div class="peb-ai-panel" id="peb-ai-panel" hidden></div>
+
+    <script src="/hub/editor-dnd.js"></script>
+    <script src="/hub/editor-ai.js"></script>
+    <script src="/hub/editor-screenshot.js"></script>
+    <script src="/hub/editor.js"></script>
+</body>
+</html>
