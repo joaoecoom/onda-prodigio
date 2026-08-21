@@ -1260,6 +1260,40 @@
         bindOfferRowClicks(root);
     }
 
+    function buildFunnelBreakdownHtml(metricsPayload) {
+        var rows = (metricsPayload && metricsPayload.funnel_breakdown) || [];
+
+        if (!rows.length) {
+            return '';
+        }
+
+        var tableRows = rows.map(function (row) {
+            var funnelLabel = row.funnel_label || row.funnel_slug || 'Desconhecido';
+            var pageLabel = row.page_label && row.page_label !== '—' ? row.page_label : '—';
+
+            return '<tr>' +
+                '<td>' + escapeHtml(funnelLabel) + '</td>' +
+                '<td>' + escapeHtml(pageLabel) + '</td>' +
+                '<td>' + escapeHtml(formatMetricNumber(row.orders)) + '</td>' +
+                '<td>' + escapeHtml(formatMoneyEur(row.revenue_eur)) + '</td>' +
+                '<td>' + escapeHtml(row.aov_eur != null ? formatMoneyEur(row.aov_eur) : '—') + '</td>' +
+            '</tr>';
+        }).join('');
+
+        return '<section class="hub-panel hub-panel--nested">' +
+            '<div class="hub-section-mark"><h2>Por funil</h2></div>' +
+            '<p class="hub-panel__sub">Atribuição via hub_orders.metadata (funnel_slug / page_slug).</p>' +
+            '<div class="hub-table-wrap">' +
+                '<table class="hub-table">' +
+                    '<thead><tr>' +
+                        '<th>Funil</th><th>Page</th><th>Orders</th><th>Receita</th><th>AOV</th>' +
+                    '</tr></thead>' +
+                    '<tbody>' + tableRows + '</tbody>' +
+                '</table>' +
+            '</div>' +
+        '</section>';
+    }
+
     function renderOfferHome(offer, modules, metricsPayload) {
         var steps = computeOnboardingSteps(offer, modules);
         var funnelHost = getFunnelHost(offer) || '';
@@ -1403,10 +1437,16 @@
                     metricStripItem('Receita', formatMoneyEur(metrics.revenue_eur)) +
                     metricStripItem('Vendas', formatMetricNumber(metrics.orders || metrics.sales)) +
                     metricStripItem('AOV', metrics.aov_eur != null ? formatMoneyEur(metrics.aov_eur) : '—') +
+                    (metrics.gross_revenue_eur != null && metrics.refunds_eur > 0
+                        ? metricStripItem('Bruto', formatMoneyEur(metrics.gross_revenue_eur)) +
+                          metricStripItem('Reembolsos', formatMoneyEur(metrics.refunds_eur)) +
+                          metricStripItem('Líquido', formatMoneyEur(metrics.net_revenue_eur))
+                        : '') +
                     metricStripItem('Gasto Meta', formatMoneyEur(metrics.meta_spend_eur)) +
                     metricStripItem('ROAS', formatRoas(metrics.roas)) +
                     metricStripItem('CPA', metrics.cpa_eur != null ? formatMoneyEur(metrics.cpa_eur) : '—') +
                 '</section>' +
+                buildFunnelBreakdownHtml(metricsPayload) +
                 '<section class="hub-chart-block">' +
                     '<div class="hub-chart-block__head">' +
                         '<h2>Receita</h2>' +
