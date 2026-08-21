@@ -11,6 +11,8 @@
     var titleEl = document.getElementById('checkout-title');
     var subtitleEl = document.getElementById('checkout-subtitle');
     var priceEl = document.getElementById('checkout-price');
+    var orderSummary = document.getElementById('order-summary');
+    var orderBumpsSection = document.getElementById('order-bumps-section');
 
     var stripe = null;
     var elements = null;
@@ -27,6 +29,31 @@
     function formatPrice(cents, currency) {
         var value = (cents / 100).toFixed(cents % 100 === 0 ? 0 : 2).replace('.', ',');
         return value + (currency === 'eur' ? '€' : ' ' + String(currency || '').toUpperCase());
+    }
+
+    function getTotalCents() {
+        if (window.CheckoutOrderBumps && checkoutConfig && (checkoutConfig.orderBumps || []).length) {
+            return window.CheckoutOrderBumps.getTotalCents();
+        }
+
+        return checkoutConfig ? checkoutConfig.amountCents : 0;
+    }
+
+    function getSelectedBumpIds() {
+        if (window.CheckoutOrderBumps) {
+            return window.CheckoutOrderBumps.getSelectedBumpIds();
+        }
+
+        return [];
+    }
+
+    function updateDisplayedTotal() {
+        if (!checkoutConfig) {
+            return;
+        }
+
+        priceEl.textContent = formatPrice(getTotalCents(), checkoutConfig.currency || 'eur');
+        submitBtn.textContent = 'Pagar ' + formatPrice(getTotalCents(), checkoutConfig.currency || 'eur');
     }
 
     function configQuery() {
@@ -54,6 +81,7 @@
             checkout_id: 'main',
             offer_slug: offerSlug,
             product_id: checkoutConfig ? (checkoutConfig.productId || productId) : productId,
+            selected_bump_ids: getSelectedBumpIds(),
             full_name: form.full_name.value.trim(),
             email: form.email.value.trim(),
             phone: form.phone.value.trim(),
@@ -67,9 +95,29 @@
         }
 
         window.OndaTracking.trackCheckoutStarted({
-            amountCents: checkoutConfig.amountCents,
+            amountCents: getTotalCents(),
             productId: checkoutConfig.productId || productId,
             offerSlug: offerSlug,
+            orderBumps: getSelectedBumpIds(),
+        });
+    }
+
+    function mountOrderBumps() {
+        if (!window.CheckoutOrderBumps || !(checkoutConfig.orderBumps || []).length) {
+            return;
+        }
+
+        orderBumpsSection.hidden = false;
+        orderSummary.hidden = false;
+
+        window.CheckoutOrderBumps.mount(checkoutConfig, {
+            form: form,
+            bumpList: document.getElementById('order-bump-list'),
+            summaryLines: document.getElementById('order-summary-lines'),
+            summaryTotal: document.getElementById('order-summary-total'),
+            onChange: function () {
+                updateDisplayedTotal();
+            },
         });
     }
 
@@ -87,7 +135,9 @@
         subtitleEl.textContent = mode === 'test'
             ? 'Modo teste — usa cartão 4242 4242 4242 4242'
             : 'Pagamento seguro';
-        priceEl.textContent = formatPrice(data.amountCents, data.currency || 'eur');
+
+        mountOrderBumps();
+        updateDisplayedTotal();
 
         if (!window.Stripe) {
             throw new Error('Stripe.js não carregou.');
@@ -161,11 +211,12 @@
 
             if (window.OndaTracking) {
                 window.OndaTracking.trackInitiateCheckout({
-                    amountCents: checkoutConfig.amountCents,
+                    amountCents: getTotalCents(),
                     productId: checkoutConfig.productId || productId,
+                    orderBumps: getSelectedBumpIds(),
                 });
                 window.OndaTracking.trackPaymentSubmitted({
-                    amountCents: checkoutConfig.amountCents,
+                    amountCents: getTotalCents(),
                 });
             }
 

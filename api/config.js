@@ -20,6 +20,8 @@ module.exports = async function handler(req, res) {
                 productId: productId || stripeContext.offer.primary_product_id,
             });
 
+            var bumps = await checkoutResolver.listCheckoutBumps(stripeContext.offer);
+
             return res.status(200).json({
                 publishableKey: settings.publishableKey,
                 amountCents: universal.amountCents,
@@ -32,6 +34,14 @@ module.exports = async function handler(req, res) {
                 thankYouPath: universal.successPath,
                 offerId: settings.offerId || undefined,
                 offerSlug: settings.offerSlug || undefined,
+                orderBumps: bumps.map(function (row) {
+                    return {
+                        bumpId: row.bump_id,
+                        productId: row.product_id,
+                        label: row.label,
+                        amountCents: row.amount_cents,
+                    };
+                }),
             });
         } catch (error) {
             return res.status(400).json({ error: error.message || 'Checkout indisponível.' });

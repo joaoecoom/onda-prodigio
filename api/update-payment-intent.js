@@ -1,5 +1,6 @@
 var stripeClient = require('../lib/hub/stripe-client');
 var productCheckoutConfig = require('../lib/product-checkout-config');
+var checkoutResolver = require('../lib/hub/checkout-resolver');
 
 module.exports = async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -29,6 +30,7 @@ module.exports = async function handler(req, res) {
     var country = typeof body.country === 'string' ? body.country.trim().toUpperCase() : '';
     var phoneCountry = typeof body.phone_country === 'string' ? body.phone_country.trim().toUpperCase() : '';
     var amountCents = parseInt(body.amount_cents, 10);
+    var selectedBumpIds = body.selected_bump_ids || body.order_bumps || [];
     var orderBumps = Array.isArray(body.order_bumps) ? body.order_bumps.filter(function (item) {
         return typeof item === 'string' && item.trim();
     }) : [];
@@ -83,6 +85,36 @@ module.exports = async function handler(req, res) {
             order_bumps: orderBumps.join(', '),
         };
 
+        if (!standaloneProduct && settings.checkoutId === 'main' && stripeContext.offer) {
+            var resolved = await checkoutResolver.resolveUniversalCheckoutWithBumps(stripeContext.offer, {
+                checkoutId: 'main',
+                mode: mode,
+                productId: productId || stripeContext.offer.primary_product_id,
+                selectedBumpIds: selectedBumpIds.length ? selectedBumpIds : orderBumps,
+            });
+            var universal = resolved.checkout;
+
+            productId = universal.productId;
+            amountCents = resolved.totalCents;
+
+            metadata = {
+                checkout_type: 'offer',
+                checkout: 'main',
+                product: offerName,
+                product_id: productId,
+                price_id: universal.priceId || '',
+                full_name: fullName || '',
+                phone: phone || '',
+                region: region || '',
+                country: country || '',
+                phone_country: phoneCountry || '',
+                email: email || '',
+                stripe_mode: mode,
+            };
+
+            metadata = Object.assign(metadata, resolved.bumpMetadata);
+        }
+
         metadata = Object.assign(
             metadata,
             stripeClient.buildOfferMetadata(settings),
@@ -106,6 +138,8 @@ module.exports = async function handler(req, res) {
         }
 
         if (standaloneProduct && Number.isFinite(amountCents) && amountCents === expectedStandaloneAmount) {
+            updatePayload.amount = amountCents;
+        } else if (!standaloneProduct && settings.checkoutId === 'main' && stripeContext.offer && Number.isFinite(amountCents)) {
             updatePayload.amount = amountCents;
         } else if (!standaloneProduct && Number.isFinite(amountCents) && amountCents >= baseAmount && amountCents <= maxAmount) {
             updatePayload.amount = amountCents;

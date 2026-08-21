@@ -32,24 +32,27 @@ module.exports = async function handler(req, res) {
     var tracking = body.tracking && typeof body.tracking === 'object' ? body.tracking : {};
     var userAgent = req.headers['user-agent'] || '';
     var productId = typeof body.product_id === 'string' ? body.product_id.trim() : '';
+    var selectedBumpIds = body.selected_bump_ids || body.order_bumps || [];
     var offerName = settings.offerName || 'Onda Prodígio';
     var amount = settings.amountCents;
     var metadata = null;
 
     if (checkoutId === 'main' && stripeContext.offer) {
         try {
-            var universal = await checkoutResolver.resolveUniversalCheckout(stripeContext.offer, {
+            var resolved = await checkoutResolver.resolveUniversalCheckoutWithBumps(stripeContext.offer, {
                 checkoutId: 'main',
                 mode: mode,
                 productId: productId || stripeContext.offer.primary_product_id,
+                selectedBumpIds: selectedBumpIds,
             });
+            var universal = resolved.checkout;
 
             if (!universal.isActive) {
                 return res.status(400).json({ error: 'Checkout indisponível para esta oferta.' });
             }
 
             productId = universal.productId;
-            amount = universal.amountCents;
+            amount = resolved.totalCents;
 
             metadata = {
                 checkout_type: 'offer',
@@ -65,6 +68,8 @@ module.exports = async function handler(req, res) {
                 email: email || '',
                 stripe_mode: mode,
             };
+
+            metadata = Object.assign(metadata, resolved.bumpMetadata);
         } catch (validationError) {
             return res.status(400).json({ error: validationError.message || 'Checkout inválido.' });
         }
