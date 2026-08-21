@@ -1488,7 +1488,9 @@
 
         homeRoot.querySelectorAll('[data-offer-wizard]').forEach(function (button) {
             button.addEventListener('click', function () {
-                openOfferWizard(state.currentOffer.slug, 2);
+                openOfferWizard(state.currentOffer.slug, 2).catch(function (error) {
+                    showStatus(error.message, true);
+                });
             });
         });
 
@@ -1952,16 +1954,29 @@
         state.wizard.slug = slug || null;
         state.wizard.step = step || (slug ? 2 : 1);
         state.wizard.data = null;
+        state.wizard.error = null;
+        state.wizard.loading = Boolean(slug);
 
         if (wizardOverlay) {
             wizardOverlay.hidden = false;
         }
 
-        if (slug) {
-            await refreshWizardData(slug);
+        renderOfferWizard();
+
+        if (!slug) {
+            return;
         }
 
-        renderOfferWizard();
+        try {
+            await refreshWizardData(slug);
+            state.wizard.loading = false;
+            state.wizard.error = null;
+            renderOfferWizard();
+        } catch (error) {
+            state.wizard.loading = false;
+            state.wizard.error = error.message || 'Não foi possível carregar o assistente.';
+            renderOfferWizard();
+        }
     }
 
     async function refreshWizardData(slug) {
@@ -1989,6 +2004,33 @@
                 '</span>';
             }).join('')
             : '<span class="hub-wizard__step is-active">1. Oferta</span>';
+
+        if (state.wizard.loading) {
+            wizardBodyEl.innerHTML =
+                '<p class="hub-panel__sub">A carregar assistente de setup…</p>';
+            wizardFootEl.innerHTML =
+                '<button type="button" class="dr-btn dr-btn--ghost" data-wizard-close-inline="1">Cancelar</button>';
+            wizardFootEl.querySelector('[data-wizard-close-inline]').onclick = closeOfferWizard;
+            return;
+        }
+
+        if (state.wizard.error) {
+            wizardBodyEl.innerHTML =
+                '<div class="dr-alert dr-alert--warning">' +
+                    '<div class="dr-alert__body">' +
+                        '<strong>Não foi possível carregar</strong>' +
+                        '<p>' + escapeHtml(state.wizard.error) + '</p>' +
+                    '</div>' +
+                '</div>';
+            wizardFootEl.innerHTML =
+                '<button type="button" class="dr-btn dr-btn--ghost" data-wizard-retry="1">Tentar novamente</button>' +
+                '<button type="button" class="dr-btn dr-btn--primary" data-wizard-close-inline="1">Fechar</button>';
+            wizardFootEl.querySelector('[data-wizard-close-inline]').onclick = closeOfferWizard;
+            wizardFootEl.querySelector('[data-wizard-retry]').onclick = function () {
+                openOfferWizard(state.wizard.slug, state.wizard.step);
+            };
+            return;
+        }
 
         if (currentStep === 1 && !state.wizard.slug) {
             wizardBodyEl.innerHTML =
@@ -3299,7 +3341,9 @@
             '</form>';
 
         card.querySelector('#hub-open-wizard').addEventListener('click', function () {
-            openOfferWizard(null, 1);
+            openOfferWizard(null, 1).catch(function (error) {
+                showStatus(error.message, true);
+            });
         });
 
         card.querySelector('#hub-open-quick-create').addEventListener('click', function () {
@@ -3645,6 +3689,7 @@
     }
 
     if (wizardOverlay) {
+        wizardOverlay.hidden = true;
         wizardOverlay.addEventListener('click', function (event) {
             if (event.target === wizardOverlay) {
                 closeOfferWizard();

@@ -665,6 +665,10 @@ body {
     backdrop-filter: blur(6px);
 }
 
+.hub-wizard-overlay[hidden] {
+    display: none !important;
+}
+
 .hub-wizard {
     width: min(720px, 100%);
     max-height: min(90vh, 860px);
@@ -696,6 +700,7 @@ body {
     gap: 6px;
     overflow-x: auto;
     padding: 16px 24px 0;
+    min-height: 36px;
 }
 
 .hub-wizard__step {
@@ -725,6 +730,30 @@ body {
 
 .hub-wizard__body {
     padding: 20px 24px;
+    min-height: 120px;
+    color: var(--dr-text);
+}
+
+.hub-wizard__body .hub-login__label {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--dr-text);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.hub-wizard__body .hub-login__input {
+    width: 100%;
+    margin-bottom: 12px;
+    border: 1px solid var(--dr-border);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--dr-text);
+    padding: 12px 14px;
+}
+
+.hub-wizard__body .hub-panel__sub {
+    color: var(--dr-text-muted);
 }
 
 .hub-wizard__foot {
@@ -732,6 +761,8 @@ body {
     justify-content: space-between;
     gap: 12px;
     padding: 0 24px 24px;
+    min-height: 52px;
+    align-items: center;
 }
 
 .hub-wizard__form {
