@@ -3072,10 +3072,8 @@
 
         var funnelsHtml = funnels.length
             ? funnels.map(function (funnel) {
-                return '<article class="hub-panel hub-panel--nested" data-funnel-slug="' + escapeHtml(funnel.slug) + '">' +
-                    '<div class="hub-panel__head"><h3>' + escapeHtml(funnel.name) + '</h3>' +
-                    '<span class="dr-badge dr-badge--draft">' + escapeHtml(funnel.status || 'draft') + '</span></div>' +
-                    '<p class="hub-panel__sub">' + escapeHtml(funnel.slug) + '</p>' +
+                var isQuiz = funnel.type === 'quiz';
+                var pageCreateForm = isQuiz ? '' :
                     '<form class="hub-funnel-create-page" data-funnel-create-page="' + escapeHtml(funnel.slug) + '">' +
                         '<div class="hub-form-grid">' +
                             '<label class="hub-field"><span class="hub-field__label">Nova page</span>' +
@@ -3094,9 +3092,22 @@
                             '<button class="hub-button" type="submit">Criar page</button>' +
                         '</div>' +
                         '<p class="hub-form-message" data-page-message hidden></p>' +
-                    '</form>' +
+                    '</form>';
+                var quizBuilder = isQuiz
+                    ? '<div class="hub-quiz-builder-mount" data-quiz-builder="' + escapeHtml(funnel.slug) + '"></div>'
+                    : '';
+                var pagesBlock = isQuiz ? '' :
                     '<div class="hub-funnel-pages" data-funnel-pages="' + escapeHtml(funnel.slug) + '">' +
-                    '<p class="hub-panel__sub">A carregar pages…</p></div></article>';
+                    '<p class="hub-panel__sub">A carregar pages…</p></div>';
+
+                return '<article class="hub-panel hub-panel--nested" data-funnel-slug="' + escapeHtml(funnel.slug) + '">' +
+                    '<div class="hub-panel__head"><h3>' + escapeHtml(funnel.name) + '</h3>' +
+                    '<span class="dr-badge dr-badge--draft">' + escapeHtml(funnel.status || 'draft') +
+                    (funnel.type ? ' · ' + escapeHtml(funnel.type) : '') + '</span></div>' +
+                    '<p class="hub-panel__sub">' + escapeHtml(funnel.slug) + '</p>' +
+                    pageCreateForm +
+                    quizBuilder +
+                    pagesBlock + '</article>';
             }).join('')
             : '<div class="dr-empty">' +
                 '<p class="dr-empty__title">' + (pagesFocus ? 'Ainda não tens páginas' : 'Ainda não tens funis') + '</p>' +
@@ -3121,6 +3132,7 @@
                             '<option value="vsl">VSL</option>' +
                             '<option value="lead">Lead</option>' +
                             '<option value="webinar">Webinar</option>' +
+                            '<option value="quiz">Quiz</option>' +
                         '</select></label>' +
                     '</div>' +
                     '<div class="hub-actions">' +
@@ -3143,7 +3155,26 @@
 
         bindFunilModuleEvents(offer);
         funnels.forEach(function (funnel) {
-            loadFunnelPages(offer.slug, funnel.slug);
+            if (funnel.type === 'quiz') {
+                mountQuizBuilder(offer, funnel);
+            } else {
+                loadFunnelPages(offer.slug, funnel.slug);
+            }
+        });
+    }
+
+    function mountQuizBuilder(offer, funnel) {
+        var container = modulePanel.querySelector('[data-quiz-builder="' + funnel.slug + '"]');
+
+        if (!container || !window.HubQuizBuilder) {
+            return;
+        }
+
+        window.HubQuizBuilder.mount(container, {
+            offer: offer,
+            funnel: funnel,
+            apiFetch: apiFetch,
+            onStatus: showStatus,
         });
     }
 

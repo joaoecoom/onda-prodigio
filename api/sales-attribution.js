@@ -474,8 +474,9 @@ module.exports = async function handler(req, res) {
     var action = String(req.query.action || 'stripe').trim();
     var isPublicHubPagePreview = req.method === 'GET' && action === 'hub_page_preview';
     var isPublicHubPageDomain = req.method === 'GET' && action === 'hub_page_domain';
+    var isPublicHubQuizSubmit = req.method === 'POST' && action === 'hub_quiz_submit';
 
-    if (!isPublicHubPagePreview && !isPublicHubPageDomain && !metricsAuth.isAuthorized(req)) {
+    if (!isPublicHubPagePreview && !isPublicHubPageDomain && !isPublicHubQuizSubmit && !metricsAuth.isAuthorized(req)) {
         return res.status(401).json({ error: 'Não autorizado.' });
     }
 
@@ -576,6 +577,10 @@ module.exports = async function handler(req, res) {
 
         if (action === 'hub_page_create') {
             return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_quiz_save' || action === 'hub_quiz_submit' || action === 'hub_quiz_publish') {
+            return require('../lib/hub/handlers/quiz')(req, res);
         }
 
         res.setHeader('Allow', 'GET, POST');
@@ -694,6 +699,10 @@ module.exports = async function handler(req, res) {
 
         if (action === 'hub_page_revisions') {
             return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_quiz_get') {
+            return require('../lib/hub/handlers/quiz')(req, res);
         }
 
         return handleStripe(req, res);

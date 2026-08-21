@@ -89,12 +89,19 @@
         });
 
         if (response.status === 401) {
+            sessionStorage.removeItem(TOKEN_KEY);
             showLogin(true);
             throw new Error('Palavra-passe incorrecta.');
         }
 
         if (!response.ok) {
-            throw new Error(payload.error || 'Pedido falhou.');
+            var message = payload.error || 'Pedido falhou.';
+
+            if (response.status === 404 || payload.code === 'NOT_FOUND') {
+                message = 'Oferta, funil ou page não encontrados. Verifica o URL ou cria a page no HUB.';
+            }
+
+            throw new Error(message);
         }
 
         return payload;
@@ -1382,8 +1389,13 @@
     });
 
     if (getToken()) {
-        loadEditor().catch(function () {
+        loadEditor().catch(function (error) {
             showLogin(true);
+
+            if (error && error.message && error.message !== 'Palavra-passe incorrecta.') {
+                loginError.hidden = false;
+                loginError.textContent = error.message;
+            }
         });
     } else {
         showLogin(true);

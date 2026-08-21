@@ -7,6 +7,11 @@ var offerSetupWizard = require('../lib/hub/offer-setup-wizard');
 var offerProvisioning = require('../lib/hub/offer-provisioning');
 var registry = require('../lib/hub/agent-tools/registry');
 
+test('provisionOffer export survives offers circular require', function () {
+    assert.equal(typeof offerProvisioning.provisionOffer, 'function');
+    assert.equal(typeof offerProvisioning.updateMainCheckout, 'function');
+});
+
 test('resolveStripeConnectionStatus returns not_configured without keys', function () {
     var status = offerSetupWizard.resolveStripeConnectionStatus({ mode: 'test' }, {});
     assert.equal(status.status, 'not_configured');

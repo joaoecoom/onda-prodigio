@@ -53,7 +53,7 @@ test('tool registry is allowlisted and complete', function () {
     assert.ok(registry.isAllowedTool('get_page_tree'));
     assert.equal(registry.isAllowedTool('execute_sql'), false);
     assert.equal(registry.isAllowedTool('run_shell'), false);
-    assert.equal(registry.ALLOWED_TOOL_NAMES.length, 34);
+    assert.equal(registry.ALLOWED_TOOL_NAMES.length, 41);
 });
 
 test('create funnel tool', async function () {

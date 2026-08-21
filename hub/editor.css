@@ -32,11 +32,20 @@ body {
     color: var(--peb-text);
 }
 
+.peb-login[hidden],
+.peb-app[hidden] {
+    display: none !important;
+}
+
 .peb-login {
     min-height: 100vh;
     display: grid;
     place-items: center;
     padding: 24px;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--peb-bg);
 }
 
 .peb-login__layout {
