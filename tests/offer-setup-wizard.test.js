@@ -4,6 +4,7 @@ var test = require('node:test');
 var assert = require('node:assert/strict');
 
 var offerSetupWizard = require('../lib/hub/offer-setup-wizard');
+var offerProvisioning = require('../lib/hub/offer-provisioning');
 var registry = require('../lib/hub/agent-tools/registry');
 
 test('resolveStripeConnectionStatus returns not_configured without keys', function () {
