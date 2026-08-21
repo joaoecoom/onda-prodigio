@@ -97,6 +97,11 @@
     var statusEl = document.getElementById('hub-status');
     var refreshButton = document.getElementById('hub-refresh');
     var logoutButton = document.getElementById('hub-logout');
+    var wizardOverlay = document.getElementById('hub-wizard-overlay');
+    var wizardStepsEl = document.getElementById('hub-wizard-steps');
+    var wizardBodyEl = document.getElementById('hub-wizard-body');
+    var wizardFootEl = document.getElementById('hub-wizard-foot');
+    var wizardCloseBtn = document.getElementById('hub-wizard-close');
 
     var state = {
         offers: [],
@@ -109,6 +114,13 @@
         launchReadiness: null,
         platformSection: 'home',
         view: 'list',
+        wizard: {
+            open: false,
+            step: 1,
+            slug: null,
+            data: null,
+            busy: false,
+        },
     };
 
     function chatContext() {
@@ -1374,6 +1386,9 @@
                         '</span>' +
                     '</div>' +
                     '<div class="hub-offer-hero__actions">' +
+                        (offer.status !== 'active'
+                            ? '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm" data-offer-wizard="1">Continuar setup</button>'
+                            : '') +
                         (publicUrl
                             ? '<a class="dr-btn dr-btn--ghost dr-btn--sm" href="' + escapeHtml(publicUrl) +
                                 '" target="_blank" rel="noopener">' + iconSvg('externalLink') + ' Ver oferta</a>'
@@ -1468,6 +1483,12 @@
         homeRoot.querySelectorAll('[data-open-community]').forEach(function (button) {
             button.addEventListener('click', function () {
                 openCommunityGestor();
+            });
+        });
+
+        homeRoot.querySelectorAll('[data-offer-wizard]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                openOfferWizard(state.currentOffer.slug, 2);
             });
         });
 
@@ -1710,11 +1731,18 @@
         var cls = check.status === 'pass'
             ? 'hub-launch__check--pass'
             : (check.status === 'warning' ? 'hub-launch__check--warn' : 'hub-launch__check--fail');
+        var actionBtn = check.action && check.status !== 'pass'
+            ? '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm hub-launch__check-action" ' +
+                'data-launch-action="' + escapeHtml(check.action.moduleId || '') + '"' +
+                (check.action.navKey ? ' data-launch-nav="' + escapeHtml(check.action.navKey) + '"' : '') +
+                '>' + escapeHtml(check.action.label || 'Corrigir') + '</button>'
+            : '';
 
         return '<div class="hub-launch__check ' + cls + '">' +
             '<span class="hub-launch__icon" aria-hidden="true">' + icon + '</span>' +
             '<span class="hub-launch__label">' + escapeHtml(check.label) + '</span>' +
             '<span class="hub-launch__msg">' + escapeHtml(check.message || '') + '</span>' +
+            actionBtn +
         '</div>';
     }
 
@@ -1750,6 +1778,15 @@
             '</div>';
         }).join('');
 
+        var launchReady = launch.readiness === 'ready';
+        var launchActions =
+            '<div class="hub-launch__actions">' +
+                '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm" data-launch-validate="1">Validar oferta</button>' +
+                '<button type="button" class="dr-btn dr-btn--primary dr-btn--sm"' +
+                    (launchReady ? '' : ' disabled') +
+                    ' data-launch-go="1">Launch offer</button>' +
+            '</div>';
+
         return '<section class="hub-launch" aria-label="Launch Status">' +
             '<div class="hub-launch__head">' +
                 '<div>' +
@@ -1767,6 +1804,7 @@
                         (launch.summary.warnings ? ' · ' + launch.summary.warnings + ' avisos' : '')
                     : '') +
             '</div>' +
+            launchActions +
             (issuesHtml ? '<div class="hub-launch__issues">' + issuesHtml + '</div>' : '') +
             '<details class="hub-launch__details">' +
                 '<summary>Ver todos os checks</summary>' +
@@ -1804,6 +1842,437 @@
                 openModule(moduleId, null, navKey || moduleId);
             });
         });
+
+        root.querySelectorAll('[data-launch-validate]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                validateCurrentOffer();
+            });
+        });
+
+        root.querySelectorAll('[data-launch-go]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                launchCurrentOffer();
+            });
+        });
+    }
+
+    async function validateCurrentOffer() {
+        if (!state.currentOffer) {
+            return;
+        }
+
+        try {
+            showStatus('A validar oferta…');
+            var result = await apiFetch(
+                '/api/sales-attribution?action=hub_validate_offer&slug=' +
+                    encodeURIComponent(state.currentOffer.slug),
+                { method: 'POST', body: {} }
+            );
+
+            state.launchReadiness = result.wizard ? result.wizard.launch : state.launchReadiness;
+
+            if (result.ready) {
+                showStatus('🟢 Oferta pronta para launch.');
+            } else if (result.ok) {
+                showStatus('🟡 Quase pronta — resolve avisos antes do launch.');
+            } else {
+                showStatus('🔴 Not ready — ' + (result.failures || []).length + ' falha(s) crítica(s).', true);
+            }
+
+            renderOfferHome(state.currentOffer, state.currentModules, state.offerMetrics);
+
+            if (window.PlatformUI) {
+                window.PlatformUI.toast(result.label || (result.ready ? 'Ready' : 'Not ready'), result.ready ? 'success' : 'warning');
+            }
+        } catch (error) {
+            showStatus(error.message, true);
+        }
+    }
+
+    async function launchCurrentOffer() {
+        if (!state.currentOffer) {
+            return;
+        }
+
+        if (!window.confirm('Confirmar launch desta oferta? Só avança se todos os checks críticos passarem.')) {
+            return;
+        }
+
+        try {
+            showStatus('A lançar oferta…');
+            var result = await apiFetch(
+                '/api/sales-attribution?action=hub_launch_offer&slug=' +
+                    encodeURIComponent(state.currentOffer.slug),
+                { method: 'POST', body: {} }
+            );
+
+            await loadOffers();
+            state.currentOffer = result.offer || state.currentOffer;
+            state.launchReadiness = result.launch && result.launch.wizard
+                ? result.launch.wizard.launch
+                : state.launchReadiness;
+
+            showStatus('🟢 Oferta activa — live.');
+            renderOfferHome(state.currentOffer, state.currentModules, state.offerMetrics);
+            renderSidebar();
+
+            if (window.PlatformUI) {
+                window.PlatformUI.toast('Oferta lançada com sucesso.', 'success');
+            }
+        } catch (error) {
+            showStatus(error.message, true);
+            await loadLaunchReadiness(state.currentOffer.slug, true);
+            renderOfferHome(state.currentOffer, state.currentModules, state.offerMetrics);
+        }
+    }
+
+    function wizardStepClass(status) {
+        if (status === 'pass') {
+            return 'is-pass';
+        }
+
+        if (status === 'fail') {
+            return 'is-fail';
+        }
+
+        return '';
+    }
+
+    function closeOfferWizard() {
+        state.wizard.open = false;
+        state.wizard.busy = false;
+
+        if (wizardOverlay) {
+            wizardOverlay.hidden = true;
+        }
+    }
+
+    async function openOfferWizard(slug, step) {
+        state.wizard.open = true;
+        state.wizard.slug = slug || null;
+        state.wizard.step = step || (slug ? 2 : 1);
+        state.wizard.data = null;
+
+        if (wizardOverlay) {
+            wizardOverlay.hidden = false;
+        }
+
+        if (slug) {
+            await refreshWizardData(slug);
+        }
+
+        renderOfferWizard();
+    }
+
+    async function refreshWizardData(slug) {
+        var payload = await apiFetch(
+            '/api/sales-attribution?action=hub_offer_wizard&slug=' +
+                encodeURIComponent(slug) + '&refresh=1'
+        );
+        state.wizard.data = payload.wizard;
+        state.wizard.slug = slug;
+    }
+
+    function renderOfferWizard() {
+        if (!wizardOverlay || !wizardStepsEl || !wizardBodyEl || !wizardFootEl) {
+            return;
+        }
+
+        var steps = (state.wizard.data && state.wizard.data.steps) || [];
+        var currentStep = state.wizard.step;
+
+        wizardStepsEl.innerHTML = steps.length
+            ? steps.map(function (step) {
+                var active = step.index === currentStep ? ' is-active' : '';
+                return '<span class="hub-wizard__step' + active + wizardStepClass(step.status) + '">' +
+                    step.index + '. ' + escapeHtml(step.title) +
+                '</span>';
+            }).join('')
+            : '<span class="hub-wizard__step is-active">1. Oferta</span>';
+
+        if (currentStep === 1 && !state.wizard.slug) {
+            wizardBodyEl.innerHTML =
+                '<form class="hub-wizard__form" id="hub-wizard-create-form">' +
+                    '<label class="hub-login__label" for="hub-wizard-name">Nome da oferta</label>' +
+                    '<input class="hub-login__input" id="hub-wizard-name" type="text" required placeholder="Ex: Curso X">' +
+                    '<label class="hub-login__label" for="hub-wizard-desc">Descrição (opcional)</label>' +
+                    '<input class="hub-login__input" id="hub-wizard-desc" type="text" placeholder="Breve descrição">' +
+                    '<label class="hub-login__label" for="hub-wizard-domain">Domínio funil (opcional)</label>' +
+                    '<input class="hub-login__input" id="hub-wizard-domain" type="text" placeholder="minhaoferta.com">' +
+                    '<p class="hub-create-form__error" id="hub-wizard-error" hidden></p>' +
+                '</form>';
+            wizardFootEl.innerHTML =
+                '<span></span>' +
+                '<button type="submit" form="hub-wizard-create-form" class="dr-btn dr-btn--primary">Continuar →</button>';
+
+            var createForm = document.getElementById('hub-wizard-create-form');
+
+            if (createForm) {
+                createForm.onsubmit = handleWizardCreateOffer;
+            }
+
+            return;
+        }
+
+        if (currentStep === 2 && state.wizard.slug) {
+            var offer = state.currentOffer || {};
+            var checkout = (offer.checkouts || [])[0] || {};
+            var amountEuros = checkout.amount_cents ? (checkout.amount_cents / 100).toFixed(2) : '1.00';
+
+            wizardBodyEl.innerHTML =
+                '<form class="hub-wizard__form" id="hub-wizard-product-form">' +
+                    '<p class="hub-panel__sub">Produto principal e checkout serão provisionados automaticamente.</p>' +
+                    '<label class="hub-login__label" for="hub-wizard-price">Preço (EUR)</label>' +
+                    '<input class="hub-login__input" id="hub-wizard-price" type="number" min="0.5" step="0.01" value="' +
+                        escapeHtml(amountEuros) + '" required>' +
+                    '<p class="hub-create-form__error" id="hub-wizard-error" hidden></p>' +
+                '</form>';
+            wizardFootEl.innerHTML =
+                '<button type="button" class="dr-btn dr-btn--ghost" data-wizard-back="1">← Voltar</button>' +
+                '<button type="submit" form="hub-wizard-product-form" class="dr-btn dr-btn--primary">Guardar e continuar →</button>';
+
+            document.getElementById('hub-wizard-product-form').onsubmit = handleWizardProductStep;
+            wizardFootEl.querySelector('[data-wizard-back]').onclick = function () {
+                state.wizard.step = 1;
+                renderOfferWizard();
+            };
+            return;
+        }
+
+        var stepData = steps.find(function (row) {
+            return row.index === currentStep;
+        });
+
+        if (!stepData) {
+            wizardBodyEl.innerHTML = '<p class="hub-panel__sub">Passo concluído.</p>';
+            wizardFootEl.innerHTML = '';
+            return;
+        }
+
+        var stripeHtml = '';
+
+        if (stepData.id === 'stripe' && state.wizard.data && state.wizard.data.stripe) {
+            var stripe = state.wizard.data.stripe;
+            stripeHtml =
+                '<p class="hub-launch__stripe">Stripe · <strong>' + escapeHtml(stripe.label) + '</strong></p>';
+        }
+
+        var domainHtml = '';
+
+        if (stepData.id === 'domain' && state.wizard.data && state.wizard.data.domain) {
+            var domainInfo = state.wizard.data.domain;
+            var domainStatus = domainInfo.configured
+                ? (domainInfo.funnel_domain ? '🟢 ' + escapeHtml(domainInfo.funnel_domain) : '🟡 DNS REQUIRED')
+                : '🟡 VERCEL_TOKEN / VERCEL_PROJECT_ID em falta';
+            domainHtml = '<p class="hub-panel__sub">Domínio: ' + domainStatus + '</p>';
+        }
+
+        wizardBodyEl.innerHTML =
+            '<div class="hub-wizard__status-grid">' +
+                '<div class="hub-wizard__status-row">' +
+                    '<div><strong>' + escapeHtml(stepData.title) + '</strong>' +
+                        '<p class="hub-panel__sub">' + escapeHtml(stepData.description) + '</p>' +
+                        (stepData.message ? '<p>' + escapeHtml(stepData.message) + '</p>' : '') +
+                        stripeHtml + domainHtml +
+                    '</div>' +
+                    '<span class="dr-status ' + launchStatusClass(stepData.status === 'pass' ? 'ready' : (stepData.status === 'warning' ? 'almost_ready' : 'not_ready')) + '">' +
+                        '<span class="dr-status__dot"></span>' +
+                        escapeHtml(stepData.status === 'pass' ? 'OK' : (stepData.status === 'warning' ? 'Aviso' : 'Por configurar')) +
+                    '</span>' +
+                '</div>' +
+            '</div>';
+
+        var configureBtn = stepData.action && stepData.action.moduleId
+            ? '<button type="button" class="dr-btn dr-btn--ghost" data-wizard-configure="1">' +
+                escapeHtml(stepData.action.label || 'Configurar') + '</button>'
+            : '';
+
+        var validateBtn = stepData.id === 'check'
+            ? '<button type="button" class="dr-btn dr-btn--ghost" data-wizard-validate="1">Executar validação</button>'
+            : '';
+
+        var launchBtn = stepData.id === 'ready'
+            ? '<button type="button" class="dr-btn dr-btn--primary" data-wizard-launch="1"' +
+                ((state.wizard.data && state.wizard.data.launch.readiness === 'ready') ? '' : ' disabled') +
+                '>Launch offer</button>'
+            : '';
+
+        wizardFootEl.innerHTML =
+            '<button type="button" class="dr-btn dr-btn--ghost" data-wizard-back="1">← Anterior</button>' +
+            '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+                configureBtn + validateBtn + launchBtn +
+                (currentStep < 9
+                    ? '<button type="button" class="dr-btn dr-btn--primary" data-wizard-next="1">Seguinte →</button>'
+                    : '') +
+            '</div>';
+
+        wizardFootEl.querySelector('[data-wizard-back]').onclick = function () {
+            state.wizard.step = Math.max(state.wizard.slug ? 2 : 1, currentStep - 1);
+            renderOfferWizard();
+        };
+
+        var nextBtn = wizardFootEl.querySelector('[data-wizard-next]');
+
+        if (nextBtn) {
+            nextBtn.onclick = function () {
+                state.wizard.step = Math.min(9, currentStep + 1);
+                renderOfferWizard();
+            };
+        }
+
+        var configBtn = wizardFootEl.querySelector('[data-wizard-configure]');
+
+        if (configBtn && stepData.action) {
+            configBtn.onclick = function () {
+                closeOfferWizard();
+                openModule(stepData.action.moduleId, null, stepData.action.navKey || stepData.action.moduleId);
+            };
+        }
+
+        var validateStepBtn = wizardFootEl.querySelector('[data-wizard-validate]');
+
+        if (validateStepBtn) {
+            validateStepBtn.onclick = async function () {
+                await runWizardValidation();
+            };
+        }
+
+        var launchStepBtn = wizardFootEl.querySelector('[data-wizard-launch]');
+
+        if (launchStepBtn) {
+            launchStepBtn.onclick = async function () {
+                await runWizardLaunch();
+            };
+        }
+    }
+
+    async function handleWizardCreateOffer(event) {
+        event.preventDefault();
+
+        if (state.wizard.busy) {
+            return;
+        }
+
+        var nameInput = document.getElementById('hub-wizard-name');
+        var domainInput = document.getElementById('hub-wizard-domain');
+        var errorEl = document.getElementById('hub-wizard-error');
+        var name = nameInput.value.trim();
+        var funnelDomain = domainInput.value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+
+        errorEl.hidden = true;
+        state.wizard.busy = true;
+
+        try {
+            var payload = await apiFetch(
+                '/api/sales-attribution?action=hub_create_offer',
+                {
+                    method: 'POST',
+                    body: {
+                        name: name,
+                        funnel_domain: funnelDomain,
+                    },
+                }
+            );
+
+            state.wizard.slug = payload.offer.slug;
+            state.wizard.step = 2;
+            await loadOffers();
+            await refreshWizardData(payload.offer.slug);
+            renderOfferWizard();
+        } catch (error) {
+            errorEl.textContent = error.message;
+            errorEl.hidden = false;
+        } finally {
+            state.wizard.busy = false;
+        }
+    }
+
+    async function handleWizardProductStep(event) {
+        event.preventDefault();
+
+        if (state.wizard.busy || !state.wizard.slug) {
+            return;
+        }
+
+        var priceInput = document.getElementById('hub-wizard-price');
+        var errorEl = document.getElementById('hub-wizard-error');
+        var euros = parseFloat(priceInput.value);
+        errorEl.hidden = true;
+        state.wizard.busy = true;
+
+        if (!Number.isFinite(euros) || euros < 0.5) {
+            errorEl.textContent = 'Preço inválido (mínimo €0.50).';
+            errorEl.hidden = false;
+            state.wizard.busy = false;
+            return;
+        }
+
+        try {
+            await apiFetch(
+                '/api/sales-attribution?action=hub_provision_offer&slug=' +
+                    encodeURIComponent(state.wizard.slug),
+                {
+                    method: 'POST',
+                    body: {
+                        amount_cents: Math.round(euros * 100),
+                        currency: 'eur',
+                    },
+                }
+            );
+
+            state.wizard.step = 3;
+            await refreshWizardData(state.wizard.slug);
+            renderOfferWizard();
+        } catch (error) {
+            errorEl.textContent = error.message;
+            errorEl.hidden = false;
+        } finally {
+            state.wizard.busy = false;
+        }
+    }
+
+    async function runWizardValidation() {
+        if (!state.wizard.slug) {
+            return;
+        }
+
+        try {
+            showStatus('A validar…');
+            var result = await apiFetch(
+                '/api/sales-attribution?action=hub_validate_offer&slug=' +
+                    encodeURIComponent(state.wizard.slug),
+                { method: 'POST', body: {} }
+            );
+            state.wizard.data = result.wizard;
+            state.wizard.step = 8;
+            renderOfferWizard();
+            showStatus(result.ready ? '🟢 Ready' : '🔴 Not ready');
+        } catch (error) {
+            showStatus(error.message, true);
+        }
+    }
+
+    async function runWizardLaunch() {
+        if (!state.wizard.slug) {
+            return;
+        }
+
+        try {
+            showStatus('A lançar…');
+            await apiFetch(
+                '/api/sales-attribution?action=hub_launch_offer&slug=' +
+                    encodeURIComponent(state.wizard.slug),
+                { method: 'POST', body: {} }
+            );
+            await loadOffers();
+            closeOfferWizard();
+            await openOffer(state.wizard.slug);
+            showStatus('🟢 Oferta live.');
+        } catch (error) {
+            showStatus(error.message, true);
+            await refreshWizardData(state.wizard.slug);
+            renderOfferWizard();
+        }
     }
 
     function renderHealthItems(health) {
@@ -2817,12 +3286,26 @@
 
         card.innerHTML =
             '<h3 class="hub-offer__name">Nova oferta</h3>' +
-            '<form class="hub-create-form hub-create-inline" id="hub-create-form">' +
+            '<p class="hub-panel__sub">Configura funil, checkout, Stripe, tracking e domínio num fluxo guiado.</p>' +
+            '<div class="hub-create-form__actions">' +
+                '<button type="button" class="hub-login__button" id="hub-open-wizard">Assistente de setup</button>' +
+                '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm" id="hub-open-quick-create">Criação rápida</button>' +
+            '</div>' +
+            '<form class="hub-create-form hub-create-inline" id="hub-create-form" hidden>' +
                 '<input class="hub-login__input" id="hub-create-name" type="text" placeholder="Nome da oferta" required>' +
                 '<input class="hub-login__input" id="hub-create-domain" type="text" placeholder="Domínio funil (opcional)">' +
                 '<button class="hub-login__button" type="submit">Criar oferta</button>' +
                 '<p class="hub-create-form__error" id="hub-create-error" hidden></p>' +
             '</form>';
+
+        card.querySelector('#hub-open-wizard').addEventListener('click', function () {
+            openOfferWizard(null, 1);
+        });
+
+        card.querySelector('#hub-open-quick-create').addEventListener('click', function () {
+            var form = card.querySelector('#hub-create-form');
+            form.hidden = !form.hidden;
+        });
 
         var form = card.querySelector('#hub-create-form');
         form.addEventListener('submit', handleCreateOffer);
@@ -3154,6 +3637,18 @@
         window.HubChat.init({
             apiFetch: apiFetch,
             getContext: chatContext,
+        });
+    }
+
+    if (wizardCloseBtn) {
+        wizardCloseBtn.addEventListener('click', closeOfferWizard);
+    }
+
+    if (wizardOverlay) {
+        wizardOverlay.addEventListener('click', function (event) {
+            if (event.target === wizardOverlay) {
+                closeOfferWizard();
+            }
         });
     }
 

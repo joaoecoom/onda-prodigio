@@ -195,6 +195,21 @@
                 <p class="dr-command__hint">Sugestões · Enter para executar · Esc para fechar</p>
             </div>
         </div>
+
+        <div class="hub-wizard-overlay" id="hub-wizard-overlay" hidden>
+            <div class="hub-wizard" role="dialog" aria-modal="true" aria-labelledby="hub-wizard-title">
+                <div class="hub-wizard__head">
+                    <div>
+                        <p class="hub-wizard__eyebrow">Assistente de setup</p>
+                        <h2 id="hub-wizard-title">Nova oferta</h2>
+                    </div>
+                    <button type="button" class="dr-btn dr-btn--ghost dr-btn--sm" id="hub-wizard-close" aria-label="Fechar">✕</button>
+                </div>
+                <div class="hub-wizard__steps" id="hub-wizard-steps"></div>
+                <div class="hub-wizard__body" id="hub-wizard-body"></div>
+                <div class="hub-wizard__foot" id="hub-wizard-foot"></div>
+            </div>
+        </div>
     </div>
 
     <script>window.HUB_PLATFORM_HOST = 'hub-dr-ecoom.vercel.app';</script>
@@ -202,6 +217,6 @@
     <script src="/assets/platform-ui.js?v=1"></script>
     <script src="/hub/hub-ai.js?v=4"></script>
     <script src="/hub/hub-chat.js?v=3"></script>
-    <script src="/hub/hub.js?v=30"></script>
+    <script src="/hub/hub.js?v=31"></script>
 </body>
 </html>

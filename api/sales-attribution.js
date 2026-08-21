@@ -568,6 +568,12 @@ module.exports = async function handler(req, res) {
             return require('../lib/hub/handlers/page-builder')(req, res);
         }
 
+        if (action === 'hub_provision_offer' ||
+            action === 'hub_validate_offer' ||
+            action === 'hub_launch_offer') {
+            return require('../lib/hub/handlers/offer-operations')(req, res);
+        }
+
         if (action === 'hub_page_create') {
             return require('../lib/hub/handlers/page-builder')(req, res);
         }
@@ -644,6 +650,10 @@ module.exports = async function handler(req, res) {
 
         if (action === 'hub_launch_health') {
             return require('../lib/hub/handlers/launch-health')(req, res);
+        }
+
+        if (action === 'hub_offer_wizard') {
+            return require('../lib/hub/handlers/offer-operations')(req, res);
         }
 
         if (action === 'hub_module') {

@@ -633,6 +633,138 @@ body {
     color: var(--dr-text-muted);
 }
 
+.hub-launch__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.hub-launch__check-action {
+    margin-left: auto;
+}
+
+.hub-launch__stripe {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--dr-text-muted);
+}
+
+.hub-wizard-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: rgba(9, 10, 13, 0.72);
+    backdrop-filter: blur(6px);
+}
+
+.hub-wizard {
+    width: min(720px, 100%);
+    max-height: min(90vh, 860px);
+    overflow: auto;
+    background: var(--dr-surface);
+    border: 1px solid var(--dr-border);
+    border-radius: 16px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+.hub-wizard__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px 24px 0;
+}
+
+.hub-wizard__eyebrow {
+    margin: 0 0 4px;
+    font-size: 12px;
+    color: var(--dr-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.hub-wizard__steps {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 16px 24px 0;
+}
+
+.hub-wizard__step {
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    border: 1px solid var(--dr-border);
+    color: var(--dr-text-muted);
+}
+
+.hub-wizard__step.is-active {
+    border-color: var(--dr-accent);
+    color: var(--dr-text);
+    background: rgba(124, 108, 255, 0.12);
+}
+
+.hub-wizard__step.is-pass {
+    border-color: rgba(5, 150, 105, 0.35);
+    color: #059669;
+}
+
+.hub-wizard__step.is-fail {
+    border-color: rgba(220, 38, 38, 0.35);
+    color: #dc2626;
+}
+
+.hub-wizard__body {
+    padding: 20px 24px;
+}
+
+.hub-wizard__foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 24px 24px;
+}
+
+.hub-wizard__form {
+    display: grid;
+    gap: 12px;
+}
+
+.hub-wizard__status-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.hub-wizard__status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--dr-border);
+    border-radius: 10px;
+}
+
+.hub-offer--create .hub-create-form {
+    display: grid;
+    gap: 10px;
+}
+
+.hub-offer--create .hub-create-form__actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .hub-actions-row {
     display: flex;
     flex-direction: column;
