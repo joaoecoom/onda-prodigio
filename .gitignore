@@ -13,3 +13,5 @@ stripe-config.env
 .env.prod.tmp
 env.vercel.prod
 .env.push-test
+.e2e-hub-token.local
+.stripe-webhook-secret.local

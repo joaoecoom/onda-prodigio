@@ -11,6 +11,8 @@
   "scripts": {
     "test": "node --test tests/**/*.test.js",
     "test:e2e": "playwright test",
+    "test:e2e:payment": "playwright test e2e/production-payment.spec.js",
+    "test:e2e:production": "node scripts/production-e2e-setup.js && E2E_HUB_TOKEN=\"$(cat .e2e-hub-token.local 2>/dev/null)\" E2E_BASE_URL=https://hub-dr-ecoom.vercel.app E2E_SITE_URL=https://onda-prodigio.vercel.app npm run test:e2e && npm run test:e2e:payment && node scripts/production-e2e-verify.js",
     "test:all": "npm test && npm run test:e2e"
   },
   "devDependencies": {

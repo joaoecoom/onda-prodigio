@@ -65,7 +65,24 @@ module.exports = async function handler(req, res) {
         var claim = await require('../lib/hub/stripe-events').claimStripeEvent(event);
 
         if (claim.already_processed) {
-            console.log('Stripe event duplicate skipped:', event.id, event.type);
+            console.log('Stripe event duplicate:', event.id, event.type);
+
+            if (event.type === 'payment_intent.succeeded') {
+                try {
+                    var hubOrdersDup = require('../lib/hub/orders');
+                    await hubOrdersDup.upsertOrderFromPaymentIntent(event.data.object);
+                } catch (orderDupError) {
+                    console.error('Erro ao re-sincronizar order duplicate:', orderDupError);
+                }
+
+                try {
+                    var grantAccessDup = require('../lib/comunidade/grant-access');
+                    await grantAccessDup.grantAccessFromPaymentIntent(event.data.object);
+                } catch (accessDupError) {
+                    console.error('Erro ao re-sincronizar access duplicate:', accessDupError);
+                }
+            }
+
             return res.status(200).json({
                 received: true,
                 duplicate: true,
