@@ -1955,7 +1955,7 @@
         state.wizard.step = step || (slug ? 2 : 1);
         state.wizard.data = null;
         state.wizard.error = null;
-        state.wizard.loading = Boolean(slug);
+        state.wizard.loading = Boolean(slug && state.wizard.step > 2);
 
         if (wizardOverlay) {
             wizardOverlay.hidden = false;
