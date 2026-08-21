@@ -234,13 +234,7 @@
     },
     {
       "source": "/:funnel/:page",
-      "destination": "/api/sales-attribution?action=hub_page_domain&funnel=:funnel&page=:page",
-      "has": [
-        {
-          "type": "host",
-          "value": "onda-prodigio.vercel.app"
-        }
-      ]
+      "destination": "/api/sales-attribution?action=hub_page_domain&funnel=:funnel&page=:page"
     },
     {
       "source": "/editor/:offer/:funnel/:page",
