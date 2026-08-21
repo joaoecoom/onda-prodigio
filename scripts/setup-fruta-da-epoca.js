@@ -116,26 +116,40 @@ async function run() {
             status: 'draft',
             page_type: 'sales',
         });
+    }
 
-        var section = await funnelEngine.createSection(SLUG, page.id, {
+    var sections = await funnelEngine.listSections(SLUG, page.id);
+    var section = sections[0];
+
+    if (!section) {
+        section = await funnelEngine.createSection(SLUG, page.id, {
             name: 'Hero',
             slug: 'hero',
             sort_order: 1,
         });
+    }
 
-        await funnelEngine.createBlock(SLUG, section.id, {
-            type: 'heading',
-            sort_order: 1,
-            content: { text: 'Fruta da Época' },
-            settings: { level: 1 },
-        });
+    var blocks = await funnelEngine.listBlocks(SLUG, section.id);
+    var hasButton = blocks.some(function (row) { return row.type === 'button'; });
 
-        await funnelEngine.createBlock(SLUG, section.id, {
-            type: 'text',
-            sort_order: 2,
-            content: { text: 'Oferta de teste — produto principal €10 + 3 bumps de €2.' },
-            settings: {},
-        });
+    if (!hasButton) {
+        if (!blocks.some(function (row) { return row.type === 'heading'; })) {
+            await funnelEngine.createBlock(SLUG, section.id, {
+                type: 'heading',
+                sort_order: 1,
+                content: { text: 'Fruta da Época' },
+                settings: { level: 1 },
+            });
+        }
+
+        if (!blocks.some(function (row) { return row.type === 'text'; })) {
+            await funnelEngine.createBlock(SLUG, section.id, {
+                type: 'text',
+                sort_order: 2,
+                content: { text: 'Oferta de teste — produto principal €10 + 3 bumps de €2.' },
+                settings: {},
+            });
+        }
 
         await funnelEngine.createBlock(SLUG, section.id, {
             type: 'button',
