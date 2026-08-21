@@ -31,6 +31,15 @@ test('launch readiness and agent tool share same offer check export', function (
     assert.ok(agentRegistry.isAllowedTool('get_offer_launch_status'));
 });
 
+test('checkTestOrder counts paid and refunded orders by slug', function () {
+    var pass = launchReadiness.checkTestOrder(2);
+    assert.equal(pass.status, 'pass');
+    assert.match(pass.message, /2 order/);
+
+    var warn = launchReadiness.checkTestOrder(0);
+    assert.equal(warn.status, 'warning');
+});
+
 test('domain routing rejects hub host', async function () {
     var domainRouting = require('../lib/hub/page-builder/domain-routing');
     var hubConfig = require('../lib/hub/config');
