@@ -4175,11 +4175,24 @@
             });
         });
 
-        container.querySelectorAll('[data-open-checkout-editor]').forEach(function (button) {
-            button.addEventListener('click', function (event) {
-                event.preventDefault();
-                event.stopPropagation();
-                openModule('checkout');
+        // Prefer SPA navigation for checkout editor (keeps session/state).
+        // Fallback href still works if JS handler misses the click.
+        container.addEventListener('click', function (event) {
+            var checkoutEdit = event.target.closest && event.target.closest('[data-open-checkout-editor]');
+            if (!checkoutEdit) {
+                return;
+            }
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            if (!state.currentOffer) {
+                showStatus('Selecciona uma oferta primeiro.', true);
+                return;
+            }
+
+            openModule('checkout').catch(function (error) {
+                showStatus((error && error.message) || 'Não foi possível abrir o checkout.', true);
             });
         });
 
@@ -4452,6 +4465,7 @@
 
     async function openModule(moduleId, tokenOverride, navKey) {
         if (!state.currentOffer) {
+            showStatus('Oferta não seleccionada.', true);
             return;
         }
 
@@ -4459,25 +4473,30 @@
             navKey = 'funil';
         }
 
-        showStatus('A carregar módulo…');
+        try {
+            showStatus('A carregar módulo…');
 
-        var payload = await apiFetch(
-            '/api/sales-attribution?action=hub_module&slug=' +
-                encodeURIComponent(state.currentOffer.slug) +
-                '&module=' + encodeURIComponent(moduleId),
-            null,
-            tokenOverride
-        );
+            var payload = await apiFetch(
+                '/api/sales-attribution?action=hub_module&slug=' +
+                    encodeURIComponent(state.currentOffer.slug) +
+                    '&module=' + encodeURIComponent(moduleId),
+                null,
+                tokenOverride
+            );
 
-        state.currentModule = moduleId;
-        state.moduleNavKey = navKey || moduleId;
-        state.currentEmbed = null;
-        moduleView.classList.remove('hub-view--embed');
-        setNavIntent(state.currentOffer.slug, moduleId, state.moduleNavKey);
-        renderModulePanel(moduleId, payload.module);
-        setView('module');
-        updateUrl(state.currentOffer.slug, moduleId);
-        showStatus('');
+            state.currentModule = moduleId;
+            state.moduleNavKey = navKey || moduleId;
+            state.currentEmbed = null;
+            moduleView.classList.remove('hub-view--embed');
+            setNavIntent(state.currentOffer.slug, moduleId, state.moduleNavKey);
+            renderModulePanel(moduleId, payload.module);
+            setView('module');
+            updateUrl(state.currentOffer.slug, moduleId);
+            showStatus('');
+        } catch (error) {
+            showStatus((error && error.message) || 'Não foi possível abrir o módulo.', true);
+            throw error;
+        }
     }
 
     function formatCheckouts(offer) {

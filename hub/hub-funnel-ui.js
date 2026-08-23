@@ -103,10 +103,10 @@
         var editLink = '';
 
         if (isCheckout) {
-            editLink = '<button type="button" class="hub-link hub-link--studio" data-open-checkout-editor="1">' +
-                'Editar ↗</button>';
+            // Hard link — always opens checkout module (SPA deep-link + fallback).
+            editLink = '<a class="hub-link hub-link--studio" data-open-checkout-editor="1" href="/hub/?offer=' +
+                encodeURIComponent(offerSlug) + '&module=checkout">Editar checkout ↗</a>';
         } else if (step.active_page && step.active_page.slug) {
-            // Same-tab: enter Studio (do not bounce to a blank Hub tab).
             editLink = '<a class="hub-link hub-link--studio" href="/studio/' +
                 encodeURIComponent(offerSlug) + '/' + encodeURIComponent(funnelSlug) + '/' +
                 encodeURIComponent(step.active_page.slug) + '">' +
@@ -172,8 +172,7 @@
                     '</select>' +
                     '<button type="button" class="hub-button hub-button--ghost hub-step-checkout-apply-btn" ' +
                         'data-step-id="' + escapeHtml(step.id) + '">Aplicar</button>' +
-                '</div>' +
-                renderStepEditLink(step, ctx);
+                '</div>';
         } else {
             body = '<label class="hub-field"><span class="hub-field__label">Page</span>' +
                 '<select class="hub-login__input hub-funnel-flow-page" data-step-id="' + escapeHtml(step.id) + '" ' +
@@ -189,8 +188,7 @@
                         '</select>' +
                     '</label>' +
                     '<button type="button" class="hub-button hub-button--ghost hub-step-create-submit">Criar</button>' +
-                '</div>' +
-                renderStepEditLink(step, ctx);
+                '</div>';
         }
 
         var branchBlock = '';
@@ -216,6 +214,7 @@
                     renderStepToolbar(step, ctx) +
                 '</div>' +
                 '<div class="hub-step-card__body">' + body + '</div>' +
+                renderStepEditLink(step, ctx) +
             '</article>' +
             branchBlock +
         '</div>';
@@ -619,7 +618,7 @@
                 return false;
             }
 
-            if (target.closest('button, input, textarea, select, a, label, .hub-step-drag-handle, .hub-step-card__toolbar')) {
+            if (target.closest('button, input, textarea, select, a, label, .hub-step-drag-handle, .hub-step-card__toolbar, .hub-step-card__links')) {
                 return false;
             }
 

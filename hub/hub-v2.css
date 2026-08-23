@@ -1598,7 +1598,8 @@ body {
 .hub-funnel-builder.is-pan-mode .hub-step-card__links,
 .hub-funnel-builder.is-pan-mode .hub-step-card__links a,
 .hub-funnel-builder.is-pan-mode .hub-step-card__links button,
-.hub-funnel-builder.is-pan-mode .hub-step-card__toolbar {
+.hub-funnel-builder.is-pan-mode .hub-step-card__toolbar,
+.hub-funnel-builder.is-pan-mode .hub-step-card__head {
     pointer-events: auto;
 }
 
@@ -1748,6 +1749,9 @@ body {
     gap: 10px;
     align-items: center;
     margin-top: 8px;
+    padding: 0 2px 4px;
+    position: relative;
+    z-index: 3;
 }
 
 button.hub-link--save,
