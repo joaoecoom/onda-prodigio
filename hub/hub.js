@@ -1,5 +1,14 @@
 (function () {
     var TOKEN_KEY = 'onda-metrics-token';
+
+    (function migrateAuthTokenToLocalStorage() {
+        var session = sessionStorage.getItem(TOKEN_KEY);
+
+        if (session && !localStorage.getItem(TOKEN_KEY)) {
+            localStorage.setItem(TOKEN_KEY, session);
+        }
+    })();
+
     var NAV_INTENT_KEY = 'hub-nav-intent';
     var HUB_HOST = String(window.HUB_PLATFORM_HOST || 'hub-dr-ecoom.vercel.app').toLowerCase();
 
@@ -26,8 +35,7 @@
             label: 'Construir',
             items: [
                 { type: 'module', id: 'funil', label: 'Funis' },
-                { type: 'module', id: 'funil', label: 'Páginas', navKey: 'pages' },
-                { type: 'checkout', label: 'Checkout' },
+                { type: 'module', id: 'checkout', label: 'Checkout' },
                 { type: 'module', id: 'comunidade', label: 'Comunidade' },
             ],
         },
@@ -112,6 +120,7 @@
         platformMetrics: null,
         offerMetrics: null,
         launchReadiness: null,
+        geminiStatus: null,
         platformSection: 'home',
         view: 'list',
         wizard: {
@@ -135,6 +144,49 @@
         if (window.HubChat) {
             window.HubChat.refresh();
         }
+    }
+
+    async function refreshGeminiStatus() {
+        try {
+            var payload = await apiFetch('/api/sales-attribution?action=hub_gemini_status');
+            state.geminiStatus = payload.gemini || { configured: false };
+        } catch (error) {
+            state.geminiStatus = { configured: false, error: error.message };
+        }
+
+        return state.geminiStatus;
+    }
+
+    function isGeminiConfigured(moduleData) {
+        if (moduleData && moduleData.gemini && moduleData.gemini.configured) {
+            return true;
+        }
+
+        return Boolean(state.geminiStatus && state.geminiStatus.configured);
+    }
+
+    function mountGeminiPanel(container, options) {
+        if (!container) {
+            return;
+        }
+
+        if (!window.HubGemini) {
+            container.innerHTML =
+                '<div class="dr-alert dr-alert--warning">' +
+                    '<div class="dr-alert__body">' +
+                        '<strong>Assistente Gemini indisponível</strong>' +
+                        '<p>Recarrega a página (Cmd+Shift+R) para actualizar os scripts do HUB.</p>' +
+                    '</div>' +
+                '</div>';
+            return;
+        }
+
+        window.HubGemini.mount(container, Object.assign({
+            offer: state.currentOffer,
+            apiFetch: apiFetch,
+            geminiConfigured: isGeminiConfigured(options && options.moduleData),
+            onStatus: showStatus,
+        }, options || {}));
     }
 
     function setNavIntent(slug, moduleId, navKey) {
@@ -172,6 +224,14 @@
             };
         }
 
+        if (path === '/checkout-builder' && offerParam) {
+            return {
+                slug: offerParam,
+                module: 'checkout',
+                reason: 'checkout-builder-path',
+            };
+        }
+
         if (offerParam && moduleParam) {
             return {
                 slug: offerParam,
@@ -193,14 +253,29 @@
     }
 
     function getToken() {
-        return sessionStorage.getItem(TOKEN_KEY) || '';
+        var local = localStorage.getItem(TOKEN_KEY);
+
+        if (local) {
+            return local;
+        }
+
+        var session = sessionStorage.getItem(TOKEN_KEY);
+
+        if (session) {
+            localStorage.setItem(TOKEN_KEY, session);
+            return session;
+        }
+
+        return '';
     }
 
     function setToken(token) {
+        localStorage.setItem(TOKEN_KEY, token);
         sessionStorage.setItem(TOKEN_KEY, token);
     }
 
     function clearToken() {
+        localStorage.removeItem(TOKEN_KEY);
         sessionStorage.removeItem(TOKEN_KEY);
     }
 
@@ -311,10 +386,6 @@
             if (state.view === 'module' && state.currentModule) {
                 var mod = findModule(state.currentModule);
                 var moduleLabel = mod ? mod.label : state.currentModule;
-
-                if (state.currentModule === 'funil' && state.moduleNavKey === 'pages') {
-                    moduleLabel = 'Páginas';
-                }
 
                 parts.push('<span class="hub-breadcrumb__sep" aria-hidden="true">/</span>');
                 parts.push('<span class="hub-breadcrumb__current">' +
@@ -874,23 +945,7 @@
                 }
 
                 if (nav === 'checkout') {
-                    var checkouts = (state.currentOffer && state.currentOffer.checkouts) || [];
-
-                    if (!checkouts.length) {
-                        if (window.PlatformUI) {
-                            window.PlatformUI.toast('Sem checkout configurado nesta oferta.', 'info');
-                        }
-
-                        return;
-                    }
-
-                    var checkout = checkouts[0];
-                    var path = checkout.path || checkout.test_path;
-
-                    if (path) {
-                        window.open(path, '_blank', 'noopener');
-                    }
-
+                    openModule('checkout');
                     return;
                 }
 
@@ -1361,7 +1416,7 @@
         }).join('');
 
         var quickActions = [
-            { moduleId: 'funil', navKey: 'pages', label: 'Criar página', desc: 'Page Engine' },
+            { moduleId: 'funil', navKey: 'funil', label: 'Abrir funis', desc: 'Pages e funil visual' },
             { moduleId: 'funil', navKey: 'funil', label: 'Criar funil', desc: 'Novo funnel' },
             { moduleId: 'integracoes', label: 'Configurar checkout', desc: 'Stripe & credenciais' },
             { moduleId: 'tracking', label: 'Configurar tracking', desc: 'Meta, GA4 e GTM' },
@@ -2079,6 +2134,13 @@
                     '<input class="hub-login__input" id="hub-wizard-name" type="text" required placeholder="Ex: Curso X">' +
                     '<label class="hub-login__label" for="hub-wizard-desc">Descrição (opcional)</label>' +
                     '<input class="hub-login__input" id="hub-wizard-desc" type="text" placeholder="Breve descrição">' +
+                    '<label class="hub-login__label" for="hub-wizard-currency">Moeda comercial</label>' +
+                    '<select class="hub-login__input" id="hub-wizard-currency">' +
+                        '<option value="eur" selected>EUR — Euro</option>' +
+                        '<option value="usd">USD — Dólar</option>' +
+                        '<option value="brl">BRL — Real</option>' +
+                    '</select>' +
+                    '<p class="hub-panel__sub">Pixel, GTM, Stape e moeda Meta reporting serão configurados no passo Tracking — cada oferta é independente.</p>' +
                     '<label class="hub-login__label" for="hub-wizard-domain">Domínio funil (opcional)</label>' +
                     '<input class="hub-login__input" id="hub-wizard-domain" type="text" placeholder="minhaoferta.com">' +
                     '<p class="hub-create-form__error" id="hub-wizard-error" hidden></p>' +
@@ -2100,11 +2162,18 @@
             var offer = state.currentOffer || {};
             var checkout = (offer.checkouts || [])[0] || {};
             var amountEuros = checkout.amount_cents ? (checkout.amount_cents / 100).toFixed(2) : '1.00';
+            var currencyCode = (
+                (offer.settings && offer.settings.commercial_currency) ||
+                checkout.currency ||
+                'eur'
+            ).toUpperCase();
+            var currencySymbol = currencyCode === 'USD' ? '$' : (currencyCode === 'BRL' ? 'R$' : '€');
 
             wizardBodyEl.innerHTML =
                 '<form class="hub-wizard__form" id="hub-wizard-product-form">' +
                     '<p class="hub-panel__sub">Produto principal e checkout serão provisionados automaticamente.</p>' +
-                    '<label class="hub-login__label" for="hub-wizard-price">Preço (EUR)</label>' +
+                    '<label class="hub-login__label" for="hub-wizard-price">Preço (' + escapeHtml(currencySymbol) + ' · ' +
+                        escapeHtml(currencyCode) + ')</label>' +
                     '<input class="hub-login__input" id="hub-wizard-price" type="number" min="0.5" step="0.01" value="' +
                         escapeHtml(amountEuros) + '" required>' +
                     '<p class="hub-create-form__error" id="hub-wizard-error" hidden></p>' +
@@ -2147,6 +2216,31 @@
                 ? (domainInfo.funnel_domain ? '🟢 ' + escapeHtml(domainInfo.funnel_domain) : '🟡 DNS REQUIRED')
                 : '🟡 VERCEL_TOKEN / VERCEL_PROJECT_ID em falta';
             domainHtml = '<p class="hub-panel__sub">Domínio: ' + domainStatus + '</p>';
+        }
+
+        if (stepData.id === 'tracking') {
+            wizardBodyEl.innerHTML = renderWizardTrackingForm(stepData);
+            wizardFootEl.innerHTML =
+                '<button type="button" class="dr-btn dr-btn--ghost" data-wizard-back="1">← Anterior</button>' +
+                '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
+                    '<button type="submit" form="hub-wizard-tracking-form" class="dr-btn dr-btn--primary">Guardar tracking →</button>' +
+                    '<button type="button" class="dr-btn dr-btn--ghost" data-wizard-next="1">Saltar por agora</button>' +
+                '</div>';
+            wizardFootEl.querySelector('[data-wizard-back]').onclick = function () {
+                state.wizard.step = Math.max(state.wizard.slug ? 2 : 1, currentStep - 1);
+                renderOfferWizard();
+            };
+            wizardFootEl.querySelector('[data-wizard-next]').onclick = function () {
+                state.wizard.step = Math.min(9, currentStep + 1);
+                renderOfferWizard();
+            };
+            var trackingForm = document.getElementById('hub-wizard-tracking-form');
+
+            if (trackingForm) {
+                trackingForm.onsubmit = handleWizardTrackingStep;
+            }
+
+            return;
         }
 
         wizardBodyEl.innerHTML =
@@ -2237,9 +2331,11 @@
 
         var nameInput = document.getElementById('hub-wizard-name');
         var domainInput = document.getElementById('hub-wizard-domain');
+        var currencyInput = document.getElementById('hub-wizard-currency');
         var errorEl = document.getElementById('hub-wizard-error');
         var name = nameInput.value.trim();
         var funnelDomain = domainInput.value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+        var currency = currencyInput ? currencyInput.value : 'eur';
 
         errorEl.hidden = true;
         state.wizard.busy = true;
@@ -2252,6 +2348,8 @@
                     body: {
                         name: name,
                         funnel_domain: funnelDomain,
+                        currency: currency,
+                        meta_reporting_currency: currency,
                     },
                 }
             );
@@ -2290,6 +2388,10 @@
         }
 
         try {
+            var offer = state.currentOffer || {};
+            var checkout = (offer.checkouts || [])[0] || {};
+            var currency = (offer.settings && offer.settings.commercial_currency) || checkout.currency || 'eur';
+
             await apiFetch(
                 '/api/sales-attribution?action=hub_provision_offer&slug=' +
                     encodeURIComponent(state.wizard.slug),
@@ -2297,7 +2399,7 @@
                     method: 'POST',
                     body: {
                         amount_cents: Math.round(euros * 100),
-                        currency: 'eur',
+                        currency: currency,
                     },
                 }
             );
@@ -2357,6 +2459,106 @@
         }
     }
 
+    function renderWizardTrackingForm(stepData) {
+        var offer = state.currentOffer || {};
+        var commercialCurrency = (
+            (offer.settings && offer.settings.commercial_currency) ||
+            'eur'
+        ).toUpperCase();
+
+        return '<form class="hub-wizard__form" id="hub-wizard-tracking-form">' +
+            '<p class="hub-panel__sub">' + escapeHtml(stepData.description || '') + '</p>' +
+            '<div class="dr-alert dr-alert--warning">' +
+                '<div class="dr-alert__body">' +
+                    '<strong>Cada oferta = tracking próprio</strong>' +
+                    '<p>Pixel Meta, GTM Web, GTM Server (Stape) e moeda reporting são exclusivos desta oferta. ' +
+                        'Nada é partilhado com a Onda Prodígio ou outras ofertas.</p>' +
+                '</div>' +
+            '</div>' +
+            '<div class="hub-form-grid">' +
+                '<label class="hub-int-field"><span>Meta Pixel ID *</span>' +
+                    '<input class="hub-login__input" name="meta_pixel_id" required placeholder="1234567890"></label>' +
+                '<label class="hub-int-field"><span>Meta Access Token (CAPI) *</span>' +
+                    '<input class="hub-login__input" name="meta_access_token" type="password" required placeholder="EAA…"></label>' +
+                '<label class="hub-int-field"><span>Moeda reporting Meta</span>' +
+                    '<select class="hub-login__input" name="meta_reporting_currency">' +
+                        '<option value="EUR"' + (commercialCurrency === 'EUR' ? ' selected' : '') + '>EUR</option>' +
+                        '<option value="USD"' + (commercialCurrency === 'USD' ? ' selected' : '') + '>USD</option>' +
+                        '<option value="BRL"' + (commercialCurrency === 'BRL' ? ' selected' : '') + '>BRL</option>' +
+                    '</select></label>' +
+                '<label class="hub-int-field"><span>GTM Container ID (Web)</span>' +
+                    '<input class="hub-login__input" name="gtm_container_id" placeholder="GTM-XXXXXXX"></label>' +
+                '<label class="hub-int-field"><span>GTM Server Container</span>' +
+                    '<input class="hub-login__input" name="gtm_server_container" placeholder="GTM-XXXXXXX"></label>' +
+                '<label class="hub-int-field"><span>Stape / Server URL</span>' +
+                    '<input class="hub-login__input" name="server_container_url" placeholder="https://xxxxx.eu.stape.io"></label>' +
+                '<label class="hub-int-field"><span>GA4 Measurement ID</span>' +
+                    '<input class="hub-login__input" name="ga4_measurement_id" placeholder="G-XXXXXXXX"></label>' +
+                '<label class="hub-int-field"><span>GA4 API Secret</span>' +
+                    '<input class="hub-login__input" name="ga4_api_secret" type="password" placeholder="Secret"></label>' +
+            '</div>' +
+            '<p class="hub-create-form__error" id="hub-wizard-error" hidden></p>' +
+        '</form>';
+    }
+
+    async function handleWizardTrackingStep(event) {
+        event.preventDefault();
+
+        if (state.wizard.busy || !state.wizard.slug) {
+            return;
+        }
+
+        var form = document.getElementById('hub-wizard-tracking-form');
+        var errorEl = document.getElementById('hub-wizard-error');
+        var integrations = {};
+        var fields = [
+            'meta_pixel_id',
+            'meta_access_token',
+            'meta_reporting_currency',
+            'gtm_container_id',
+            'gtm_server_container',
+            'server_container_url',
+            'ga4_measurement_id',
+            'ga4_api_secret',
+        ];
+
+        fields.forEach(function (key) {
+            var input = form.querySelector('[name="' + key + '"]');
+
+            if (input && input.value.trim()) {
+                integrations[key] = input.value.trim();
+            }
+        });
+
+        if (!integrations.meta_pixel_id || !integrations.meta_access_token) {
+            errorEl.textContent = 'Pixel Meta e Access Token (CAPI) são obrigatórios.';
+            errorEl.hidden = false;
+            return;
+        }
+
+        errorEl.hidden = true;
+        state.wizard.busy = true;
+
+        try {
+            await apiFetch('/api/sales-attribution?action=hub_save_integrations', {
+                method: 'POST',
+                body: {
+                    slug: state.wizard.slug,
+                    integrations: integrations,
+                },
+            });
+
+            await refreshWizardData(state.wizard.slug);
+            state.wizard.step = Math.min(9, (state.wizard.step || 5) + 1);
+            renderOfferWizard();
+        } catch (error) {
+            errorEl.textContent = error.message;
+            errorEl.hidden = false;
+        } finally {
+            state.wizard.busy = false;
+        }
+    }
+
     function renderHealthItems(health) {
         var labels = {
             pixel: 'Pixel Meta',
@@ -2398,10 +2600,100 @@
         }).join('');
     }
 
-    function renderTrackingModule(data) {
-        var scriptUrl = (data.funnel_url || '') + (data.script_path || '/assets/tracking.js');
+    function renderCheckoutModule(data) {
+        var checkout = data.checkout || {};
+        var amountEuros = checkout.amount_cents
+            ? (checkout.amount_cents / 100).toFixed(2).replace('.', ',')
+            : '—';
+        var currency = String(checkout.currency || 'eur').toUpperCase();
+        var previewUrl = data.preview_url || checkout.path || '';
+        var liveUrl = data.live_url || previewUrl.replace('mode=test', 'mode=live');
+        var template = data.template || {};
+        var bumps = data.order_bumps || [];
 
         modulePanel.innerHTML =
+            '<article class="hub-panel">' +
+                '<h3>Checkout universal</h3>' +
+                '<p class="hub-panel__sub">Layout, preço e order bumps — o pagamento Stripe mantém-se no core.</p>' +
+                '<div class="hub-stats">' +
+                    '<div class="hub-stat">' +
+                        '<div class="hub-stat__value">' + escapeHtml(amountEuros + (currency === 'EUR' ? ' €' : ' ' + currency)) + '</div>' +
+                        '<div class="hub-stat__label">Preço principal</div>' +
+                    '</div>' +
+                    '<div class="hub-stat">' +
+                        '<div class="hub-stat__value">' + bumps.length + '</div>' +
+                        '<div class="hub-stat__label">Order bumps</div>' +
+                    '</div>' +
+                    '<div class="hub-stat">' +
+                        '<div class="hub-stat__value">' + (template.has_custom ? 'Sim' : 'Por criar') + '</div>' +
+                        '<div class="hub-stat__label">Layout Gemini</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="hub-actions">' +
+                    (previewUrl
+                        ? '<a class="hub-button hub-button--ghost" href="' + escapeHtml(previewUrl) + '" target="_blank" rel="noopener">Preview teste</a>'
+                        : '') +
+                    (liveUrl && liveUrl !== previewUrl
+                        ? '<a class="hub-button hub-button--ghost" href="' + escapeHtml(liveUrl) + '" target="_blank" rel="noopener">Abrir live</a>'
+                        : '') +
+                    '<button type="button" class="hub-button hub-button--ghost" data-open-integrations="1">Stripe &amp; integrações</button>' +
+                '</div>' +
+            '</article>' +
+            (bumps.length
+                ? '<article class="hub-panel"><h3>Order bumps</h3><div class="hub-kv">' +
+                    bumps.map(function (bump) {
+                        var bumpPrice = ((bump.amount_cents || 0) / 100).toFixed(2).replace('.', ',');
+                        return '<div class="hub-kv__row"><span>' + escapeHtml(bump.label || bump.bump_id) +
+                            '</span><strong>+' + escapeHtml(bumpPrice) + ' €</strong></div>';
+                    }).join('') +
+                '</div></article>'
+                : '') +
+            '<article class="hub-panel hub-gemini-mount">' +
+                '<h3>Construir checkout com Gemini</h3>' +
+                '<p class="hub-panel__sub">Descreve o layout (dark, scarcity, MB WAY, testemunhos). A IA gera HTML/CSS e configura preço/bumps.</p>' +
+                '<div data-gemini-checkout="1"></div>' +
+            '</article>';
+
+        var openIntegrationsBtn = modulePanel.querySelector('[data-open-integrations]');
+
+        if (openIntegrationsBtn) {
+            openIntegrationsBtn.addEventListener('click', function () {
+                openModule('integracoes');
+            });
+        }
+
+        var geminiMount = modulePanel.querySelector('[data-gemini-checkout]');
+
+        if (geminiMount) {
+            mountGeminiPanel(geminiMount, { mode: 'checkout', moduleData: data });
+        }
+    }
+
+    function renderTrackingModule(data) {
+        var scriptUrl = (data.funnel_url || '') + (data.script_path || '/assets/tracking.js');
+        var isolationBanner = '';
+
+        if (data.isolated) {
+            isolationBanner =
+                '<div class="dr-alert dr-alert--warning">' +
+                    '<div class="dr-alert__body">' +
+                        '<strong>Tracking isolado por oferta</strong>' +
+                        '<p>Cada oferta tem o seu pixel, GTM, Stape e moeda. ' +
+                            'Nada é partilhado com outras ofertas — configura abaixo ou em Integrações.</p>' +
+                    '</div>' +
+                '</div>';
+        } else if (data.uses_env_fallback) {
+            isolationBanner =
+                '<div class="dr-alert">' +
+                    '<div class="dr-alert__body">' +
+                        '<strong>Oferta legacy</strong>' +
+                        '<p>Valores em falta podem ser preenchidos a partir das variáveis de ambiente (Onda Prodígio).</p>' +
+                    '</div>' +
+                '</div>';
+        }
+
+        modulePanel.innerHTML =
+            isolationBanner +
             '<article class="hub-panel">' +
                 '<h3>Estado do tracking</h3>' +
                 '<p class="hub-panel__sub">Pixel, CAPI, GA4 e Stape configurados para esta oferta.</p>' +
@@ -2410,6 +2702,9 @@
             '<article class="hub-panel">' +
                 '<h3>Valores activos</h3>' +
                 '<div class="hub-kv">' + renderKvRows(data.values || {}) + '</div>' +
+                '<div class="hub-actions">' +
+                    '<button type="button" class="hub-button hub-button--ghost" data-open-integrations="1">Abrir Integrações</button>' +
+                '</div>' +
             '</article>' +
             '<article class="hub-panel">' +
                 '<h3>UTM para anúncios Meta</h3>' +
@@ -2426,6 +2721,11 @@
                     '<code>' + escapeHtml(scriptUrl) + '</code>' +
                     '<button class="hub-button hub-button--ghost hub-copy-button" type="button" data-copy="' + escapeHtml(scriptUrl) + '">Copiar URL</button>' +
                 '</div>' +
+            '</article>' +
+            '<article class="hub-panel hub-gemini-mount">' +
+                '<h3>Configurar com Gemini</h3>' +
+                '<p class="hub-panel__sub">Cola pixel, GTM, Stape — a IA regista na oferta.</p>' +
+                '<div data-gemini-tracking="1"></div>' +
             '</article>';
 
         modulePanel.querySelectorAll('.hub-copy-button').forEach(function (button) {
@@ -2433,6 +2733,20 @@
                 copyText(button.getAttribute('data-copy'), button);
             });
         });
+
+        var openIntegrationsBtn = modulePanel.querySelector('[data-open-integrations]');
+
+        if (openIntegrationsBtn) {
+            openIntegrationsBtn.addEventListener('click', function () {
+                openModule('integracoes');
+            });
+        }
+
+        var geminiMount = modulePanel.querySelector('[data-gemini-tracking]');
+
+        if (geminiMount) {
+            mountGeminiPanel(geminiMount, { mode: 'tracking', moduleData: data });
+        }
     }
 
     function renderRecuperaModule(data, offer) {
@@ -2732,15 +3046,25 @@
                 { key: 'supabase_service_role_key', label: 'Service Role Key', secret: true },
             ], itemMap);
 
+        var canImportEnv = data.can_import_env !== false;
+
         modulePanel.innerHTML =
             '<article class="hub-panel">' +
                 '<div class="hub-panel__head"><h2>Integrações</h2></div>' +
                 '<p class="hub-panel__sub">Liga serviços por oferta. Valores secretos ficam mascarados — deixa vazio para manter o actual.</p>' +
+                (canImportEnv
+                    ? ''
+                    : '<div class="dr-alert dr-alert--warning"><div class="dr-alert__body">' +
+                        '<strong>Isolamento por oferta</strong>' +
+                        '<p>Cada oferta tem credenciais próprias. Nada é herdado de outras ofertas.</p>' +
+                    '</div></div>') +
                 '<form class="hub-integrations-form hub-int-services" id="hub-integrations-form">' +
                     servicesHtml +
                     '<div class="hub-actions">' +
                         '<button class="hub-button" type="submit">Guardar integrações</button>' +
-                        '<button class="hub-button hub-button--ghost" type="button" id="hub-import-integrations">Importar do env actual</button>' +
+                        (canImportEnv
+                            ? '<button class="hub-button hub-button--ghost" type="button" id="hub-import-integrations">Importar do env actual</button>'
+                            : '') +
                     '</div>' +
                     '<p class="hub-form-message" id="hub-integrations-message" hidden></p>' +
                 '</form>' +
@@ -2783,25 +3107,28 @@
             }
         });
 
-        importButton.addEventListener('click', async function () {
-            messageEl.hidden = true;
+        if (importButton) {
+            importButton.addEventListener('click', async function () {
+                messageEl.hidden = true;
 
-            try {
-                showStatus('A importar credenciais…');
-                var payload = await apiFetch(
-                    '/api/sales-attribution?action=hub_import_integrations&slug=' + encodeURIComponent(state.currentOffer.slug),
-                    { method: 'POST', body: {} }
-                );
-                renderIntegracoesModule(payload.module);
-                messageEl.textContent = payload.result.message || 'Importação concluída.';
-                messageEl.hidden = false;
-                showStatus('');
-            } catch (error) {
-                messageEl.textContent = error.message;
-                messageEl.hidden = false;
-                showStatus('');
-            }
-        });
+                try {
+                    showStatus('A importar credenciais…');
+                    var payload = await apiFetch(
+                        '/api/sales-attribution?action=hub_import_integrations&slug=' +
+                            encodeURIComponent(state.currentOffer.slug),
+                        { method: 'POST', body: {} }
+                    );
+                    renderIntegracoesModule(payload.module);
+                    messageEl.textContent = payload.result.message || 'Importação concluída.';
+                    messageEl.hidden = false;
+                    showStatus('');
+                } catch (error) {
+                    messageEl.textContent = error.message;
+                    messageEl.hidden = false;
+                    showStatus('');
+                }
+            });
+        }
     }
 
     function bindCommunityEmbedAuth(iframe, module) {
@@ -2868,13 +3195,25 @@
 
     function renderModulePanel(moduleId, data) {
         if (moduleId === 'ai-agent') {
+            modulePanel.innerHTML =
+                '<article class="hub-panel hub-gemini-mount">' +
+                    '<h3>Gemini — assistente rápido</h3>' +
+                    '<p class="hub-panel__sub">Funis, tracking, domínios e pages. Resposta imediata com execução de tools.</p>' +
+                    '<div id="hub-gemini-agent-panel"></div>' +
+                '</article>' +
+                '<div id="hub-ai-agent-mount"></div>';
+            mountGeminiPanel(modulePanel.querySelector('#hub-gemini-agent-panel'), {
+                mode: 'general',
+                moduleData: data,
+            });
             if (window.HubAI) {
-                window.HubAI.render(modulePanel, data, {
+                window.HubAI.render(modulePanel.querySelector('#hub-ai-agent-mount'), data, {
                     offer: state.currentOffer,
                     apiFetch: apiFetch,
                 });
             } else {
-                modulePanel.innerHTML = '<article class="hub-panel"><p>AI Agent indisponível.</p></article>';
+                modulePanel.querySelector('#hub-ai-agent-mount').innerHTML =
+                    '<article class="hub-panel"><p>Cursor Agent indisponível.</p></article>';
             }
             return;
         }
@@ -2901,6 +3240,11 @@
 
         if (moduleId === 'funil') {
             renderFunilModule(data);
+            return;
+        }
+
+        if (moduleId === 'checkout') {
+            renderCheckoutModule(data);
             return;
         }
 
@@ -3027,9 +3371,15 @@
                     '<p class="hub-panel__sub">Domínio HUB (fixo): ' + escapeHtml(offer.hub_domain || 'hub-dr-ecoom.vercel.app') + '</p>' +
                     '<div class="hub-actions">' +
                         '<button class="hub-button" type="submit">Guardar domínio</button>' +
+                        '<button class="hub-button hub-button--ghost" type="button" id="hub-domain-vercel">Registar na Vercel</button>' +
                     '</div>' +
                     '<p class="hub-form-message" hidden></p>' +
                 '</form>' +
+            '</article>' +
+            '<article class="hub-panel hub-gemini-mount">' +
+                '<h3>Registar com Gemini</h3>' +
+                '<p class="hub-panel__sub">Escreve o domínio — a IA regista na Vercel e associa à oferta.</p>' +
+                '<div data-gemini-domain="1"></div>' +
             '</article>' +
             '<article class="hub-panel">' +
                 '<h3>Domínios registados</h3>' +
@@ -3042,23 +3392,71 @@
             bindOfferSettingsForm(form, [{ name: 'funnel_domain' }]);
         }
 
+        var vercelBtn = modulePanel.querySelector('#hub-domain-vercel');
+
+        if (vercelBtn) {
+            vercelBtn.addEventListener('click', async function () {
+                var domainInput = form && form.querySelector('[name="funnel_domain"]');
+                var domain = domainInput ? domainInput.value.trim() : '';
+
+                if (!domain) {
+                    return;
+                }
+
+                try {
+                    showStatus('A registar na Vercel…');
+                    await apiFetch(
+                        '/api/sales-attribution?action=hub_launch_health&slug=' +
+                            encodeURIComponent(state.currentOffer.slug) + '&launch_action=verify_domain',
+                        {
+                            method: 'POST',
+                            body: { domain: domain, save: true },
+                        }
+                    );
+                    showStatus('Domínio registado.');
+                    await openModule('dominios');
+                } catch (error) {
+                    showStatus(error.message, true);
+                }
+            });
+        }
+
+        var geminiDomainMount = modulePanel.querySelector('[data-gemini-domain]');
+
+        if (geminiDomainMount) {
+            mountGeminiPanel(geminiDomainMount, {
+                mode: 'domain',
+                moduleData: data,
+                onComplete: function () {
+                    openModule('dominios');
+                },
+            });
+        }
+
         bindOpenCommunityButtons(modulePanel);
     }
 
     function renderDefinicoesModule(data) {
         var offer = data.offer || {};
         var branding = offer.branding || {};
+        var commercialCurrency = (offer.commercial_currency || 'eur').toLowerCase();
 
         modulePanel.innerHTML =
             '<article class="hub-panel">' +
                 '<div class="hub-panel__head"><h2>Definições da oferta</h2></div>' +
-                '<p class="hub-panel__sub">Nome, estado e branding usados no funil, emails e checkout.</p>' +
+                '<p class="hub-panel__sub">Nome, estado, moeda e branding usados no funil, emails e checkout.</p>' +
                 '<form class="hub-offer-settings-form" id="hub-definicoes-form">' +
                     '<div class="hub-form-grid">' +
                         '<label class="hub-int-field"><span>Nome</span>' +
                             '<input name="name" type="text" value="' + escapeHtml(offer.name || '') + '" required></label>' +
                         '<label class="hub-int-field"><span>Slug</span>' +
                             '<input type="text" value="' + escapeHtml(offer.slug || '') + '" disabled></label>' +
+                        '<label class="hub-int-field"><span>Moeda comercial</span>' +
+                            '<select name="commercial_currency" class="hub-login__input">' +
+                                '<option value="eur"' + (commercialCurrency === 'eur' ? ' selected' : '') + '>EUR — Euro</option>' +
+                                '<option value="usd"' + (commercialCurrency === 'usd' ? ' selected' : '') + '>USD — Dólar</option>' +
+                                '<option value="brl"' + (commercialCurrency === 'brl' ? ' selected' : '') + '>BRL — Real</option>' +
+                            '</select></label>' +
                         '<label class="hub-int-field"><span>Estado</span>' +
                             '<select name="status" class="hub-login__input">' +
                                 '<option value="active"' + (offer.status === 'active' ? ' selected' : '') + '>Live</option>' +
@@ -3091,6 +3489,7 @@
         if (form) {
             bindOfferSettingsForm(form, [
                 { name: 'name' },
+                { name: 'commercial_currency' },
                 { name: 'status' },
                 { name: 'mode' },
                 { name: 'primary_product_id' },
@@ -3104,62 +3503,75 @@
         var offer = data.offer || state.currentOffer || {};
         var funnels = data.funnels || [];
         var publicSite = data.public_site_url || '';
-        var pagesFocus = state.moduleNavKey === 'pages';
-        var moduleTitle = pagesFocus ? 'Páginas' : 'Funis';
-        var moduleSub = pagesFocus
-            ? 'Gere e edita pages desta oferta no Page Engine.'
-            : 'Editor visual sobre Offer → Funnel → Page → Section → Block.';
 
         var funnelsHtml = funnels.length
             ? funnels.map(function (funnel) {
                 var isQuiz = funnel.type === 'quiz';
-                var pageCreateForm = isQuiz ? '' :
-                    '<form class="hub-funnel-create-page" data-funnel-create-page="' + escapeHtml(funnel.slug) + '">' +
-                        '<div class="hub-form-grid">' +
-                            '<label class="hub-field"><span class="hub-field__label">Nova page</span>' +
-                            '<input class="hub-login__input" name="page_name" required placeholder="Ex.: Sales Page" minlength="2"></label>' +
-                            '<label class="hub-field"><span class="hub-field__label">Slug (opcional)</span>' +
-                            '<input class="hub-login__input" name="page_slug" placeholder="sales-page"></label>' +
-                            '<label class="hub-field"><span class="hub-field__label">Template</span>' +
-                            '<select class="hub-login__input" name="template_id">' +
-                                '<option value="sales-basic">Sales Page Basic</option>' +
-                                '<option value="sales-minimal">Sales Page Minimal</option>' +
-                                '<option value="sales-full">Sales Page Full</option>' +
-                                '<option value="">Vazia (sem template)</option>' +
-                            '</select></label>' +
-                        '</div>' +
-                        '<div class="hub-actions">' +
-                            '<button class="hub-button" type="submit">Criar page</button>' +
-                        '</div>' +
-                        '<p class="hub-form-message" data-page-message hidden></p>' +
-                    '</form>';
-                var quizBuilder = isQuiz
-                    ? '<div class="hub-quiz-builder-mount" data-quiz-builder="' + escapeHtml(funnel.slug) + '"></div>'
+                var isActive = funnel.status === 'active';
+                var stepsBlock = isQuiz ? '' :
+                    '<details class="hub-collapsible hub-collapsible--nested" open>' +
+                        '<summary>Funil visual</summary>' +
+                        '<div class="hub-funnel-steps" data-funnel-steps="' + escapeHtml(funnel.slug) + '">' +
+                        '<p class="hub-panel__sub">A carregar…</p></div>' +
+                    '</details>';
+                var quizBlock = isQuiz
+                    ? '<details class="hub-collapsible hub-collapsible--nested">' +
+                        '<summary>Quiz — toca para expandir</summary>' +
+                        '<div data-quiz-stub="' + escapeHtml(funnel.slug) + '"></div>' +
+                    '</details>'
                     : '';
                 var pagesBlock = isQuiz ? '' :
-                    '<div class="hub-funnel-pages" data-funnel-pages="' + escapeHtml(funnel.slug) + '">' +
-                    '<p class="hub-panel__sub">A carregar pages…</p></div>';
+                    '<details class="hub-collapsible hub-collapsible--nested">' +
+                        '<summary>Pages deste funil</summary>' +
+                        '<div class="hub-funnel-pages" data-funnel-pages="' + escapeHtml(funnel.slug) + '">' +
+                        '<p class="hub-panel__sub">A carregar…</p></div>' +
+                    '</details>';
+                var checkoutBlock = isQuiz ? '' :
+                    '<details class="hub-collapsible hub-collapsible--nested" data-funnel-checkout-panel="' +
+                        escapeHtml(funnel.slug) + '">' +
+                        '<summary>Checkout</summary>' +
+                        '<div class="hub-funnel-checkout" data-funnel-checkout="' + escapeHtml(funnel.slug) + '">' +
+                            '<p class="hub-panel__sub">Layout, preço e bumps desta oferta — edita sem sair dos Funis.</p>' +
+                            '<div class="hub-actions">' +
+                                '<button type="button" class="hub-button hub-button--ghost" data-open-funnel-checkout="1">' +
+                                    'Abrir editor de checkout</button>' +
+                                '<a class="hub-link" href="/checkout/?offer=' + encodeURIComponent(offer.slug || '') +
+                                    '&mode=test" target="_blank" rel="noopener">Preview teste ↗</a>' +
+                            '</div>' +
+                        '</div>' +
+                    '</details>';
 
-                return '<article class="hub-panel hub-panel--nested" data-funnel-slug="' + escapeHtml(funnel.slug) + '">' +
-                    '<div class="hub-panel__head"><h3>' + escapeHtml(funnel.name) + '</h3>' +
-                    '<span class="dr-badge dr-badge--draft">' + escapeHtml(funnel.status || 'draft') +
-                    (funnel.type ? ' · ' + escapeHtml(funnel.type) : '') + '</span></div>' +
-                    '<p class="hub-panel__sub">' + escapeHtml(funnel.slug) + '</p>' +
-                    pageCreateForm +
-                    quizBuilder +
-                    pagesBlock + '</article>';
+                return '<details class="hub-collapsible hub-funnel-card" data-funnel-slug="' + escapeHtml(funnel.slug) + '">' +
+                    '<summary class="hub-funnel-card__summary">' +
+                        '<span class="hub-funnel-card__title">' + escapeHtml(funnel.name) + '</span>' +
+                        '<span class="dr-badge dr-badge--' + (isActive ? 'live' : 'draft') + '">' +
+                            escapeHtml(funnel.status || 'draft') + (funnel.type ? ' · ' + escapeHtml(funnel.type) : '') +
+                        '</span>' +
+                        '<span class="hub-funnel-card__actions" data-funnel-actions="' + escapeHtml(funnel.slug) + '">' +
+                            '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm hub-funnel-activate" ' +
+                                'data-funnel="' + escapeHtml(funnel.slug) + '"' + (isActive ? ' disabled' : '') + '>Activar</button>' +
+                            '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm hub-funnel-duplicate" ' +
+                                'data-funnel="' + escapeHtml(funnel.slug) + '">Duplicar</button>' +
+                            '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm hub-funnel-delete" ' +
+                                'data-funnel="' + escapeHtml(funnel.slug) + '">Eliminar</button>' +
+                        '</span>' +
+                    '</summary>' +
+                    '<div class="hub-funnel-card__body">' +
+                        '<p class="hub-panel__sub">' + escapeHtml(funnel.slug) + '</p>' +
+                        stepsBlock +
+                        quizBlock +
+                        pagesBlock +
+                        checkoutBlock +
+                    '</div>' +
+                '</details>';
             }).join('')
             : '<div class="dr-empty">' +
-                '<p class="dr-empty__title">' + (pagesFocus ? 'Ainda não tens páginas' : 'Ainda não tens funis') + '</p>' +
-                '<p class="dr-empty__text">' +
-                    (pagesFocus
-                        ? 'Cria o primeiro funil para começar a publicar pages.'
-                        : 'Cria o primeiro funil desta oferta.') +
-                '</p></div>';
+                '<p class="dr-empty__title">Ainda não tens funis</p>' +
+                '<p class="dr-empty__text">Cria o primeiro funil — pages e steps no mesmo sítio.</p></div>';
 
-        var createFunnelBlock = pagesFocus ? '' :
-            '<article class="hub-panel">' +
-                '<h3>Novo funnel</h3>' +
+        var createFunnelBlock =
+            '<details class="hub-collapsible hub-collapsible--create">' +
+                '<summary>+ Novo funnel</summary>' +
                 '<form class="hub-funnel-create" id="hub-funnel-create-form">' +
                     '<div class="hub-form-grid">' +
                         '<label class="hub-field"><span class="hub-field__label">Nome</span>' +
@@ -3169,6 +3581,7 @@
                         '<label class="hub-field"><span class="hub-field__label">Tipo</span>' +
                         '<select class="hub-login__input" name="funnel_type">' +
                             '<option value="custom">Custom</option>' +
+                            '<option value="presell">Pre Sell</option>' +
                             '<option value="vsl">VSL</option>' +
                             '<option value="lead">Lead</option>' +
                             '<option value="webinar">Webinar</option>' +
@@ -3180,12 +3593,12 @@
                     '</div>' +
                     '<p class="hub-form-message" id="hub-funnel-create-message" hidden></p>' +
                 '</form>' +
-            '</article>';
+            '</details>';
 
         modulePanel.innerHTML =
             '<article class="hub-panel">' +
-                '<div class="hub-panel__head"><h2>' + escapeHtml(moduleTitle) + '</h2></div>' +
-                '<p class="hub-panel__sub">' + escapeHtml(moduleSub) + '</p>' +
+                '<div class="hub-panel__head"><h2>Funis</h2></div>' +
+                '<p class="hub-panel__sub">Constrói funil e pages aqui — steps, criar page, editor e preview.</p>' +
                 (publicSite
                     ? '<p><a class="hub-link" href="' + escapeHtml(publicSite) + '" target="_blank" rel="noopener">Ver site público ↗</a></p>'
                     : '') +
@@ -3194,28 +3607,43 @@
             funnelsHtml;
 
         bindFunilModuleEvents(offer);
+
         funnels.forEach(function (funnel) {
             if (funnel.type === 'quiz') {
-                mountQuizBuilder(offer, funnel);
+                mountQuizStub(offer, funnel);
             } else {
                 loadFunnelPages(offer.slug, funnel.slug);
             }
         });
     }
 
-    function mountQuizBuilder(offer, funnel) {
-        var container = modulePanel.querySelector('[data-quiz-builder="' + funnel.slug + '"]');
+    function mountQuizStub(offer, funnel) {
+        var container = modulePanel.querySelector('[data-quiz-stub="' + funnel.slug + '"]');
 
-        if (!container || !window.HubQuizBuilder) {
+        if (!container || !window.HubFunnelUI) {
             return;
         }
 
-        window.HubQuizBuilder.mount(container, {
-            offer: offer,
-            funnel: funnel,
-            apiFetch: apiFetch,
-            onStatus: showStatus,
-        });
+        container.innerHTML = window.HubFunnelUI.renderQuizStub(funnel, offer.slug);
+
+        var button = container.querySelector('[data-quiz-open-funnel]');
+
+        if (button) {
+            button.addEventListener('click', function () {
+                var card = modulePanel.querySelector('[data-funnel-slug="' + funnel.slug + '"]');
+                var visual = card && card.querySelector('[data-funnel-steps="' + funnel.slug + '"]');
+
+                if (visual) {
+                    var details = visual.closest('details');
+
+                    if (details) {
+                        details.open = true;
+                    }
+
+                    visual.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+        }
     }
 
     function bindFunilModuleEvents(offer) {
@@ -3257,77 +3685,734 @@
             });
         }
 
-        modulePanel.querySelectorAll('[data-funnel-create-page]').forEach(function (form) {
-            form.addEventListener('submit', async function (event) {
+        modulePanel.querySelectorAll('.hub-funnel-activate').forEach(function (button) {
+            button.addEventListener('click', async function (event) {
                 event.preventDefault();
-                var messageEl = form.querySelector('[data-page-message]');
-                messageEl.hidden = true;
+                event.stopPropagation();
 
-                var funnelSlug = form.getAttribute('data-funnel-create-page');
-                var nameInput = form.querySelector('[name="page_name"]');
-                var slugInput = form.querySelector('[name="page_slug"]');
-                var templateInput = form.querySelector('[name="template_id"]');
-                var body = {
-                    offer: offer.slug,
-                    funnel: funnelSlug,
-                    name: nameInput.value.trim(),
-                    type: 'sales',
-                    status: 'draft',
-                };
+                var funnelSlug = button.getAttribute('data-funnel');
 
-                if (slugInput.value.trim()) {
-                    body.slug = slugInput.value.trim();
+                if (!window.confirm('Activar este funil para produção?')) {
+                    return;
                 }
 
-                if (templateInput.value) {
-                    body.template_id = templateInput.value;
+                try {
+                    await apiFetch('/api/sales-attribution?action=hub_funnel_activate', {
+                        method: 'POST',
+                        body: { offer: offer.slug, funnel: funnelSlug },
+                    });
+                    await openModule('funil');
+                } catch (error) {
+                    showStatus(error.message, true);
+                }
+            });
+        });
+
+        modulePanel.querySelectorAll('.hub-funnel-duplicate').forEach(function (button) {
+            button.addEventListener('click', async function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                var funnelSlug = button.getAttribute('data-funnel');
+
+                try {
+                    showStatus('A duplicar funil…');
+                    await apiFetch('/api/sales-attribution?action=hub_funnel_duplicate', {
+                        method: 'POST',
+                        body: { offer: offer.slug, funnel: funnelSlug },
+                    });
+                    showStatus('');
+                    await openModule('funil');
+                } catch (error) {
+                    showStatus(error.message, true);
+                }
+            });
+        });
+
+        modulePanel.querySelectorAll('.hub-funnel-delete').forEach(function (button) {
+            button.addEventListener('click', async function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                var funnelSlug = button.getAttribute('data-funnel');
+
+                if (!window.confirm('Eliminar este funil e todas as pages associadas?')) {
+                    return;
+                }
+
+                try {
+                    await apiFetch('/api/sales-attribution?action=hub_funnel_delete', {
+                        method: 'POST',
+                        body: { offer: offer.slug, funnel: funnelSlug },
+                    });
+                    await openModule('funil');
+                } catch (error) {
+                    showStatus(error.message, true);
+                }
+            });
+        });
+
+        modulePanel.querySelectorAll('[data-open-funnel-checkout]').forEach(function (button) {
+            button.addEventListener('click', function () {
+                openModule('checkout');
+            });
+        });
+
+        try {
+            var params = new URLSearchParams(window.location.search);
+            if (params.get('checkout') === '1') {
+                var panel = modulePanel.querySelector('[data-funnel-checkout-panel]');
+                if (panel) {
+                    panel.open = true;
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+        } catch (error) {
+            // ignore
+        }
+    }
+        return {
+            id: step.id,
+            kind: step.kind,
+            page_type: step.page_type,
+            label: step.label,
+            sort_order: step.sort_order,
+            active_page_id: step.active_page_id,
+            variant_page_ids: step.variant_page_ids || [],
+            checkout_id: step.checkout_id || 'main',
+            lane: step.lane || 'main',
+            parent_step_id: step.parent_step_id || null,
+            is_step_active: step.is_step_active !== false,
+        };
+    }
+
+    function getMainStepsInStateOrder(state) {
+        return state.filter(function (row) {
+            return row.lane !== 'reject';
+        });
+    }
+
+    function getMainStepsOrdered(state) {
+        return getMainStepsInStateOrder(state).slice().sort(function (a, b) {
+            return (a.sort_order || 0) - (b.sort_order || 0);
+        });
+    }
+
+    function reindexMainSteps(state) {
+        getMainStepsInStateOrder(state).forEach(function (step, index) {
+            step.sort_order = (index + 1) * 100;
+        });
+    }
+
+    function insertStepAfter(state, afterStepId, stepDef) {
+        var main = getMainStepsOrdered(state);
+        var index = main.findIndex(function (row) {
+            return row.id === afterStepId;
+        });
+        var newStep = Object.assign({
+            id: 'step-' + Date.now() + '-' + Math.random().toString(36).slice(2, 5),
+            active_page_id: null,
+            variant_page_ids: [],
+            checkout_id: 'main',
+            lane: 'main',
+            parent_step_id: null,
+            is_step_active: true,
+        }, stepDef);
+
+        if (index === -1) {
+            state.push(newStep);
+        } else {
+            var insertAt = 0;
+
+            for (var i = 0; i < state.length; i += 1) {
+                if (state[i].id === main[index].id) {
+                    insertAt = i + 1;
+                    break;
+                }
+            }
+
+            state.splice(insertAt, 0, newStep);
+        }
+
+        reindexMainSteps(state);
+        return newStep;
+    }
+
+    function reorderMainSteps(state, sourceId, targetId) {
+        var main = getMainStepsOrdered(state);
+        var fromIndex = main.findIndex(function (row) { return row.id === sourceId; });
+        var toIndex = main.findIndex(function (row) { return row.id === targetId; });
+
+        if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) {
+            return false;
+        }
+
+        var moved = main.splice(fromIndex, 1)[0];
+        main.splice(toIndex, 0, moved);
+
+        var rejectSteps = state.filter(function (row) {
+            return row.lane === 'reject';
+        });
+
+        state.length = 0;
+        main.forEach(function (step) {
+            state.push(step);
+        });
+        rejectSteps.forEach(function (step) {
+            state.push(step);
+        });
+        reindexMainSteps(state);
+
+        return true;
+    }
+
+    function readAddKindFromBuilder(container, funnelSlug) {
+        var select = container.querySelector('#hub-funnel-add-kind-' + funnelSlug);
+
+        if (!select) {
+            return { kind: 'page', page_type: 'sales', label: 'Página' };
+        }
+
+        var option = select.options[select.selectedIndex];
+
+        return {
+            kind: option.getAttribute('data-kind') || 'page',
+            page_type: option.getAttribute('data-page-type') || 'sales',
+            label: option.getAttribute('data-label') || option.textContent.trim(),
+        };
+    }
+
+    function bindFunnelFlowBuilder(container, ctx, offerSlug, funnelSlug) {
+        if (!container || !window.HubFunnelUI) {
+            return;
+        }
+
+        var flowState = (ctx.flow || []).map(cloneFlowStep);
+        var offerPages = ctx.offer_pages || ctx.all_pages || ctx.pages || [];
+        var pageTemplates = ctx.page_templates || [];
+        var checkoutTemplates = ctx.checkout_templates || [];
+        var navMode = ctx.nav_mode || 'select';
+        var panX = parseInt(ctx.pan_x, 10) || 0;
+
+        function buildRenderCtx() {
+            return {
+                flow: flowState,
+                offer_pages: offerPages,
+                all_pages: offerPages,
+                offer_slug: offerSlug,
+                funnel_slug: funnelSlug,
+                checkout_url: ctx.checkout_url,
+                page_templates: pageTemplates,
+                checkout_templates: checkoutTemplates,
+                nav_mode: navMode,
+                pan_x: panX,
+            };
+        }
+
+        function rerender() {
+            var mount = container.parentElement;
+
+            if (!mount) {
+                return;
+            }
+
+            panX = parseInt(container.getAttribute('data-pan-x') || String(panX), 10) || 0;
+
+            if (container._navAbort) {
+                container._navAbort.abort();
+            }
+
+            mount.innerHTML = window.HubFunnelUI.renderFunnelBuilder(buildRenderCtx());
+            var nextContainer = mount.querySelector('.hub-funnel-builder');
+
+            if (!nextContainer) {
+                return;
+            }
+
+            bindFunnelFlowBuilder(nextContainer, Object.assign({}, ctx, {
+                flow: flowState,
+                offer_pages: offerPages,
+                nav_mode: navMode,
+                pan_x: panX,
+            }), offerSlug, funnelSlug);
+        }
+
+        container.querySelectorAll('.hub-funnel-insert-step').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                var afterStepId = button.getAttribute('data-after-step');
+                var kind = readAddKindFromBuilder(container, funnelSlug);
+
+                insertStepAfter(flowState, afterStepId, {
+                    kind: kind.kind,
+                    page_type: kind.page_type,
+                    label: kind.label,
+                });
+                rerender();
+            });
+        });
+
+        container.querySelectorAll('.hub-funnel-flow-add').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var select = container.querySelector('#hub-funnel-add-kind-' + funnelSlug);
+
+                if (!select) {
+                    return;
+                }
+
+                var option = select.options[select.selectedIndex];
+                var kind = option.getAttribute('data-kind') || option.value;
+                var pageType = option.getAttribute('data-page-type') || kind;
+                var label = option.getAttribute('data-label') || option.textContent.trim();
+
+                flowState.push({
+                    id: 'step-' + Date.now(),
+                    kind: kind,
+                    page_type: pageType,
+                    label: label,
+                    sort_order: (getMainStepsOrdered(flowState).length + 1) * 100,
+                    active_page_id: null,
+                    variant_page_ids: [],
+                    checkout_id: 'main',
+                    lane: 'main',
+                    parent_step_id: null,
+                    is_step_active: true,
+                });
+                reindexMainSteps(flowState);
+                rerender();
+            });
+        });
+
+        container.querySelectorAll('.hub-funnel-add-branch').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var parentId = button.getAttribute('data-parent-step');
+                var hasBranch = flowState.some(function (row) {
+                    return row.lane === 'reject' && row.parent_step_id === parentId;
+                });
+
+                if (hasBranch) {
+                    return;
+                }
+
+                flowState.push({
+                    id: 'step-' + Date.now() + '-reject',
+                    kind: 'page',
+                    page_type: 'downsell',
+                    label: 'Não aceita',
+                    sort_order: (flowState.length + 1) * 100,
+                    active_page_id: null,
+                    variant_page_ids: [],
+                    checkout_id: 'main',
+                    lane: 'reject',
+                    parent_step_id: parentId,
+                    is_step_active: true,
+                });
+                rerender();
+            });
+        });
+
+        container.querySelectorAll('.hub-step-btn--remove').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var stepId = button.getAttribute('data-step-id');
+                flowState = flowState.filter(function (row) {
+                    return row.id !== stepId && row.parent_step_id !== stepId;
+                });
+                rerender();
+            });
+        });
+
+        container.querySelectorAll('[data-step-move]').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                var stepId = button.getAttribute('data-step-id');
+                var direction = button.getAttribute('data-step-move');
+                var main = getMainStepsInStateOrder(flowState);
+                var index = main.findIndex(function (row) {
+                    return row.id === stepId;
+                });
+
+                if (index === -1) {
+                    return;
+                }
+
+                var targetIndex = direction === 'left' ? index - 1 : index + 1;
+
+                if (targetIndex < 0 || targetIndex >= main.length) {
+                    return;
+                }
+
+                if (reorderMainSteps(flowState, stepId, main[targetIndex].id)) {
+                    rerender();
+                }
+            });
+        });
+
+        container.querySelectorAll('.hub-step-btn--activate').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var stepId = button.getAttribute('data-step-id');
+                var step = flowState.find(function (row) { return row.id === stepId; });
+
+                if (step) {
+                    step.is_step_active = step.is_step_active === false;
+                }
+
+                rerender();
+            });
+        });
+
+        container.querySelectorAll('.hub-step-btn--duplicate').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                var stepId = button.getAttribute('data-step-id');
+                var step = flowState.find(function (row) { return row.id === stepId; });
+
+                if (!step || !step.active_page_id) {
+                    return;
+                }
+
+                try {
+                    showStatus('A duplicar page…');
+                    var payload = await apiFetch('/api/sales-attribution?action=hub_page_duplicate', {
+                        method: 'POST',
+                        body: {
+                            offer: offerSlug,
+                            page_id: step.active_page_id,
+                        },
+                    });
+                    step.active_page_id = payload.page.id;
+                    offerPages.push(payload.page);
+                    showStatus('');
+                    rerender();
+                } catch (error) {
+                    showStatus(error.message, true);
+                }
+            });
+        });
+
+        container.querySelectorAll('.hub-funnel-flow-page').forEach(function (select) {
+            select.addEventListener('change', async function () {
+                var stepId = select.getAttribute('data-step-id');
+                var pageType = select.getAttribute('data-page-type') || 'sales';
+                var step = flowState.find(function (row) { return row.id === stepId; });
+                var inline = container.querySelector('[data-step-create="' + stepId + '"]');
+
+                if (!step) {
+                    return;
+                }
+
+                if (select.value === '__create__') {
+                    if (inline) {
+                        inline.hidden = false;
+                    }
+
+                    select.value = step.active_page_id || '';
+                    return;
+                }
+
+                if (inline) {
+                    inline.hidden = true;
+                }
+
+                step.active_page_id = select.value || null;
+            });
+        });
+
+        container.querySelectorAll('.hub-step-create-submit').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                var inline = button.closest('[data-step-create]');
+                var stepId = inline.getAttribute('data-step-create');
+                var step = flowState.find(function (row) { return row.id === stepId; });
+                var nameInput = inline.querySelector('.hub-step-create-name');
+                var name = nameInput.value.trim();
+                var pageType = step ? step.page_type : 'sales';
+
+                if (!name || !step) {
+                    return;
                 }
 
                 try {
                     showStatus('A criar page…');
+                    var templateSelect = inline.querySelector('.hub-step-create-template');
+                    var savedBlockId = templateSelect ? String(templateSelect.value || '').trim() : '';
+                    var createBody = {
+                        offer: offerSlug,
+                        funnel: funnelSlug,
+                        name: name,
+                        type: pageType,
+                        status: 'draft',
+                    };
+
+                    if (savedBlockId) {
+                        createBody.saved_block_id = savedBlockId;
+                    }
+
                     var payload = await apiFetch('/api/sales-attribution?action=hub_page_create', {
                         method: 'POST',
-                        body: body,
+                        body: createBody,
                     });
-                    showStatus('');
-                    messageEl.textContent = 'Page criada. A abrir editor…';
-                    messageEl.hidden = false;
+                    step.active_page_id = payload.page.id;
+                    offerPages.push(payload.page);
+                    nameInput.value = '';
+                    inline.hidden = true;
+                    showStatus(savedBlockId ? 'Page criada a partir do template.' : '');
 
-                    if (payload.editor_url) {
-                        window.location.href = payload.editor_url;
-                    } else {
-                        loadFunnelPages(offer.slug, funnelSlug);
-                    }
+                    var studioUrl = '/studio/' + encodeURIComponent(offerSlug) + '/' +
+                        encodeURIComponent(funnelSlug) + '/' +
+                        encodeURIComponent(payload.page.slug) +
+                        '?type=' + encodeURIComponent(pageType) +
+                        '&name=' + encodeURIComponent(name);
+
+                    window.open(studioUrl, '_blank', 'noopener');
+                    rerender();
                 } catch (error) {
-                    messageEl.textContent = error.message;
-                    messageEl.hidden = false;
+                    showStatus(error.message, true);
+                }
+            });
+        });
+
+        container.querySelectorAll('[data-step-save-page]').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                var pageId = button.getAttribute('data-step-save-page');
+                var defaultName = button.getAttribute('data-page-name') || 'Página';
+                var name = window.prompt('Nome para gravar esta página na biblioteca:', defaultName);
+
+                if (!name || !String(name).trim()) {
+                    return;
+                }
+
+                try {
+                    showStatus('A gravar página…');
+                    await apiFetch('/api/sales-attribution?action=hub_saved_blocks_save', {
+                        method: 'POST',
+                        body: {
+                            offer: offerSlug,
+                            page_id: pageId,
+                            name: String(name).trim(),
+                            kind: 'page',
+                        },
+                    });
+                    var refreshedPages = await apiFetch(
+                        '/api/sales-attribution?action=hub_saved_blocks_list&offer=' +
+                            encodeURIComponent(offerSlug) + '&kind=page'
+                    );
+                    pageTemplates = refreshedPages.blocks || pageTemplates;
+                    showStatus('Página gravada na biblioteca.');
+                    window.setTimeout(function () { showStatus(''); }, 2200);
+                    rerender();
+                } catch (error) {
+                    showStatus(error.message, true);
+                }
+            });
+        });
+
+        container.querySelectorAll('[data-step-save-checkout]').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                var name = window.prompt('Nome para gravar este checkout na biblioteca:', 'Checkout');
+
+                if (!name || !String(name).trim()) {
+                    return;
+                }
+
+                try {
+                    showStatus('A gravar checkout…');
+                    await apiFetch('/api/sales-attribution?action=hub_saved_blocks_save', {
+                        method: 'POST',
+                        body: {
+                            offer: offerSlug,
+                            source: 'checkout',
+                            kind: 'checkout',
+                            name: String(name).trim(),
+                        },
+                    });
+                    var refreshedCheckout = await apiFetch(
+                        '/api/sales-attribution?action=hub_saved_blocks_list&offer=' +
+                            encodeURIComponent(offerSlug) + '&kind=checkout'
+                    );
+                    checkoutTemplates = refreshedCheckout.blocks || checkoutTemplates;
+                    showStatus('Checkout gravado na biblioteca.');
+                    window.setTimeout(function () { showStatus(''); }, 2200);
+                    rerender();
+                } catch (error) {
+                    showStatus(error.message, true);
+                }
+            });
+        });
+
+        container.querySelectorAll('.hub-step-checkout-apply-btn').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                var stepId = button.getAttribute('data-step-id');
+                var select = container.querySelector(
+                    '.hub-step-checkout-template[data-step-id="' + stepId + '"]'
+                );
+                var blockId = select ? String(select.value || '').trim() : '';
+
+                if (!blockId) {
+                    showStatus('Escolhe um checkout gravado.', true);
+                    return;
+                }
+
+                if (!window.confirm('Substituir o layout/bumps/preço do checkout desta oferta pelo template gravado?')) {
+                    return;
+                }
+
+                try {
+                    showStatus('A aplicar checkout…');
+                    await apiFetch('/api/sales-attribution?action=hub_saved_blocks_apply', {
+                        method: 'POST',
+                        body: {
+                            offer: offerSlug,
+                            block_id: blockId,
+                            target: 'checkout',
+                        },
+                    });
+                    showStatus('Checkout aplicado. Abre o separador Checkout para afinar preço/cores.');
+                    window.setTimeout(function () { showStatus(''); }, 2800);
+                } catch (error) {
+                    showStatus(error.message, true);
+                }
+            });
+        });
+
+        container.querySelectorAll('.hub-funnel-flow-save').forEach(function (button) {
+            button.addEventListener('click', async function () {
+                var messageEl = container.querySelector('[data-funnel-flow-message]');
+
+                try {
+                    showStatus('A guardar funil…');
+                    await apiFetch('/api/sales-attribution?action=hub_funnel_flow_save', {
+                        method: 'POST',
+                        body: {
+                            offer: offerSlug,
+                            funnel: funnelSlug,
+                            flow: flowState,
+                        },
+                    });
+
+                    if (messageEl) {
+                        messageEl.textContent = 'Funil guardado.';
+                        messageEl.hidden = false;
+                    }
+
+                    showStatus('');
+                    loadFunnelPages(offerSlug, funnelSlug);
+                } catch (error) {
+                    if (messageEl) {
+                        messageEl.textContent = error.message;
+                        messageEl.hidden = false;
+                    }
+
                     showStatus('');
                 }
             });
         });
+
+        var navApi = null;
+
+        if (window.HubFunnelUI.bindCanvasNavigation) {
+            navApi = window.HubFunnelUI.bindCanvasNavigation(container, {
+                mode: navMode,
+                pan_x: panX,
+                onModeChange: function (mode) {
+                    navMode = mode;
+                },
+                onPanChange: function (nextPanX) {
+                    panX = nextPanX;
+                },
+            });
+        }
+
+        if (window.HubFunnelUI.bindDragReorder) {
+            window.HubFunnelUI.bindDragReorder(container, {
+                signal: container._navAbort ? container._navAbort.signal : undefined,
+                setSelectMode: function () {
+                    if (navApi && typeof navApi.setMode === 'function') {
+                        navApi.setMode('select');
+                    }
+                },
+                onReorder: function (sourceId, targetId) {
+                    if (reorderMainSteps(flowState, sourceId, targetId)) {
+                        rerender();
+                    }
+                },
+            });
+        }
     }
 
     async function loadFunnelPages(offerSlug, funnelSlug) {
         var container = modulePanel.querySelector('[data-funnel-pages="' + funnelSlug + '"]');
+        var stepsContainer = modulePanel.querySelector('[data-funnel-steps="' + funnelSlug + '"]');
 
-        if (!container) {
+        if (!container && !stepsContainer) {
             return;
         }
 
         try {
-            var payload = await apiFetch(
-                '/api/sales-attribution?action=hub_page_list&offer=' +
+            var flowPayload = await apiFetch(
+                '/api/sales-attribution?action=hub_funnel_flow&offer=' +
                     encodeURIComponent(offerSlug) + '&funnel=' + encodeURIComponent(funnelSlug)
             );
-            var pages = payload.pages || [];
+            var pages = flowPayload.pages || [];
+            var templatesPayload = await Promise.all([
+                apiFetch(
+                    '/api/sales-attribution?action=hub_saved_blocks_list&offer=' +
+                        encodeURIComponent(offerSlug) + '&kind=page'
+                ).catch(function () { return { blocks: [] }; }),
+                apiFetch(
+                    '/api/sales-attribution?action=hub_saved_blocks_list&offer=' +
+                        encodeURIComponent(offerSlug) + '&kind=checkout'
+                ).catch(function () { return { blocks: [] }; }),
+            ]);
+            var pageTemplates = templatesPayload[0].blocks || [];
+            var checkoutTemplates = templatesPayload[1].blocks || [];
+
+            if (stepsContainer && window.HubFunnelUI) {
+                var existingBuilder = stepsContainer.querySelector('.hub-funnel-builder');
+                var preservedNavMode = 'select';
+                var preservedPanX = 0;
+
+                if (existingBuilder) {
+                    preservedNavMode = existingBuilder.getAttribute('data-nav-mode') || 'select';
+                    preservedPanX = parseInt(existingBuilder.getAttribute('data-pan-x') || '0', 10) || 0;
+                }
+
+                stepsContainer.innerHTML = window.HubFunnelUI.renderFunnelBuilder({
+                    flow: flowPayload.flow,
+                    offer_pages: flowPayload.offer_pages || flowPayload.all_pages,
+                    all_pages: flowPayload.offer_pages || flowPayload.all_pages,
+                    offer_slug: offerSlug,
+                    funnel_slug: funnelSlug,
+                    checkout_url: flowPayload.checkout_url,
+                    page_templates: pageTemplates,
+                    checkout_templates: checkoutTemplates,
+                    nav_mode: preservedNavMode,
+                    pan_x: preservedPanX,
+                });
+                var builderEl = stepsContainer.querySelector('.hub-funnel-builder');
+
+                if (builderEl) {
+                    bindFunnelFlowBuilder(builderEl, Object.assign({}, flowPayload, {
+                        page_templates: pageTemplates,
+                        checkout_templates: checkoutTemplates,
+                        nav_mode: preservedNavMode,
+                        pan_x: preservedPanX,
+                    }), offerSlug, funnelSlug);
+                }
+            }
+
+            if (!container) {
+                return;
+            }
 
             if (!pages.length) {
-                container.innerHTML = '<p class="hub-panel__sub">Sem pages.</p>';
+                container.innerHTML = '<p class="hub-panel__sub">Sem pages neste funil — usa o funil visual acima (+ ou criar page).</p>';
                 return;
             }
 
             container.innerHTML = pages.map(function (page) {
-                var editorUrl = '/editor/' + encodeURIComponent(offerSlug) + '/' +
+                var studioUrl = '/studio/' + encodeURIComponent(offerSlug) + '/' +
                     encodeURIComponent(funnelSlug) + '/' + encodeURIComponent(page.slug);
                 var previewUrl = page.preview_url || (
                     '/preview/' + encodeURIComponent(offerSlug) + '/' +
@@ -3343,7 +4428,7 @@
                     '<div><strong>' + escapeHtml(page.name) + '</strong>' +
                     '<span class="hub-panel__sub">' + escapeHtml(page.slug) + ' · ' + escapeHtml(page.status || 'draft') + '</span></div>' +
                     '<div class="hub-funnel-page__actions">' +
-                    '<a class="hub-button hub-button--ghost" href="' + editorUrl + '">Editar visualmente</a>' +
+                    '<a class="hub-button hub-button--ghost" href="' + studioUrl + '" target="_blank" rel="noopener">Editar</a>' +
                     '<a class="hub-link" href="' + previewUrl + '" target="_blank" rel="noopener">Preview</a>' +
                     (isPublished
                         ? '<a class="hub-link" href="' + liveUrl + '" target="_blank" rel="noopener">Live</a>'
@@ -3358,6 +4443,10 @@
     async function openModule(moduleId, tokenOverride, navKey) {
         if (!state.currentOffer) {
             return;
+        }
+
+        if (moduleId === 'funil' && navKey === 'pages') {
+            navKey = 'funil';
         }
 
         showStatus('A carregar módulo…');
@@ -3399,16 +4488,29 @@
 
         card.innerHTML =
             '<h3 class="hub-offer__name">Nova oferta</h3>' +
-            '<p class="hub-panel__sub">Configura funil, checkout, Stripe, tracking e domínio num fluxo guiado.</p>' +
+            '<p class="hub-panel__sub">Infraestrutura vazia — funis, pages e tracking só quando pedires.</p>' +
             '<div class="hub-create-form__actions">' +
-                '<button type="button" class="hub-login__button" id="hub-open-wizard">Assistente de setup</button>' +
+                '<button type="button" class="hub-login__button" id="hub-open-wizard">Assistente completo</button>' +
                 '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm" id="hub-open-quick-create">Criação rápida</button>' +
             '</div>' +
             '<form class="hub-create-form hub-create-inline" id="hub-create-form" hidden>' +
-                '<input class="hub-login__input" id="hub-create-name" type="text" placeholder="Nome da oferta" required>' +
-                '<input class="hub-login__input" id="hub-create-domain" type="text" placeholder="Domínio funil (opcional)">' +
+                '<div class="hub-form-grid">' +
+                    '<label class="hub-field"><span class="hub-field__label">Nome</span>' +
+                    '<input class="hub-login__input" id="hub-create-name" type="text" required minlength="2"></label>' +
+                    '<label class="hub-field"><span class="hub-field__label">Slug</span>' +
+                    '<input class="hub-login__input" id="hub-create-slug" type="text" placeholder="auto"></label>' +
+                    '<label class="hub-field"><span class="hub-field__label">Moeda</span>' +
+                    '<select class="hub-login__input" id="hub-create-currency">' +
+                        '<option value="eur">EUR</option><option value="usd">USD</option><option value="brl">BRL</option>' +
+                    '</select></label>' +
+                    '<label class="hub-field"><span class="hub-field__label">Preço inicial (opcional)</span>' +
+                    '<input class="hub-login__input" id="hub-create-price" type="number" min="0.5" step="0.01" placeholder="10.00"></label>' +
+                    '<label class="hub-field"><span class="hub-field__label">Domínio funil</span>' +
+                    '<input class="hub-login__input" id="hub-create-domain" type="text" placeholder="fruta.vercel.app">' +
+                    '<span class="hub-field__hint" id="hub-create-domain-status"></span></label>' +
+                '</div>' +
                 '<button class="hub-login__button" type="submit">Criar oferta</button>' +
-                '<p class="hub-create-form__error" id="hub-create-error" hidden></p>' +
+                '<p class="hub-form-message" id="hub-create-error" hidden></p>' +
             '</form>';
 
         card.querySelector('#hub-open-wizard').addEventListener('click', function () {
@@ -3421,6 +4523,38 @@
             var form = card.querySelector('#hub-create-form');
             form.hidden = !form.hidden;
         });
+
+        var domainInput = card.querySelector('#hub-create-domain');
+        var domainStatus = card.querySelector('#hub-create-domain-status');
+        var domainTimer = null;
+
+        if (domainInput && domainStatus) {
+            domainInput.addEventListener('input', function () {
+                clearTimeout(domainTimer);
+                domainTimer = setTimeout(async function () {
+                    var domain = domainInput.value.trim();
+
+                    if (!domain) {
+                        domainStatus.textContent = '';
+                        return;
+                    }
+
+                    try {
+                        var check = await apiFetch(
+                            '/api/sales-attribution?action=hub_check_domain&domain=' +
+                                encodeURIComponent(domain)
+                        );
+                        var result = check.check || {};
+
+                        domainStatus.textContent = result.available ? '✓ Disponível' : '✗ ' + (result.reason || 'Indisponível');
+                        domainStatus.className = 'hub-field__hint ' + (result.available ? 'is-ok' : 'is-error');
+                    } catch (error) {
+                        domainStatus.textContent = error.message;
+                        domainStatus.className = 'hub-field__hint is-error';
+                    }
+                }, 400);
+            });
+        }
 
         var form = card.querySelector('#hub-create-form');
         form.addEventListener('submit', handleCreateOffer);
@@ -3587,6 +4721,7 @@
 
     async function bootstrapShell(tokenOverride, refresh) {
         await loadOffers(tokenOverride, refresh);
+        await refreshGeminiStatus();
 
         var target = readBootstrapTarget();
 
@@ -3649,10 +4784,24 @@
 
         var form = event.currentTarget;
         var nameInput = form.querySelector('#hub-create-name');
+        var slugInput = form.querySelector('#hub-create-slug');
         var domainInput = form.querySelector('#hub-create-domain');
+        var currencyInput = form.querySelector('#hub-create-currency');
+        var priceInput = form.querySelector('#hub-create-price');
         var errorEl = form.querySelector('#hub-create-error');
         var name = nameInput.value.trim();
         var funnelDomain = domainInput.value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+        var slug = slugInput.value.trim();
+        var priceRaw = priceInput.value.trim();
+        var amountCents = null;
+
+        if (priceRaw) {
+            var euros = parseFloat(priceRaw.replace(',', '.'));
+
+            if (Number.isFinite(euros) && euros >= 0.5) {
+                amountCents = Math.round(euros * 100);
+            }
+        }
 
         errorEl.hidden = true;
 
@@ -3664,19 +4813,32 @@
 
         try {
             showStatus('A criar oferta…');
+            var body = {
+                name: name,
+                funnel_domain: funnelDomain,
+                currency: currencyInput.value,
+            };
+
+            if (slug) {
+                body.slug = slug;
+            }
+
+            if (amountCents) {
+                body.amount_cents = amountCents;
+            }
+
             var payload = await apiFetch(
                 '/api/sales-attribution?action=hub_create_offer',
                 {
                     method: 'POST',
-                    body: {
-                        name: name,
-                        funnel_domain: funnelDomain,
-                    },
+                    body: body,
                 }
             );
 
             nameInput.value = '';
+            slugInput.value = '';
             domainInput.value = '';
+            priceInput.value = '';
             await loadOffers();
             await openOffer(payload.offer.slug);
         } catch (error) {
