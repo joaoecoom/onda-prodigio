@@ -1595,6 +1595,13 @@ body {
     pointer-events: none;
 }
 
+.hub-funnel-builder.is-pan-mode .hub-step-card__links,
+.hub-funnel-builder.is-pan-mode .hub-step-card__links a,
+.hub-funnel-builder.is-pan-mode .hub-step-card__links button,
+.hub-funnel-builder.is-pan-mode .hub-step-card__toolbar {
+    pointer-events: auto;
+}
+
 .hub-funnel-insert-step {
     flex-shrink: 0;
     align-self: center;
@@ -1743,7 +1750,8 @@ body {
     margin-top: 8px;
 }
 
-button.hub-link--save {
+button.hub-link--save,
+button.hub-link--studio {
     appearance: none;
     background: none;
     border: 0;
@@ -1755,7 +1763,8 @@ button.hub-link--save {
     text-underline-offset: 2px;
 }
 
-button.hub-link--save:hover {
+button.hub-link--save:hover,
+button.hub-link--studio:hover {
     color: #e9d5ff;
 }
 

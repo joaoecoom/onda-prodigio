@@ -4175,6 +4175,14 @@
             });
         });
 
+        container.querySelectorAll('[data-open-checkout-editor]').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                openModule('checkout');
+            });
+        });
+
         container.querySelectorAll('[data-step-save-page]').forEach(function (button) {
             button.addEventListener('click', async function () {
                 var pageId = button.getAttribute('data-step-save-page');
@@ -4430,7 +4438,7 @@
                     '<div><strong>' + escapeHtml(page.name) + '</strong>' +
                     '<span class="hub-panel__sub">' + escapeHtml(page.slug) + ' · ' + escapeHtml(page.status || 'draft') + '</span></div>' +
                     '<div class="hub-funnel-page__actions">' +
-                    '<a class="hub-button hub-button--ghost" href="' + studioUrl + '" target="_blank" rel="noopener">Editar</a>' +
+                    '<a class="hub-button hub-button--ghost" href="' + studioUrl + '">Editar</a>' +
                     '<a class="hub-link" href="' + previewUrl + '" target="_blank" rel="noopener">Preview</a>' +
                     (isPublished
                         ? '<a class="hub-link" href="' + liveUrl + '" target="_blank" rel="noopener">Live</a>'
@@ -4868,6 +4876,17 @@
             showShell(true);
             await bootstrapShell(password);
             passwordInput.value = '';
+
+            try {
+                var studioReturn = sessionStorage.getItem('onda-studio-return');
+                if (studioReturn && studioReturn.indexOf('/studio/') === 0) {
+                    sessionStorage.removeItem('onda-studio-return');
+                    window.location.assign(studioReturn);
+                    return;
+                }
+            } catch (returnError) {
+                /* ignore */
+            }
         } catch (error) {
             clearToken();
             showShell(false);
