@@ -3771,6 +3771,8 @@
             // ignore
         }
     }
+
+    function cloneFlowStep(step) {
         return {
             id: step.id,
             kind: step.kind,
