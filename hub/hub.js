@@ -3956,6 +3956,21 @@
             };
         }
 
+        async function autoSaveFlow() {
+            try {
+                await apiFetch('/api/sales-attribution?action=hub_funnel_flow_save', {
+                    method: 'POST',
+                    body: {
+                        offer: offerSlug,
+                        funnel: funnelSlug,
+                        flow: flowState,
+                    },
+                });
+            } catch (_) {
+                // non-fatal — user can still save manually
+            }
+        }
+
         function rerender() {
             var mount = container.parentElement;
 
@@ -4164,6 +4179,7 @@
                 }
 
                 step.active_page_id = select.value || null;
+                autoSaveFlow();
             });
         });
 
@@ -4205,6 +4221,7 @@
                     nameInput.value = '';
                     inline.hidden = true;
                     showStatus(savedBlockId ? 'Page criada a partir do template.' : '');
+                    autoSaveFlow();
 
                     var studioUrl = '/studio/' + encodeURIComponent(offerSlug) + '/' +
                         encodeURIComponent(funnelSlug) + '/' +
