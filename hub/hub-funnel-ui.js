@@ -102,13 +102,15 @@
         var saveLink = renderStepSaveLink(step, ctx);
         var editLink = '';
 
-        if (isCheckout) {
-            editLink = '<button type="button" class="hub-link hub-link--studio" data-open-checkout-editor="1">Editar checkout ↗</button>';
-        } else if (step.active_page && step.active_page.slug) {
+        if (step.active_page && step.active_page.slug) {
             editLink = '<a class="hub-link hub-link--studio" href="/studio/' +
                 encodeURIComponent(offerSlug) + '/' + encodeURIComponent(funnelSlug) + '/' +
                 encodeURIComponent(step.active_page.slug) + '">' +
-                'Editar ↗</a>';
+                (isCheckout ? 'Editar checkout ↗' : 'Editar ↗') + '</a>';
+        } else if (isCheckout) {
+            editLink = '<button type="button" class="hub-link hub-link--studio" ' +
+                'data-ensure-checkout-studio="1" data-step-id="' + escapeHtml(step.id) + '">' +
+                'Editar checkout ↗</button>';
         } else {
             editLink = '<span class="hub-link hub-link--disabled" title="Selecciona ou cria uma page">Editar ↗</span>';
         }
@@ -156,20 +158,26 @@
         var checkoutUrl = ctx.checkout_url || ('/checkout/?offer=' + encodeURIComponent(offerSlug));
         var isCheckout = step.kind === 'checkout' || step.page_type === 'checkout';
         var pageType = step.page_type || step.kind;
-        var statusClass = isCheckout ? 'is-system' : (step.active_page_id ? 'is-linked' : 'is-empty');
+        var statusClass = step.active_page_id ? 'is-linked' : (isCheckout ? 'is-system' : 'is-empty');
         var inactiveClass = step.is_step_active === false ? ' is-inactive' : '';
         var body = '';
 
         if (isCheckout) {
             body = '<span class="hub-step-card__meta">' + escapeHtml(checkoutUrl) + '</span>' +
-                '<span class="hub-step-card__meta">checkout: ' + escapeHtml(step.checkout_id || 'main') + '</span>' +
-                '<div class="hub-step-checkout-apply">' +
-                    '<select class="hub-login__input hub-step-checkout-template" data-step-id="' +
-                        escapeHtml(step.id) + '">' +
-                        checkoutTemplateOptionsHtml(ctx.checkout_templates || []) +
-                    '</select>' +
-                    '<button type="button" class="hub-button hub-button--ghost hub-step-checkout-apply-btn" ' +
-                        'data-step-id="' + escapeHtml(step.id) + '">Aplicar</button>' +
+                '<label class="hub-field"><span class="hub-field__label">Page checkout</span>' +
+                '<select class="hub-login__input hub-funnel-flow-page" data-step-id="' + escapeHtml(step.id) + '" ' +
+                'data-page-type="checkout">' +
+                pageOptionsHtml(allPages, step.active_page_id, 'checkout') +
+                '</select></label>' +
+                '<div class="hub-step-create-inline" data-step-create="' + escapeHtml(step.id) + '" hidden>' +
+                    '<input class="hub-login__input hub-step-create-name" placeholder="Nome da page" minlength="2">' +
+                    '<label class="hub-field hub-field--compact">' +
+                        '<span class="hub-field__label">Usar página gravada</span>' +
+                        '<select class="hub-login__input hub-step-create-template">' +
+                            pageTemplateOptionsHtml(ctx.page_templates || [], 'checkout') +
+                        '</select>' +
+                    '</label>' +
+                    '<button type="button" class="hub-button hub-button--ghost hub-step-create-submit">Criar</button>' +
                 '</div>';
         } else {
             body = '<label class="hub-field"><span class="hub-field__label">Page</span>' +

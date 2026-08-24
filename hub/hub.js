@@ -221,7 +221,7 @@
         }
 
         window.HubGemini.mount(container, Object.assign({
-            offer: state.currentOffer,
+            offer: state.currentOffer || (options && options.moduleData && options.moduleData.offer) || null,
             apiFetch: apiFetch,
             geminiConfigured: isGeminiConfigured(options && options.moduleData),
             onStatus: showStatus,
@@ -4366,11 +4366,63 @@
             });
         });
 
-        container.querySelectorAll('[data-open-checkout-editor]').forEach(function (button) {
-            button.addEventListener('click', function (event) {
+        container.querySelectorAll('[data-ensure-checkout-studio]').forEach(function (button) {
+            button.addEventListener('click', async function (event) {
                 event.preventDefault();
                 event.stopPropagation();
-                openModule('checkout');
+
+                var stepId = button.getAttribute('data-step-id');
+                var step = flowState.find(function (row) {
+                    return row.id === stepId;
+                });
+
+                try {
+                    showStatus('A abrir construtor de checkout…');
+
+                    var existing = (offerPages || []).find(function (page) {
+                        return page && (page.type === 'checkout' || page.slug === 'checkout');
+                    });
+                    var page = existing;
+
+                    if (!page) {
+                        var created = await apiFetch('/api/sales-attribution?action=hub_page_create', {
+                            method: 'POST',
+                            body: {
+                                offer: offerSlug,
+                                funnel: funnelSlug,
+                                name: 'Checkout',
+                                slug: 'checkout',
+                                type: 'checkout',
+                                status: 'draft',
+                            },
+                        });
+                        page = created.page;
+                        offerPages.push(page);
+                    }
+
+                    if (step) {
+                        step.active_page_id = page.id;
+                        step.active_page = page;
+                        await apiFetch('/api/sales-attribution?action=hub_funnel_flow_save', {
+                            method: 'POST',
+                            body: {
+                                offer: offerSlug,
+                                funnel: funnelSlug,
+                                flow: flowState,
+                            },
+                        });
+                        delete state.funnelFlowCache[offerSlug + ':' + funnelSlug];
+                        delete state.moduleCache[offerSlug + ':funil'];
+                    }
+
+                    window.location.assign(
+                        '/studio/' + encodeURIComponent(offerSlug) + '/' +
+                        encodeURIComponent(funnelSlug) + '/' +
+                        encodeURIComponent(page.slug)
+                    );
+                } catch (error) {
+                    showStatus(error.message || 'Não foi possível abrir o checkout.', true);
+                }
             });
         });
 
