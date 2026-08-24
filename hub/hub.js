@@ -215,19 +215,23 @@
         var intent = getNavIntent();
         var path = window.location.pathname.replace(/\/$/, '');
 
-        if (path === '/funil' && offerParam) {
-            return {
-                slug: offerParam,
-                module: 'funil',
-                reason: 'funil-path',
-            };
-        }
+        var pathModuleMap = {
+            '/funil': 'funil',
+            '/checkout-builder': 'checkout',
+            '/integracoes': 'integracoes',
+            '/tracking': 'tracking',
+            '/ai-agent': 'ai-agent',
+            '/recupera': 'recupera',
+            '/impulsiona': 'impulsiona',
+            '/dominios': 'dominios',
+            '/definicoes': 'definicoes',
+        };
 
-        if (path === '/checkout-builder' && offerParam) {
+        if (offerParam && pathModuleMap[path]) {
             return {
                 slug: offerParam,
-                module: 'checkout',
-                reason: 'checkout-builder-path',
+                module: pathModuleMap[path],
+                reason: 'module-path',
             };
         }
 

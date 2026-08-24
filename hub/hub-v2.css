@@ -1743,6 +1743,11 @@ body {
     margin-top: 8px;
 }
 
+/* class display:flex must not override the HTML hidden attribute */
+.hub-step-create-inline[hidden] {
+    display: none !important;
+}
+
 .hub-step-card__links {
     display: flex;
     flex-wrap: wrap;

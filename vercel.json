@@ -113,6 +113,26 @@
       ]
     },
     {
+      "source": "/dominios",
+      "destination": "/hub/index.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "hub-dr-ecoom.vercel.app"
+        }
+      ]
+    },
+    {
+      "source": "/definicoes",
+      "destination": "/hub/index.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "hub-dr-ecoom.vercel.app"
+        }
+      ]
+    },
+    {
       "source": "/",
       "destination": "/funnel/index.html",
       "has": [
