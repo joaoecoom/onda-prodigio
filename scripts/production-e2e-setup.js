@@ -64,27 +64,59 @@ async function hub(pathSuffix, opts) {
     return { ok: r.ok, status: r.status, data: d };
 }
 
-async function archiveSlug(slug) {
-    var rows = await sql("SELECT slug FROM hub_offers WHERE slug='" + slug + "' AND status <> 'archived' LIMIT 1;");
-    if (!rows[0]) return;
-    try {
-        await require('../lib/hub/offers').archiveOffer(slug);
-    } catch (e) {
-        await sql("UPDATE hub_offers SET status='archived' WHERE slug='" + slug + "';");
-    }
-}
+async function ensureOffer(slug, name) {
+    var offers = require('../lib/hub/offers');
+    var safeName = String(name || '').replace(/'/g, "''");
+    var rows = await sql("SELECT slug, status FROM hub_offers WHERE slug='" + slug + "' LIMIT 1;");
 
-async function setupOffer(slug, name) {
-    return require('../lib/hub/offers').createOffer({ name: name, slug: slug, status: 'draft', mode: 'test' });
+    if (rows[0]) {
+        if (rows[0].status !== 'archived') {
+            try {
+                await offers.archiveOffer(slug);
+            } catch (e) {
+                await sql("UPDATE hub_offers SET status='archived' WHERE slug='" + slug + "';");
+            }
+        }
+
+        await sql(
+            "UPDATE hub_offers SET status='draft', mode='test', name='" + safeName + "' WHERE slug='" + slug + "';"
+        );
+        offers.clearOffersCache();
+        return offers.getOfferBySlug(slug, { forceRefresh: true });
+    }
+
+    return offers.createOffer({ name: name, slug: slug, status: 'draft', mode: 'test' });
 }
 
 async function setupPage(offerId) {
     var fe = require('../lib/hub/funnel-engine');
-    var funnel = await fe.createFunnel(offerId, { name: 'E2E', slug: 'e2e', funnel_type: 'sales' });
-    var page = await fe.createPage(offerId, funnel.id, { name: 'Sales', slug: 'sales', status: 'draft', page_type: 'sales' });
-    var section = await fe.createSection(offerId, page.id, { name: 'Main', slug: 'main', sort_order: 1 });
-    await fe.createBlock(offerId, section.id, { type: 'button', sort_order: 1, content: { label: 'Comprar' }, settings: { action: 'checkout' } });
-    await require('../lib/hub/page-builder/publish').publishPage({ offer_id: offerId, page_id: page.id, status: 'published' });
+    var publish = require('../lib/hub/page-builder/publish');
+    var funnels = await fe.listFunnels(offerId);
+    var funnel = funnels.find(function (row) {
+        return row.slug === 'e2e';
+    });
+
+    if (!funnel) {
+        funnel = await fe.createFunnel(offerId, { name: 'E2E', slug: 'e2e', funnel_type: 'sales' });
+    }
+
+    var pages = await fe.listPages(offerId, funnel.id);
+    var page = pages.find(function (row) {
+        return row.slug === 'sales';
+    });
+
+    if (!page) {
+        page = await fe.createPage(offerId, funnel.id, { name: 'Sales', slug: 'sales', status: 'draft', page_type: 'sales' });
+        var section = await fe.createSection(offerId, page.id, { name: 'Main', slug: 'main', sort_order: 1 });
+        await fe.createBlock(offerId, section.id, {
+            type: 'button',
+            sort_order: 1,
+            content: { label: 'Comprar' },
+            settings: { action: 'checkout' },
+        });
+    }
+
+    await publish.publishPage({ offer_id: offerId, page_id: page.id, status: 'published' });
     return { funnel: funnel, page: page };
 }
 
@@ -149,13 +181,10 @@ async function run() {
         process.exit(1);
     }
 
-    await archiveSlug(SLUG_A);
-    await archiveSlug(SLUG_B);
-
-    var offerA = await setupOffer(SLUG_A, 'Production E2E Test Offer');
+    var offerA = await ensureOffer(SLUG_A, 'Production E2E Test Offer');
     step('create_offer_a', !!offerA.id, SLUG_A);
 
-    var offerB = await setupOffer(SLUG_B, 'Production E2E Test Offer B');
+    var offerB = await ensureOffer(SLUG_B, 'Production E2E Test Offer B');
     step('create_offer_b', !!offerB.id, SLUG_B);
 
     var pageSetup = await setupPage(SLUG_A);

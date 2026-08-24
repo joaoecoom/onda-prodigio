@@ -10,12 +10,11 @@ test.describe('Production checkout (browser)', function () {
         test.skip(!fs.existsSync(statePath), 'Run production-e2e-setup.js first');
 
         var state = JSON.parse(fs.readFileSync(statePath, 'utf8'));
-        var url = SITE + '/checkout/?offer=' + encodeURIComponent(state.slugA) +
-            '&product_id=' + encodeURIComponent(state.slugA) + '&mode=test';
+        var url = SITE + '/checkout/?offer=' + encodeURIComponent(state.slugA) + '&mode=test';
 
         await page.goto(url);
         await expect(page.locator('#checkout-title')).toHaveText(/Production E2E/i, { timeout: 20000 });
-        await expect(page.locator('#checkout-price')).toHaveText(/1€/);
+        await expect(page.locator('#checkout-price')).toHaveText(/1\s*€/);
         await expect(page.locator('#submit-payment')).toBeEnabled();
     });
 });
