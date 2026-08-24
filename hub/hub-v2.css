@@ -1793,13 +1793,6 @@ button.hub-link--studio:hover {
     margin: 0;
 }
 
-.hub-funnel-checkout {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 4px 0 8px;
-}
-
 .hub-quiz-stub {
     padding: 8px 0;
 }
