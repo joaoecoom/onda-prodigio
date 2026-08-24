@@ -706,7 +706,12 @@ module.exports = async function handler(req, res) {
         if (
             action === 'hub_checkout_builder' ||
             action === 'hub_save_checkout_template' ||
-            action === 'hub_checkout_template'
+            action === 'hub_checkout_template' ||
+            action === 'hub_list_checkouts' ||
+            action === 'hub_upsert_checkout' ||
+            action === 'hub_deactivate_checkout' ||
+            action === 'hub_sync_checkout_stripe' ||
+            action === 'hub_upsert_order_bump'
         ) {
             return require('../lib/hub/handlers/checkout-builder')(req, res);
         }

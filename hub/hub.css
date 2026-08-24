@@ -1418,6 +1418,48 @@ select {
     margin-top: 10px;
 }
 
+.hub-checkout-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0 16px;
+}
+
+.hub-checkout-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--hub-border, rgba(0, 0, 0, 0.08));
+    border-radius: 12px;
+    background: var(--hub-surface, rgba(255, 255, 255, 0.5));
+}
+
+.hub-checkout-row__main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 160px;
+}
+
+.hub-checkout-row__price {
+    font-weight: 600;
+    margin-top: 4px;
+}
+
+.hub-checkout-row__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.hub-checkout-form {
+    margin-top: 8px;
+}
+
 .hub-funnel-page {
     display: flex;
     align-items: center;

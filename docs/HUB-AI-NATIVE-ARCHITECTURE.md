@@ -103,7 +103,7 @@ OFERTA
 | 2 | Clean offer create + domain check | ✅ In progress |
 | 3 | Funnel visual builder | ✅ Started (`funnel-flow.js`, `hub-funnel-ui.js`) |
 | 4 | Pages + Page AI | ✅ Vertical slice (Pages Studio) |
-| 5 | Multi-checkout UI + Stripe sync | 🔲 |
+| 5 | Multi-checkout UI + Stripe sync | ✅ Hub CRUD + sync por checkout_id |
 | 6 | Quiz UX + AI | 🔲 |
 | 7 | Community templates + AI | 🔲 |
 | 8 | Tracking/Integrations AI unify | 🔲 |

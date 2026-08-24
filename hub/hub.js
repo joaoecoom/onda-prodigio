@@ -2638,25 +2638,69 @@
         }).join('');
     }
 
+    function formatCheckoutAmount(cents, currency) {
+        var amount = ((parseInt(cents, 10) || 0) / 100).toFixed(2).replace('.', ',');
+        var code = String(currency || 'eur').toUpperCase();
+        return amount + (code === 'EUR' ? ' €' : ' ' + code);
+    }
+
     function renderCheckoutModule(data) {
-        var checkout = data.checkout || {};
-        var amountEuros = checkout.amount_cents
-            ? (checkout.amount_cents / 100).toFixed(2).replace('.', ',')
-            : '—';
-        var currency = String(checkout.currency || 'eur').toUpperCase();
-        var previewUrl = data.preview_url || checkout.path || '';
-        var liveUrl = data.live_url || previewUrl.replace('mode=test', 'mode=live');
+        var checkouts = Array.isArray(data.checkouts) && data.checkouts.length
+            ? data.checkouts
+            : (data.checkout ? [data.checkout] : []);
         var template = data.template || {};
         var bumps = data.order_bumps || [];
+        var offerSlug = (data.offer && data.offer.slug) || (state.currentOffer && state.currentOffer.slug) || '';
+        var offerMode = (data.offer && data.offer.mode) || (state.currentOffer && state.currentOffer.mode) || 'test';
+
+        var checkoutRows = checkouts.map(function (row) {
+            var preview = row.test_path || row.path ||
+                ('/checkout/?offer=' + encodeURIComponent(offerSlug) +
+                    (row.checkout_id && row.checkout_id !== 'main'
+                        ? '&checkout_id=' + encodeURIComponent(row.checkout_id)
+                        : '') +
+                    '&mode=test');
+            var active = row.is_active !== false;
+
+            return '<div class="hub-checkout-row" data-checkout-id="' + escapeHtml(row.checkout_id) + '">' +
+                '<div class="hub-checkout-row__main">' +
+                    '<strong>' + escapeHtml(row.label || row.checkout_id) + '</strong>' +
+                    '<span class="hub-panel__sub">' + escapeHtml(row.checkout_id) +
+                        (active ? '' : ' · inactivo') + '</span>' +
+                    '<span class="hub-checkout-row__price">' +
+                        escapeHtml(formatCheckoutAmount(row.amount_cents, row.currency)) +
+                    '</span>' +
+                '</div>' +
+                '<div class="hub-checkout-row__actions">' +
+                    '<a class="hub-link" href="' + escapeHtml(preview) + '" target="_blank" rel="noopener">Preview</a>' +
+                    '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm" data-edit-checkout="' +
+                        escapeHtml(row.checkout_id) + '">Editar</button>' +
+                    '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm" data-sync-checkout="' +
+                        escapeHtml(row.checkout_id) + '">Sync Stripe</button>' +
+                    (row.checkout_id === 'main' || !active
+                        ? ''
+                        : '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm" data-deactivate-checkout="' +
+                            escapeHtml(row.checkout_id) + '">Desactivar</button>') +
+                '</div>' +
+            '</div>';
+        }).join('') || '<p class="hub-panel__sub">Sem checkouts — cria o primeiro abaixo.</p>';
+
+        var bumpRows = bumps.map(function (bump) {
+            return '<div class="hub-kv__row"><span>' + escapeHtml(bump.label || bump.bump_id) +
+                (bump.is_active === false ? ' (inactivo)' : '') +
+                '</span><strong>+' + escapeHtml(formatCheckoutAmount(bump.amount_cents, 'eur')) +
+                '</strong></div>';
+        }).join('') || '<p class="hub-panel__sub">Sem order bumps.</p>';
 
         modulePanel.innerHTML =
             '<article class="hub-panel">' +
-                '<h3>Checkout universal</h3>' +
-                '<p class="hub-panel__sub">Layout, preço e order bumps — o pagamento Stripe mantém-se no core.</p>' +
+                '<div class="hub-panel__head"><h2>Checkouts</h2></div>' +
+                '<p class="hub-panel__sub">Vários checkouts por oferta (main, upsell, downsell…). ' +
+                    'Stripe sync por linha. Layout Gemini abaixo.</p>' +
                 '<div class="hub-stats">' +
                     '<div class="hub-stat">' +
-                        '<div class="hub-stat__value">' + escapeHtml(amountEuros + (currency === 'EUR' ? ' €' : ' ' + currency)) + '</div>' +
-                        '<div class="hub-stat__label">Preço principal</div>' +
+                        '<div class="hub-stat__value">' + checkouts.length + '</div>' +
+                        '<div class="hub-stat__label">Checkouts</div>' +
                     '</div>' +
                     '<div class="hub-stat">' +
                         '<div class="hub-stat__value">' + bumps.length + '</div>' +
@@ -2668,24 +2712,61 @@
                     '</div>' +
                 '</div>' +
                 '<div class="hub-actions">' +
-                    (previewUrl
-                        ? '<a class="hub-button hub-button--ghost" href="' + escapeHtml(previewUrl) + '" target="_blank" rel="noopener">Preview teste</a>'
-                        : '') +
-                    (liveUrl && liveUrl !== previewUrl
-                        ? '<a class="hub-button hub-button--ghost" href="' + escapeHtml(liveUrl) + '" target="_blank" rel="noopener">Abrir live</a>'
-                        : '') +
                     '<button type="button" class="hub-button hub-button--ghost" data-open-integrations="1">Stripe &amp; integrações</button>' +
                 '</div>' +
             '</article>' +
-            (bumps.length
-                ? '<article class="hub-panel"><h3>Order bumps</h3><div class="hub-kv">' +
-                    bumps.map(function (bump) {
-                        var bumpPrice = ((bump.amount_cents || 0) / 100).toFixed(2).replace('.', ',');
-                        return '<div class="hub-kv__row"><span>' + escapeHtml(bump.label || bump.bump_id) +
-                            '</span><strong>+' + escapeHtml(bumpPrice) + ' €</strong></div>';
-                    }).join('') +
-                '</div></article>'
-                : '') +
+            '<article class="hub-panel">' +
+                '<h3>Checkouts desta oferta</h3>' +
+                '<div class="hub-checkout-list">' + checkoutRows + '</div>' +
+                '<details class="hub-collapsible hub-collapsible--create" id="hub-checkout-form-wrap">' +
+                    '<summary>+ Novo / editar checkout</summary>' +
+                    '<form class="hub-checkout-form" id="hub-checkout-form">' +
+                        '<div class="hub-form-grid">' +
+                            '<label class="hub-field"><span class="hub-field__label">ID</span>' +
+                            '<input class="hub-login__input" name="checkout_id" required placeholder="main ou upsell-a" ' +
+                                'pattern="[a-z0-9][a-z0-9_-]{0,63}"></label>' +
+                            '<label class="hub-field"><span class="hub-field__label">Label</span>' +
+                            '<input class="hub-login__input" name="label" required placeholder="Checkout Principal"></label>' +
+                            '<label class="hub-field"><span class="hub-field__label">Preço (€)</span>' +
+                            '<input class="hub-login__input" name="amount_euros" type="number" min="0.50" step="0.01" ' +
+                                'required value="1.00"></label>' +
+                            '<label class="hub-field"><span class="hub-field__label">Moeda</span>' +
+                            '<select class="hub-login__input" name="currency">' +
+                                '<option value="eur">EUR</option>' +
+                                '<option value="usd">USD</option>' +
+                                '<option value="brl">BRL</option>' +
+                            '</select></label>' +
+                        '</div>' +
+                        '<div class="hub-actions">' +
+                            '<button class="hub-button" type="submit">Guardar checkout</button>' +
+                            '<button class="hub-button hub-button--ghost" type="button" id="hub-checkout-form-reset">Limpar</button>' +
+                        '</div>' +
+                        '<p class="hub-form-message" id="hub-checkout-form-message" hidden></p>' +
+                    '</form>' +
+                '</details>' +
+            '</article>' +
+            '<article class="hub-panel">' +
+                '<h3>Order bumps</h3>' +
+                '<div class="hub-kv">' + bumpRows + '</div>' +
+                '<details class="hub-collapsible hub-collapsible--create">' +
+                    '<summary>+ Novo / editar bump</summary>' +
+                    '<form class="hub-checkout-form" id="hub-bump-form">' +
+                        '<div class="hub-form-grid">' +
+                            '<label class="hub-field"><span class="hub-field__label">ID</span>' +
+                            '<input class="hub-login__input" name="bump_id" required placeholder="bump-ebook"></label>' +
+                            '<label class="hub-field"><span class="hub-field__label">Label</span>' +
+                            '<input class="hub-login__input" name="label" required placeholder="Ebook extra"></label>' +
+                            '<label class="hub-field"><span class="hub-field__label">Preço (€)</span>' +
+                            '<input class="hub-login__input" name="amount_euros" type="number" min="0.50" step="0.01" ' +
+                                'required value="7.00"></label>' +
+                        '</div>' +
+                        '<div class="hub-actions">' +
+                            '<button class="hub-button" type="submit">Guardar bump</button>' +
+                        '</div>' +
+                        '<p class="hub-form-message" id="hub-bump-form-message" hidden></p>' +
+                    '</form>' +
+                '</details>' +
+            '</article>' +
             '<article class="hub-panel hub-gemini-mount">' +
                 '<h3>Construir checkout com Gemini</h3>' +
                 '<p class="hub-panel__sub">Descreve o layout (dark, scarcity, MB WAY, testemunhos). A IA gera HTML/CSS e configura preço/bumps.</p>' +
@@ -2697,6 +2778,178 @@
         if (openIntegrationsBtn) {
             openIntegrationsBtn.addEventListener('click', function () {
                 openModule('integracoes');
+            });
+        }
+
+        function eurosToCents(value) {
+            return Math.round(parseFloat(String(value || '0').replace(',', '.'), 10) * 100);
+        }
+
+        function fillCheckoutForm(row) {
+            var form = modulePanel.querySelector('#hub-checkout-form');
+            var wrap = modulePanel.querySelector('#hub-checkout-form-wrap');
+
+            if (!form || !row) {
+                return;
+            }
+
+            form.checkout_id.value = row.checkout_id || '';
+            form.checkout_id.readOnly = row.checkout_id === 'main';
+            form.label.value = row.label || '';
+            form.amount_euros.value = ((row.amount_cents || 100) / 100).toFixed(2);
+            form.currency.value = String(row.currency || 'eur').toLowerCase();
+
+            if (wrap) {
+                wrap.open = true;
+            }
+        }
+
+        modulePanel.querySelectorAll('[data-edit-checkout]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var id = btn.getAttribute('data-edit-checkout');
+                var row = checkouts.find(function (item) {
+                    return item.checkout_id === id;
+                });
+                fillCheckoutForm(row);
+            });
+        });
+
+        modulePanel.querySelectorAll('[data-sync-checkout]').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+                var id = btn.getAttribute('data-sync-checkout');
+
+                try {
+                    showStatus('A sincronizar Stripe…');
+                    var payload = await apiFetch(
+                        '/api/sales-attribution?action=hub_sync_checkout_stripe',
+                        {
+                            method: 'POST',
+                            body: {
+                                slug: offerSlug,
+                                checkout_id: id,
+                                mode: offerMode === 'live' ? 'live' : 'test',
+                            },
+                        }
+                    );
+                    showStatus(
+                        payload.sync && payload.sync.ok
+                            ? 'Stripe sincronizado (' + id + ').'
+                            : ((payload.sync && payload.sync.message) || 'Sync concluído com avisos.')
+                    );
+                    delete state.moduleCache[offerSlug + ':checkout'];
+                    await openModule('checkout');
+                } catch (error) {
+                    showStatus(error.message, true);
+                }
+            });
+        });
+
+        modulePanel.querySelectorAll('[data-deactivate-checkout]').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+                var id = btn.getAttribute('data-deactivate-checkout');
+
+                if (!window.confirm('Desactivar checkout "' + id + '"?')) {
+                    return;
+                }
+
+                try {
+                    showStatus('A desactivar…');
+                    await apiFetch('/api/sales-attribution?action=hub_deactivate_checkout', {
+                        method: 'POST',
+                        body: { slug: offerSlug, checkout_id: id },
+                    });
+                    delete state.moduleCache[offerSlug + ':checkout'];
+                    await openModule('checkout');
+                    showStatus('Checkout desactivado.');
+                } catch (error) {
+                    showStatus(error.message, true);
+                }
+            });
+        });
+
+        var checkoutForm = modulePanel.querySelector('#hub-checkout-form');
+        var checkoutMsg = modulePanel.querySelector('#hub-checkout-form-message');
+        var resetBtn = modulePanel.querySelector('#hub-checkout-form-reset');
+
+        if (resetBtn && checkoutForm) {
+            resetBtn.addEventListener('click', function () {
+                checkoutForm.reset();
+                checkoutForm.checkout_id.readOnly = false;
+                checkoutForm.amount_euros.value = '1.00';
+                if (checkoutMsg) {
+                    checkoutMsg.hidden = true;
+                }
+            });
+        }
+
+        if (checkoutForm) {
+            checkoutForm.addEventListener('submit', async function (event) {
+                event.preventDefault();
+
+                try {
+                    if (checkoutMsg) {
+                        checkoutMsg.hidden = true;
+                    }
+
+                    showStatus('A guardar checkout…');
+                    await apiFetch('/api/sales-attribution?action=hub_upsert_checkout', {
+                        method: 'POST',
+                        body: {
+                            slug: offerSlug,
+                            checkout_id: checkoutForm.checkout_id.value.trim(),
+                            label: checkoutForm.label.value.trim(),
+                            amount_cents: eurosToCents(checkoutForm.amount_euros.value),
+                            currency: checkoutForm.currency.value,
+                            mode: offerMode === 'live' ? 'live' : 'test',
+                        },
+                    });
+                    delete state.moduleCache[offerSlug + ':checkout'];
+                    await openModule('checkout');
+                    showStatus('Checkout guardado.');
+                } catch (error) {
+                    if (checkoutMsg) {
+                        checkoutMsg.textContent = error.message;
+                        checkoutMsg.hidden = false;
+                    }
+                    showStatus(error.message, true);
+                }
+            });
+        }
+
+        var bumpForm = modulePanel.querySelector('#hub-bump-form');
+        var bumpMsg = modulePanel.querySelector('#hub-bump-form-message');
+
+        if (bumpForm) {
+            bumpForm.addEventListener('submit', async function (event) {
+                event.preventDefault();
+
+                try {
+                    if (bumpMsg) {
+                        bumpMsg.hidden = true;
+                    }
+
+                    var bumpId = bumpForm.bump_id.value.trim();
+                    showStatus('A guardar bump…');
+                    await apiFetch('/api/sales-attribution?action=hub_upsert_order_bump', {
+                        method: 'POST',
+                        body: {
+                            slug: offerSlug,
+                            bump_id: bumpId,
+                            label: bumpForm.label.value.trim(),
+                            amount_cents: eurosToCents(bumpForm.amount_euros.value),
+                            is_active: true,
+                        },
+                    });
+                    delete state.moduleCache[offerSlug + ':checkout'];
+                    await openModule('checkout');
+                    showStatus('Order bump guardado.');
+                } catch (error) {
+                    if (bumpMsg) {
+                        bumpMsg.textContent = error.message;
+                        bumpMsg.hidden = false;
+                    }
+                    showStatus(error.message, true);
+                }
             });
         }
 
