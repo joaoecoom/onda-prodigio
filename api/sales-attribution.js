@@ -471,11 +471,14 @@ async function handleSetupCheckout19Price(res) {
 }
 
 module.exports = async function handler(req, res) {
-    if (!metricsAuth.isAuthorized(req)) {
+    var action = String(req.query.action || 'stripe').trim();
+    var isPublicHubPagePreview = req.method === 'GET' && action === 'hub_page_preview';
+    var isPublicHubPageDomain = req.method === 'GET' && action === 'hub_page_domain';
+    var isPublicHubQuizSubmit = req.method === 'POST' && action === 'hub_quiz_submit';
+
+    if (!isPublicHubPagePreview && !isPublicHubPageDomain && !isPublicHubQuizSubmit && !metricsAuth.isAuthorized(req)) {
         return res.status(401).json({ error: 'Não autorizado.' });
     }
-
-    var action = String(req.query.action || 'stripe').trim();
 
     if (req.method === 'POST') {
         if (action === 'meta_status') {
@@ -662,6 +665,10 @@ module.exports = async function handler(req, res) {
 
         if (action === 'hub_offers') {
             return require('../lib/hub/handlers/offers-list')(req, res);
+        }
+
+        if (action === 'hub_metrics_overview' || action === 'hub_metrics') {
+            return require('../lib/hub/handlers/metrics-overview')(req, res);
         }
 
         if (action === 'hub_offer') {
