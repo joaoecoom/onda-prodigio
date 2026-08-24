@@ -4,6 +4,24 @@
     var moduleParam = params.get('module') || '';
     var aulaParam = params.get('aula') || '';
 
+    var GENERIC_PRODUCT_IDS_SKIP = {
+        'onda-prodigio': true,
+        'clube-super-cerebros': true,
+        'tardes-sem-brigas': true,
+        'caixa-super-truques': true,
+        'grandes-mentes': true,
+        'codigo-autoridade': true,
+    };
+
+    if (window.ComunidadeProdutoGeneric && productId && !GENERIC_PRODUCT_IDS_SKIP[productId]) {
+        window.ComunidadeProdutoGeneric.boot({
+            productId: productId,
+            offerSlug: params.get('offer') || '',
+            editMode: params.get('edit') === '1',
+        });
+        return;
+    }
+
     var THUMB_LABELS = [
         'Começa aqui',
         'Método Onda Prodígio',
@@ -188,11 +206,15 @@
         sidebarSearchQuery: '',
         sidebarExpandedModules: {},
         progress: {},
+        editMode: false,
+        contentEditorMount: null,
     };
 
     var viewModules = document.getElementById('view-modules');
     var viewModuleAulas = document.getElementById('view-module-aulas');
     var viewLesson = document.getElementById('view-lesson');
+    var viewContentEditor = document.getElementById('view-content-editor');
+    var btnEditMode = document.getElementById('btn-edit-mode');
     var moduleGrid = document.getElementById('module-grid');
     var moduleSearch = document.getElementById('module-search');
     var aulaList = document.getElementById('aula-list');
@@ -1049,6 +1071,10 @@
     function resolveAssetUrl(path) {
         if (!path) {
             return '';
+        }
+
+        if (/^https?:\/\//i.test(path)) {
+            return path;
         }
 
         return path.charAt(0) === '/' ? path : '/' + path.replace(/^\//, '');
@@ -2088,10 +2114,6 @@
             badges += '<span class="comunidade-comment__badge comunidade-comment__badge--hidden">Oculto</span>';
         }
 
-        if (comment.is_ai) {
-            badges += '<span class="comunidade-comment__badge comunidade-comment__badge--ai">Resposta automática</span>';
-        }
-
         actions += '<div class="comunidade-comment__actions">';
 
         actions += '<button type="button" class="comunidade-comment__action' + (comment.liked_by_me ? ' is-active' : '') + '" data-like-id="' + comment.id + '" aria-pressed="' + (comment.liked_by_me ? 'true' : 'false') + '">' +
@@ -2382,6 +2404,50 @@
         document.title = data.product.name + ' — Comunidade Onda Prodígio';
 
         await loadProgress();
+
+        if (!state.editMode) {
+            resolveInitialView();
+        }
+    }
+
+    function setEditMode(enabled) {
+        state.editMode = Boolean(enabled);
+
+        if (btnEditMode) {
+            btnEditMode.classList.toggle('is-active', state.editMode);
+            btnEditMode.textContent = state.editMode ? 'Ver como membro' : 'Modo edição';
+        }
+
+        if (state.editMode) {
+            if (viewModules) viewModules.hidden = true;
+            if (viewModuleAulas) viewModuleAulas.hidden = true;
+            if (viewLesson) viewLesson.hidden = true;
+            if (viewContentEditor) viewContentEditor.hidden = false;
+
+            if (!state.contentEditorMount && viewContentEditor && window.ComunidadeContentEditor) {
+                state.contentEditorMount = window.ComunidadeContentEditor.mount(viewContentEditor, {
+                    productId: productId,
+                    offerSlug: params.get('offer') || productId,
+                    onProductChange: function (nextProductId) {
+                        var nextParams = new URLSearchParams(window.location.search);
+                        nextParams.set('id', nextProductId);
+                        nextParams.set('edit', '1');
+                        window.location.href = '/comunidade/produto?' + nextParams.toString();
+                    },
+                    onReload: function () {
+                        loadProduct();
+                    },
+                });
+            }
+
+            if (state.contentEditorMount) {
+                state.contentEditorMount.load();
+            }
+
+            return;
+        }
+
+        if (viewContentEditor) viewContentEditor.hidden = true;
         resolveInitialView();
     }
 
@@ -2407,6 +2473,10 @@
                 if (adminSurveyLink) {
                     adminSurveyLink.hidden = false;
                 }
+
+                if (btnEditMode) {
+                    btnEditMode.hidden = false;
+                }
             } else {
                 topbarUser.textContent = meData.name ? meData.name + ' · ' + meData.email : meData.email;
                 topbarUser.title = '';
@@ -2419,9 +2489,19 @@
 
         await loadProduct();
 
+        if (state.isAdmin && params.get('edit') === '1') {
+            setEditMode(true);
+        }
+
         if (getActiveCommentModuleId()) {
             await loadComments();
         }
+    }
+
+    if (btnEditMode) {
+        btnEditMode.addEventListener('click', function () {
+            setEditMode(!state.editMode);
+        });
     }
 
     btnPrev.addEventListener('click', function () {

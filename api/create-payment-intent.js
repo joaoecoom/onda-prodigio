@@ -1,4 +1,5 @@
-var stripeEnv = require('../lib/stripe-env');
+var stripeClient = require('../lib/hub/stripe-client');
+var checkoutResolver = require('../lib/hub/checkout-resolver');
 var productCheckoutConfig = require('../lib/product-checkout-config');
 
 module.exports = async function handler(req, res) {
@@ -8,12 +9,15 @@ module.exports = async function handler(req, res) {
     }
 
     var body = req.body || {};
+    var stripeEnv = require('../lib/stripe-env');
     var mode = stripeEnv.resolveStripeMode(req, body);
     var checkoutId = stripeEnv.resolveCheckoutId(req, body);
-    var stripeClient = stripeEnv.getStripeClient(mode, checkoutId);
+    var stripeContext = await stripeClient.resolveStripeContext(req, body);
+    var stripeClientApi = stripeContext.stripe;
+    var settings = stripeContext.settings;
 
-    if (stripeClient.error || !stripeClient.stripe) {
-        return res.status(500).json({ error: stripeClient.error || 'Stripe não configurado.' });
+    if (stripeContext.error || !stripeClientApi) {
+        return res.status(500).json({ error: stripeContext.error || 'Stripe não configurado.' });
     }
 
     var serverEvents = require('../lib/tracking/server-events');
@@ -28,21 +32,58 @@ module.exports = async function handler(req, res) {
     var tracking = body.tracking && typeof body.tracking === 'object' ? body.tracking : {};
     var userAgent = req.headers['user-agent'] || '';
     var productId = typeof body.product_id === 'string' ? body.product_id.trim() : '';
-    var standaloneProduct = productId ? productCheckoutConfig.getProduct(productId) : null;
-    var amount = standaloneProduct
-        ? productCheckoutConfig.getAmountCentsForMode(productId, mode)
-        : stripeClient.settings.amountCents;
+    var selectedBumpIds = body.selected_bump_ids || body.order_bumps || [];
+    var offerName = settings.offerName || 'Onda Prodígio';
+    var amount = settings.amountCents;
+    var metadata = null;
 
-    if (standaloneProduct && standaloneProduct.billingType === 'subscription') {
-        return res.status(400).json({ error: 'Este produto usa checkout por subscrição.' });
-    }
+    if (checkoutId === 'main' && stripeContext.offer) {
+        try {
+            var resolved = await checkoutResolver.resolveUniversalCheckoutWithBumps(stripeContext.offer, {
+                checkoutId: 'main',
+                mode: mode,
+                productId: productId || stripeContext.offer.primary_product_id,
+                selectedBumpIds: selectedBumpIds,
+            });
+            var universal = resolved.checkout;
 
-    if (!Number.isFinite(amount) || amount < 50) {
-        return res.status(500).json({ error: 'Valor de pagamento inválido.' });
-    }
+            if (!universal.isActive) {
+                return res.status(400).json({ error: 'Checkout indisponível para esta oferta.' });
+            }
 
-    try {
-        var metadata = standaloneProduct ? {
+            productId = universal.productId;
+            amount = resolved.totalCents;
+
+            metadata = {
+                checkout_type: 'offer',
+                checkout: 'main',
+                product: offerName,
+                product_id: productId,
+                price_id: universal.priceId || '',
+                full_name: fullName || '',
+                phone: phone || '',
+                region: region || '',
+                country: country || '',
+                phone_country: phoneCountry || '',
+                email: email || '',
+                stripe_mode: mode,
+            };
+
+            metadata = Object.assign(metadata, resolved.bumpMetadata);
+        } catch (validationError) {
+            return res.status(400).json({ error: validationError.message || 'Checkout inválido.' });
+        }
+    } else {
+        var standaloneProduct = productId ? productCheckoutConfig.getProduct(productId) : null;
+        amount = standaloneProduct
+            ? productCheckoutConfig.getAmountCentsForMode(productId, mode)
+            : settings.amountCents;
+
+        if (standaloneProduct && standaloneProduct.billingType === 'subscription') {
+            return res.status(400).json({ error: 'Este produto usa checkout por subscrição.' });
+        }
+
+        metadata = standaloneProduct ? {
             product: standaloneProduct.name,
             product_id: productId,
             checkout_type: 'standalone',
@@ -55,34 +96,46 @@ module.exports = async function handler(req, res) {
             checkout: 'comprar-' + productId,
             stripe_mode: mode,
         } : {
-            product: 'Onda Prodígio',
-            price_id: stripeClient.settings.priceId || '',
+            product: offerName,
+            price_id: settings.priceId || '',
             full_name: fullName || '',
             phone: phone || '',
             region: region || '',
             country: country || '',
             phone_country: phoneCountry || '',
             email: email || '',
-            checkout: stripeClient.settings.checkoutId,
+            checkout: settings.checkoutId,
             stripe_mode: mode,
         };
+    }
 
-        var paymentIntent = await stripeClient.stripe.paymentIntents.create({
+    if (!Number.isFinite(amount) || amount < 50) {
+        return res.status(500).json({ error: 'Valor de pagamento inválido.' });
+    }
+
+    try {
+        metadata = Object.assign(
+            metadata,
+            stripeClient.buildOfferMetadata(settings),
+            serverEvents.buildStripeTrackingMetadata(tracking, userAgent)
+        );
+
+        var paymentIntent = await stripeClientApi.paymentIntents.create({
             amount: amount,
             currency: 'eur',
-            payment_method_configuration: stripeClient.settings.paymentMethodConfiguration,
+            payment_method_configuration: settings.paymentMethodConfiguration,
             automatic_payment_methods: {
                 enabled: true,
             },
             excluded_payment_method_types: ['multibanco'],
             receipt_email: email || undefined,
-            description: standaloneProduct
-                ? standaloneProduct.name + ' — Onda Prodígio'
-                : (mode === 'test' ? 'Onda Prodígio — teste de pagamento' : 'Onda Prodígio — acesso digital'),
-            metadata: Object.assign(metadata, serverEvents.buildStripeTrackingMetadata(tracking, userAgent)),
+            description: metadata.checkout_type === 'offer'
+                ? offerName + ' — ' + (mode === 'test' ? 'teste' : 'acesso digital')
+                : (mode === 'test' ? offerName + ' — teste de pagamento' : offerName + ' — acesso digital'),
+            metadata: metadata,
         });
 
-        await stripeClient.stripe.paymentIntents.update(paymentIntent.id, {
+        await stripeClientApi.paymentIntents.update(paymentIntent.id, {
             metadata: Object.assign({}, paymentIntent.metadata || {}, {
                 purchase_event_id: 'purchase_' + paymentIntent.id,
                 client_ip: identity.sanitizeMetadataValue(metaUserData.getClientIp(req), 45),
@@ -92,6 +145,10 @@ module.exports = async function handler(req, res) {
         return res.status(200).json({
             clientSecret: paymentIntent.client_secret,
             mode: mode,
+            offerId: settings.offerId || undefined,
+            offerSlug: settings.offerSlug || undefined,
+            productId: productId || undefined,
+            checkoutId: checkoutId,
         });
     } catch (error) {
         console.error('Erro ao criar PaymentIntent:', error);

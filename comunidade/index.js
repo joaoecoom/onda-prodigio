@@ -8,6 +8,19 @@
     var heroUnlockedLabel = document.getElementById('hero-unlocked-label');
     var heroProgressFill = document.getElementById('hero-progress-fill');
     var roadmapRoot = document.getElementById('comunidade-roadmap');
+    var viewContentEditor = document.getElementById('view-content-editor-index');
+    var btnEditModeIndex = document.getElementById('btn-edit-mode-index');
+    var heroSection = document.getElementById('comunidade-hero');
+    var sectionHead = document.querySelector('.comunidade-section-head');
+
+    var state = {
+        isAdmin: false,
+        editMode: false,
+        editProductId: '',
+        contentEditorMount: null,
+        products: [],
+        offerSlug: new URLSearchParams(window.location.search).get('offer') || '',
+    };
 
     var PRODUCT_ROADMAP_LABELS = {
         'onda-prodigio': 'Onda Prodígio',
@@ -119,17 +132,74 @@
     }
 
     function renderProfileChip(meData) {
+        var isGestor = meData.role === 'admin';
+
         topbarAvatar.textContent = getInitial(meData.name, meData.email);
-        topbarName.textContent = getFirstName(meData.name, meData.email);
+        topbarName.textContent = isGestor
+            ? ((meData.name && getFirstName(meData.name, meData.email)) || 'Gestor')
+            : getFirstName(meData.name, meData.email);
         topbarProfile.hidden = false;
-        topbarProfile.title = meData.email || '';
+        topbarProfile.title = (isGestor ? 'Gestor · ' : '') + (meData.email || '');
+
+        var profileHint = topbarProfile.querySelector('.comunidade-profile-chip__hint');
+
+        if (profileHint) {
+            profileHint.textContent = isGestor ? 'Gestor' : 'Perfil';
+        }
     }
 
-    function renderProducts(products) {
+    function applyGestorMode(meData, products) {
+        if (meData.role !== 'admin') {
+            return products;
+        }
+
+        var adminBar = document.getElementById('comunidade-admin-bar');
+        var adminSurveyLink = document.getElementById('admin-survey-link');
+        var adminMembersLink = document.getElementById('admin-members-link');
+
+        if (adminBar) {
+            adminBar.hidden = false;
+        }
+
+        if (adminSurveyLink) {
+            adminSurveyLink.hidden = false;
+        }
+
+        if (btnEditModeIndex) {
+            btnEditModeIndex.hidden = false;
+        }
+
+        if (adminMembersLink) {
+            adminMembersLink.hidden = false;
+        }
+
+        document.documentElement.classList.add('comunidade-shell--gestor');
+
+        return (products || []).map(function (product) {
+            return Object.assign({}, product, { has_access: true });
+        });
+    }
+
+    function renderGestorHero(products, meData) {
+        var total = (products || []).length;
+        var firstName = getFirstName(meData.name, meData.email) || 'Gestor';
+
+        welcomeTitle.textContent = 'Modo gestor — ' + firstName;
+        welcomeSubtitle.textContent = 'Vês a comunidade como administrador. Edita conteúdo, gere membros e pré-visualiza tudo desbloqueado.';
+        heroUnlockedLabel.textContent = total + ' programa' + (total === 1 ? '' : 's');
+        heroProgressFill.style.width = '100%';
+        renderRoadmap(products);
+    }
+
+    function renderProducts(products, isAdmin) {
         if (!products.length) {
             productGrid.innerHTML = (
                 '<div class="comunidade-panel" style="padding:1.5rem;">' +
-                    '<p class="comunidade-panel__subtitle" style="margin:0;">Ainda não tens conteúdos disponíveis. Se acabaste de comprar, espera alguns minutos e actualiza a página.</p>' +
+                    '<p class="comunidade-panel__subtitle" style="margin:0;">' +
+                        (isAdmin
+                            ? 'Ainda não há programas nesta oferta. Abre o modo edição quando existir um produto, ou cria a estrutura a partir do produto no HUB.'
+                            : 'Ainda não tens conteúdos disponíveis. Se acabaste de comprar, espera alguns minutos e actualiza a página.') +
+                    '</p>' +
                 '</div>'
             );
             return;
@@ -146,11 +216,24 @@
             var hrefAttr = hasAccess
                 ? ' href="/comunidade/produto?id=' + encodeURIComponent(product.id) + '"'
                 : (isBuyable ? ' href="' + checkoutPath + '"' : '');
+
+            if (isAdmin && hasAccess) {
+                tagName = 'div';
+                hrefAttr = '';
+            }
             var badgeClass = hasAccess
                 ? 'comunidade-card__badge comunidade-card__badge--open'
                 : 'comunidade-card__badge comunidade-card__badge--locked';
             var badgeText = hasAccess ? 'Desbloqueado' : (isBuyable ? 'Comprar' : 'Bloqueado');
             var ctaText = hasAccess ? 'Aceder →' : (isBuyable ? 'Comprar →' : 'Indisponível');
+            var adminEditLink = isAdmin && hasAccess
+                ? '<div class="comunidade-card__admin-actions">' +
+                    '<a class="comunidade-card__admin-link" href="/comunidade/produto?id=' + encodeURIComponent(product.id) + '">Pré-visualizar →</a>' +
+                    '<button type="button" class="comunidade-card__admin-link" data-edit-product="' + escapeHtml(product.id) + '">Gerir conteúdo</button>' +
+                  '</div>'
+                : (isAdmin
+                    ? '<button type="button" class="comunidade-card__admin-link" data-edit-product="' + escapeHtml(product.id) + '">Gerir conteúdo</button>'
+                    : '');
 
             return (
                 '<' + tagName + ' class="' + cardClass + '"' + hrefAttr + '>' +
@@ -166,10 +249,76 @@
                             '<span class="comunidade-card__meta">' + moduleCount + ' módulo(s)</span>' +
                             '<span class="comunidade-card__cta">' + ctaText + '</span>' +
                         '</div>' +
+                        adminEditLink +
                     '</div>' +
                 '</' + tagName + '>'
             );
         }).join('');
+
+        if (isAdmin) {
+            productGrid.querySelectorAll('[data-edit-product]').forEach(function (button) {
+                button.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openProductEditor(button.getAttribute('data-edit-product'));
+                });
+            });
+        }
+    }
+
+    function setIndexEditMode(enabled, productId) {
+        state.editMode = Boolean(enabled);
+        state.editProductId = productId || state.editProductId || '';
+
+        if (btnEditModeIndex) {
+            btnEditModeIndex.classList.toggle('is-active', state.editMode);
+            btnEditModeIndex.textContent = state.editMode ? 'Fechar editor' : 'Modo edição';
+        }
+
+        if (heroSection) heroSection.hidden = state.editMode;
+        if (sectionHead) sectionHead.hidden = state.editMode;
+        if (productGrid) productGrid.hidden = state.editMode;
+        if (viewContentEditor) viewContentEditor.hidden = !state.editMode;
+
+        if (!state.editMode) {
+            return;
+        }
+
+        if (!state.editProductId && state.products.length) {
+            state.editProductId = state.products[0].id;
+        }
+
+        if (!state.editProductId || !viewContentEditor || !window.ComunidadeContentEditor) {
+            return;
+        }
+
+        if (state.contentEditorMount && state.contentEditorMount.setProduct) {
+            state.contentEditorMount.setProduct(state.editProductId);
+            return;
+        }
+
+        state.contentEditorMount = window.ComunidadeContentEditor.mount(viewContentEditor, {
+            productId: state.editProductId,
+            offerSlug: state.offerSlug || state.editProductId,
+            products: state.products.map(function (product) {
+                return { id: product.id, name: product.name };
+            }),
+            onProductChange: function (nextProductId) {
+                state.editProductId = nextProductId;
+            },
+            onReload: function () {
+                boot();
+            },
+        });
+
+        if (state.contentEditorMount) {
+            state.contentEditorMount.load();
+        }
+    }
+
+    function openProductEditor(productId) {
+        state.editProductId = productId;
+        setIndexEditMode(true, productId);
     }
 
     async function boot() {
@@ -183,22 +332,19 @@
         var meData = await meResponse.json();
 
         if (meResponse.ok) {
+            state.isAdmin = meData.role === 'admin';
             renderProfileChip(meData);
-
-            if (meData.role === 'admin') {
-                var adminSurveyLink = document.getElementById('admin-survey-link');
-
-                if (adminSurveyLink) {
-                    adminSurveyLink.hidden = false;
-                }
-            }
+            applyGestorMode(meData, []);
 
             if (window.ComunidadeTheme && window.ComunidadeTheme.syncTopbarHeight) {
                 window.ComunidadeTheme.syncTopbarHeight();
             }
         }
 
-        var productsResponse = await window.ComunidadeAuth.apiFetch('/api/comunidade/products');
+        var productsResponse = await window.ComunidadeAuth.apiFetch(
+            '/api/comunidade/products' +
+                (state.offerSlug ? '?offer=' + encodeURIComponent(state.offerSlug) : '')
+        );
         var productsData = await productsResponse.json();
 
         if (!productsResponse.ok) {
@@ -211,12 +357,42 @@
         }
 
         var products = productsData.products || [];
+        state.products = products;
 
-        if (meResponse.ok) {
-            renderHero(products, meData);
+        if (meResponse.ok && meData.role === 'admin') {
+            products = applyGestorMode(meData, products);
+            state.products = products;
         }
 
-        renderProducts(products);
+        if (meResponse.ok) {
+            if (meData.role === 'admin') {
+                renderGestorHero(products, meData);
+            } else {
+                renderHero(products, meData);
+            }
+        }
+
+        renderProducts(products, state.isAdmin);
+
+        if (state.editMode && state.editProductId) {
+            setIndexEditMode(true, state.editProductId);
+        }
+    }
+
+    if (btnEditModeIndex) {
+        btnEditModeIndex.addEventListener('click', function () {
+            if (state.editMode) {
+                setIndexEditMode(false);
+                return;
+            }
+
+            if (!state.products.length) {
+                window.alert('Ainda não há programas para editar nesta oferta.');
+                return;
+            }
+
+            openProductEditor(state.products[0].id);
+        });
     }
 
     document.getElementById('btn-logout').addEventListener('click', function () {

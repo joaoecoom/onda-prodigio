@@ -164,6 +164,33 @@ html[data-theme="light"] .comunidade-theme-toggle__icon--light {
 
 /* ── Header ── */
 
+.comunidade-admin-bar {
+    margin: 0 1.25rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    border-radius: 12px;
+    background: rgba(99, 102, 241, 0.08);
+}
+
+.comunidade-admin-bar__label {
+    margin: 0 0 0.25rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #a5b4fc;
+}
+
+.comunidade-admin-bar__text {
+    margin: 0;
+    color: #cbd5e1;
+    font-size: 0.92rem;
+}
+
+.comunidade-shell--gestor .comunidade-profile-chip__hint {
+    color: #a5b4fc;
+}
+
 .comunidade-topbar {
     background: var(--surface);
     border-bottom: 1px solid var(--border);

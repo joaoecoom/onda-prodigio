@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-PT" data-page-type="checkout" data-checkout-id="main">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout</title>
+    <meta name="robots" content="noindex, nofollow">
+    <script>window.dataLayer = window.dataLayer || [];</script>
+    <script src="/assets/tracking.js?v=meta-emq-usd" defer></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/checkout9/checkout.css?v=2">
+    <style>
+        .checkout-universal { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+        .checkout-universal__title { font-size: 1.5rem; margin: 0 0 8px; }
+        .checkout-universal__subtitle { color: #64748b; margin: 0 0 24px; }
+        .order-bump--simple { margin-bottom: 8px; }
+        .order-bumps-section { margin: 20px 0; }
+        .order-bumps-section__title { font-size: 0.95rem; font-weight: 700; margin: 0 0 10px; }
+    </style>
+</head>
+<body>
+    <div class="checkout-universal">
+        <h1 class="checkout-universal__title" id="checkout-title">Checkout</h1>
+        <p class="checkout-universal__subtitle" id="checkout-subtitle">A carregar…</p>
+
+        <section class="checkout-form-section" aria-label="Pagamento">
+            <div class="checkout-form-panel">
+                <div class="product-summary">
+                    <p class="product-summary__label">Total</p>
+                    <p class="product-summary__price" id="checkout-price">—</p>
+                </div>
+
+                <div class="order-summary" id="order-summary" hidden>
+                    <div id="order-summary-lines"></div>
+                    <div class="order-summary__total-row">
+                        <span>Total</span>
+                        <strong id="order-summary-total">—</strong>
+                    </div>
+                </div>
+
+                <form id="checkout-form" class="checkout-form" novalidate>
+                    <section class="order-bumps-section" id="order-bumps-section" hidden aria-label="Adicionar ao pedido">
+                        <h2 class="order-bumps-section__title">Adicionar ao pedido</h2>
+                        <div class="order-bump-list" id="order-bump-list"></div>
+                    </section>
+
+                    <label class="checkout-field">
+                        <span>Nome completo</span>
+                        <input type="text" name="full_name" autocomplete="name" required>
+                    </label>
+                    <label class="checkout-field">
+                        <span>Email</span>
+                        <input type="email" name="email" autocomplete="email" required>
+                    </label>
+                    <label class="checkout-field">
+                        <span>Telefone</span>
+                        <input type="tel" name="phone" autocomplete="tel">
+                    </label>
+
+                    <div id="payment-element"></div>
+                    <p id="payment-message" class="payment-message" hidden></p>
+
+                    <button type="submit" class="checkout-submit" id="submit-payment" disabled>
+                        Pagar agora
+                    </button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="/checkout/order-bumps.js?v=1"></script>
+    <script src="/checkout/checkout.js?v=2"></script>
+</body>
+</html>

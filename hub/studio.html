@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-PT" data-page-type="internal">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#090A0D">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Construtor inteligente — HUB DR Ecoom</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/platform.css?v=2">
+    <link rel="stylesheet" href="/hub/hub-v2.css?v=13">
+    <link rel="stylesheet" href="/hub/studio.css?v=11">
+</head>
+<body>
+    <div class="studio-app" id="studio-app">
+        <header class="studio-topbar">
+            <div class="studio-topbar__left">
+                <a class="studio-topbar__back" href="/hub/" id="studio-back-hub">← Funis</a>
+                <div class="studio-topbar__title">
+                    <strong id="studio-page-name">Page</strong>
+                    <span id="studio-page-meta">draft · Construtor inteligente</span>
+                </div>
+            </div>
+            <div class="studio-topbar__devices" role="group" aria-label="Preview">
+                <button type="button" class="studio-device is-active" data-device="desktop" title="Desktop">Desktop</button>
+                <button type="button" class="studio-device" data-device="tablet" title="Tablet">Tablet</button>
+                <button type="button" class="studio-device" data-device="mobile" title="Mobile">Mobile</button>
+            </div>
+            <div class="studio-topbar__right">
+                <button type="button" class="hub-button hub-button--ghost" id="studio-undo" disabled title="Desfazer (⌘Z)">↶</button>
+                <button type="button" class="hub-button hub-button--ghost" id="studio-redo" disabled title="Refazer (⇧⌘Z)">↷</button>
+                <button type="button" class="hub-button hub-button--ghost" id="studio-refresh-preview" title="Actualizar preview no painel">↻</button>
+                <a class="hub-button" id="studio-open-preview" href="#" target="_blank" rel="noopener noreferrer" title="Abrir a página numa nova janela">↗ Abrir página</a>
+            </div>
+        </header>
+
+        <div class="studio-workspace">
+            <aside class="studio-sidebar" aria-label="Estrutura e biblioteca">
+                <div class="studio-sidebar__tabs" role="tablist">
+                    <button type="button" class="studio-sidebar__tab is-active" data-tab="blocks" role="tab" aria-selected="true">Blocos</button>
+                    <button type="button" class="studio-sidebar__tab" data-tab="library" role="tab" aria-selected="false">Biblioteca</button>
+                </div>
+
+                <div class="studio-sidebar__panel is-active" data-panel="blocks" role="tabpanel">
+                    <div class="studio-sidebar__actions">
+                        <button type="button" class="studio-chip-btn" id="studio-add-block" title="Acrescentar bloco vazio">＋ Acrescentar bloco</button>
+                        <button type="button" class="studio-chip-btn" id="studio-save-block" disabled title="Guardar bloco seleccionado na biblioteca">💾 Guardar bloco</button>
+                        <button type="button" class="studio-chip-btn studio-chip-btn--ghost" id="studio-clear-page" title="Apagar todos os blocos">↺ Começar do zero</button>
+                    </div>
+                    <p class="studio-sidebar__hint">Arrasta para reordenar · ✎ renomeia · ✕ elimina · ＋ acrescenta. Grava e actualiza o preview de imediato.</p>
+                    <div class="studio-blocks" id="studio-blocks">
+                        <p class="studio-empty">Ainda sem blocos.</p>
+                    </div>
+                </div>
+
+                <div class="studio-sidebar__panel" data-panel="library" role="tabpanel" hidden>
+                    <p class="studio-sidebar__hint">Blocos, popups e scripts guardados — reutiliza entre ofertas.</p>
+                    <div class="studio-library" id="studio-library">
+                        <p class="studio-empty">Sem blocos guardados.</p>
+                    </div>
+                </div>
+            </aside>
+
+            <section class="studio-pane studio-pane--ai" id="studio-ai-mount" aria-label="IA"></section>
+
+            <main class="studio-pane studio-pane--preview">
+                <div class="studio-preview__head">
+                    <span>Live preview</span>
+                    <a class="studio-preview__url" id="studio-preview-label" href="#" target="_blank" rel="noopener noreferrer" title="Abrir numa nova janela"></a>
+                    <a class="studio-preview__open" id="studio-open-preview-inline" href="#" target="_blank" rel="noopener noreferrer" title="Abrir numa nova janela">↗ Nova janela</a>
+                </div>
+                <div class="studio-preview__body">
+                    <div class="studio-preview__frame" id="studio-preview-frame" data-device="desktop">
+                        <iframe class="studio-preview__iframe" id="studio-preview-iframe" title="Preview da page"></iframe>
+                        <div class="studio-preview__empty" id="studio-preview-empty">
+                            <p>Page vazia — descreve o primeiro bloco no chat.</p>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <footer class="studio-status" id="studio-status" hidden></footer>
+
+        <dialog class="studio-dialog" id="studio-save-dialog">
+            <form method="dialog" class="studio-dialog__form" id="studio-save-form">
+                <h2>Guardar bloco</h2>
+                <p class="studio-dialog__sub">Guarda esta secção para reutilizar noutras pages ou ofertas.</p>
+                <label class="studio-field">
+                    <span>Nome</span>
+                    <input class="hub-login__input" id="studio-save-name" required minlength="2" placeholder="Ex: Hero VSL top">
+                </label>
+                <label class="studio-field">
+                    <span>Tipo</span>
+                    <select class="hub-login__input" id="studio-save-kind">
+                        <option value="section">Secção completa</option>
+                        <option value="block">Bloco individual</option>
+                        <option value="popup">Popup</option>
+                        <option value="script">Script de vendas</option>
+                    </select>
+                </label>
+                <label class="studio-check">
+                    <input type="checkbox" id="studio-save-global">
+                    <span>Biblioteca global (todas as ofertas)</span>
+                </label>
+                <div class="studio-dialog__actions">
+                    <button type="button" class="hub-button hub-button--ghost" id="studio-save-cancel">Cancelar</button>
+                    <button type="submit" class="hub-button">Guardar</button>
+                </div>
+            </form>
+        </dialog>
+    </div>
+
+    <script src="/hub/hub-ai-panel.js?v=10"></script>
+    <script src="/hub/studio.js?v=21"></script>
+</body>
+</html>

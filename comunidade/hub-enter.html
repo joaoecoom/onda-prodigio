@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-PT" data-page-type="internal">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>A entrar na comunidade…</title>
+    <link rel="stylesheet" href="/comunidade/comunidade.css?v=1">
+    <style>
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            margin: 0;
+            background: #0b1020;
+            color: #e5e7eb;
+            font-family: "Plus Jakarta Sans", Inter, sans-serif;
+        }
+
+        .hub-enter {
+            width: min(420px, calc(100vw - 32px));
+            padding: 28px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.03);
+            text-align: center;
+        }
+
+        .hub-enter h1 {
+            font-size: 1.125rem;
+            margin: 0 0 8px;
+        }
+
+        .hub-enter p {
+            margin: 0;
+            color: #94a3b8;
+            font-size: 0.9375rem;
+        }
+
+        .hub-enter.is-error p {
+            color: #fca5a5;
+        }
+    </style>
+</head>
+<body>
+    <div class="hub-enter" id="hub-enter">
+        <h1>A preparar acesso de administrador…</h1>
+        <p id="hub-enter-status">A ligar à comunidade.</p>
+    </div>
+    <script src="/comunidade/auth.js?v=1"></script>
+    <script src="/comunidade/hub-enter.js?v=3"></script>
+</body>
+</html>

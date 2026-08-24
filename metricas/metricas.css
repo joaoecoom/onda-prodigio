@@ -1077,3 +1077,44 @@ body {
         width: 100%;
     }
 }
+
+html.metrics-embed,
+html.metrics-embed body {
+    background: #0b0f14;
+}
+
+html.metrics-embed .metrics-dashboard {
+    padding-top: 0.75rem;
+}
+
+html.metrics-embed .metrics-header__eyebrow,
+html.metrics-embed #metrics-logout,
+html.metrics-embed #adm-logout,
+html.metrics-embed .metrics-nav {
+    display: none !important;
+}
+
+/* DR Ecoom platform alignment (Fase 7) */
+body {
+    font-family: var(--dr-font, 'Plus Jakarta Sans', system-ui, sans-serif);
+    background: var(--dr-bg, #090a0d);
+    color: var(--dr-text, #f4f4f5);
+}
+
+.metrics-login__card,
+.metrics-kpi,
+.metrics-panel,
+.metrics-card {
+    border-radius: 8px;
+    border-color: var(--dr-border, rgba(255, 255, 255, 0.06));
+}
+
+.metrics-kpi {
+    background: transparent;
+    box-shadow: none;
+}
+
+.metrics-header h1 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}

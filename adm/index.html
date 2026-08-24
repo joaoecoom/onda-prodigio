@@ -8,8 +8,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/metricas/metricas.css?v=5">
-    <link rel="stylesheet" href="/adm/adm.css?v=3">
+    <link rel="stylesheet" href="/metricas/metricas.css?v=18">
+    <link rel="stylesheet" href="/adm/adm.css?v=6">
+    <script>
+        if (new URLSearchParams(window.location.search).get('embed') === '1') {
+            document.documentElement.classList.add('metrics-embed');
+        }
+    </script>
 </head>
 <body>
     <noscript>
@@ -38,6 +43,7 @@
                     <p class="metrics-header__sub" id="adm-summary-text">Membros sincronizados com Stripe — acessos e valores reflectem o que foi comprado.</p>
                 </div>
                 <div class="metrics-header__actions">
+                    <a class="metrics-button metrics-button--primary" id="adm-open-community" href="#" target="_blank" rel="noopener">Abrir comunidade ↗</a>
                     <input class="metrics-login__input adm-search" id="adm-search" type="search" placeholder="Pesquisar email ou nome…">
                     <button class="metrics-button metrics-button--ghost" type="button" id="adm-resend-never-logged-in">Reenviar a quem nunca entrou</button>
                     <button class="metrics-button metrics-button--ghost" type="button" id="adm-refresh">Actualizar</button>
@@ -47,6 +53,12 @@
 
             <div class="metrics-status" id="adm-status" hidden></div>
 
+            <nav class="adm-tabs" role="tablist" aria-label="Secções do painel">
+                <button class="adm-tabs__btn is-active" type="button" role="tab" aria-selected="true" data-adm-tab="members" id="adm-tab-btn-members">Membros</button>
+                <button class="adm-tabs__btn" type="button" role="tab" aria-selected="false" data-adm-tab="content" id="adm-tab-btn-content">Conteúdo</button>
+            </nav>
+
+            <div id="adm-tab-members">
             <section class="metrics-panel adm-add-panel">
                 <div class="metrics-panel__head">
                     <div>
@@ -103,9 +115,80 @@
                     </table>
                 </div>
             </section>
+            </div>
+
+            <div id="adm-tab-content" hidden>
+                <section class="metrics-panel adm-content-panel">
+                    <div class="metrics-panel__head">
+                        <div>
+                            <h2>Conteúdo da comunidade</h2>
+                            <p class="adm-muted" id="adm-content-product">A carregar…</p>
+                        </div>
+                        <div class="adm-content-actions">
+                            <button class="metrics-button metrics-button--ghost" type="button" id="adm-content-refresh">Actualizar</button>
+                            <button class="metrics-button metrics-button--primary" type="button" id="adm-content-add-module">Novo módulo</button>
+                        </div>
+                    </div>
+                    <p class="adm-muted adm-content-hint">Arrasta ⋮⋮ para reordenar. Clica <strong>Editar</strong> para tipo, ficheiros e drip. Título/descrição guardam ao sair do campo.</p>
+                    <div id="adm-content-root" class="adm-content-layout">
+                        <div id="adm-content-tree" class="adm-content-tree"></div>
+                        <aside class="adm-content-editor" id="adm-content-editor" hidden>
+                            <div class="adm-content-editor__head">
+                                <h3 id="adm-content-editor-title">Editar</h3>
+                                <button type="button" class="metrics-button metrics-button--ghost adm-content-editor__close" id="adm-content-editor-close" aria-label="Fechar">✕</button>
+                            </div>
+                            <form class="adm-content-editor__form" id="adm-content-editor-form">
+                                <input type="hidden" id="adm-editor-id" name="id">
+                                <label class="metrics-login__label">Tipo
+                                    <select class="metrics-login__input" id="adm-editor-type" name="type">
+                                        <option value="video">Vídeo</option>
+                                        <option value="ebook">PDF / Ebook</option>
+                                    </select>
+                                </label>
+                                <label class="metrics-login__label">YouTube (ID ou URL)
+                                    <input class="metrics-login__input" id="adm-editor-youtube" name="youtube_id" placeholder="dQw4w9WgXcQ ou URL completa">
+                                </label>
+                                <label class="metrics-login__label">Vídeo (URL ou caminho)
+                                    <input class="metrics-login__input" id="adm-editor-video" name="video_path" placeholder="https://… ou /comunidade/assets/…">
+                                </label>
+                                <label class="adm-upload-field">Upload vídeo
+                                    <input type="file" id="adm-editor-video-file" accept="video/mp4,video/webm">
+                                </label>
+                                <label class="metrics-login__label">PDF (URL ou caminho)
+                                    <input class="metrics-login__input" id="adm-editor-pdf" name="pdf_path" placeholder="https://… ou /comunidade/assets/…">
+                                </label>
+                                <label class="adm-upload-field">Upload PDF
+                                    <input type="file" id="adm-editor-pdf-file" accept="application/pdf">
+                                </label>
+                                <label class="metrics-login__label">Áudio (URL ou caminho)
+                                    <input class="metrics-login__input" id="adm-editor-audio" name="audio_path" placeholder="https://… ou /comunidade/assets/…">
+                                </label>
+                                <label class="adm-upload-field">Upload áudio
+                                    <input type="file" id="adm-editor-audio-file" accept="audio/mpeg,audio/mp3,audio/wav">
+                                </label>
+                                <label class="metrics-login__label">Imagem de capa (URL ou caminho)
+                                    <input class="metrics-login__input" id="adm-editor-image" name="image_url" placeholder="https://… ou /comunidade/assets/…">
+                                </label>
+                                <label class="adm-upload-field">Upload imagem
+                                    <input type="file" id="adm-editor-image-file" accept="image/png,image/jpeg,image/webp,image/gif">
+                                </label>
+                                <label class="metrics-login__label">Desbloquear após (dias)
+                                    <input class="metrics-login__input" id="adm-editor-unlock" name="unlock_after_days" type="number" min="0" step="1" value="0">
+                                </label>
+                                <div class="adm-content-editor__actions">
+                                    <button type="submit" class="metrics-button metrics-button--primary">Guardar aula</button>
+                                    <button type="button" class="metrics-button metrics-button--ghost adm-content-editor__delete" id="adm-content-editor-delete">Apagar</button>
+                                </div>
+                            </form>
+                        </aside>
+                    </div>
+                </section>
+            </div>
         </section>
     </div>
 
-    <script src="/adm/adm.js?v=3" defer></script>
+    <script src="/comunidade/auth.js?v=1" defer></script>
+    <script src="/adm/adm.js?v=7" defer></script>
+    <script src="/adm/content.js?v=2" defer></script>
 </body>
 </html>

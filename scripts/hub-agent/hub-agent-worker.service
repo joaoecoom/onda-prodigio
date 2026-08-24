@@ -1,0 +1,22 @@
+[Unit]
+Description=HUB DR Ecoom AI Task Worker (Supabase poll + Cursor Agent)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/hub-agent/worker
+EnvironmentFile=/opt/hub-agent/config/worker.env
+EnvironmentFile=-/opt/hub-agent/secrets/supabase.env
+ExecStart=/usr/bin/node /opt/hub-agent/worker/poll-tasks.js
+Restart=always
+RestartSec=8
+StandardOutput=append:/opt/hub-agent/logs/worker.log
+StandardError=append:/opt/hub-agent/logs/worker.log
+
+# Não interfere com Evolution API (porta 8080)
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

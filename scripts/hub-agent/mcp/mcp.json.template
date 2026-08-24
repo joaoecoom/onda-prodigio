@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "hub-page-tools": {
+      "command": "node",
+      "args": ["REPO_ROOT/scripts/hub-agent/mcp/hub-page-tools-server.js"],
+      "env": {
+        "HUB_AGENT_OFFER_ID": "OFFER_ID_PLACEHOLDER",
+        "HUB_AGENT_TASK_ID": "TASK_ID_PLACEHOLDER"
+      }
+    }
+  }
+}
