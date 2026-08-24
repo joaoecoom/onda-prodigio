@@ -3,70 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#0b0f14">
+    <meta name="theme-color" content="#090A0D">
     <meta name="robots" content="noindex, nofollow">
     <title>HUB DR Ecoom</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/hub/hub.css?v=4">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/assets/platform.css?v=2">
+    <link rel="stylesheet" href="/hub/hub.css?v=17">
+    <link rel="stylesheet" href="/hub/hub-v2.css?v=14">
 </head>
 <body>
     <noscript>
-        <p style="padding:2rem;font-family:Inter,sans-serif;">Activa JavaScript para usar o HUB DR Ecoom.</p>
+        <p style="padding:2rem;font-family:'Plus Jakarta Sans',sans-serif;">Activa JavaScript para usar o HUB DR Ecoom.</p>
     </noscript>
 
     <div class="hub-app" id="hub-app">
         <section class="hub-login" id="hub-login">
-            <div class="hub-login__card">
-                <p class="hub-login__eyebrow">DR Ecoom</p>
-                <h1>HUB</h1>
-                <p class="hub-login__text">Plataforma central — cada oferta é um espaço completo com funil, métricas, tracking e automações.</p>
-                <form class="hub-login__form" id="hub-login-form">
-                    <label class="hub-login__label" for="hub-password">Palavra-passe</label>
-                    <input class="hub-login__input" id="hub-password" type="password" autocomplete="current-password" required>
-                    <button class="hub-login__button" type="submit">Entrar</button>
-                    <p class="hub-login__error" id="hub-login-error" hidden></p>
-                </form>
+            <div class="hub-login__layout">
+                <div class="hub-login__hero">
+                    <div class="hub-login__brand">
+                        <div class="hub-login__logo" aria-hidden="true">DR</div>
+                        <div>
+                            <p class="hub-login__eyebrow">DR Ecoom</p>
+                            <h1>Plataforma de vendas</h1>
+                        </div>
+                    </div>
+                    <p class="hub-login__lead">Funil, checkout, tracking e automações — tudo organizado por oferta, num só lugar.</p>
+                    <ul class="hub-login__trust">
+                        <li><span class="hub-login__trust-icon" aria-hidden="true"></span> Pagamentos Stripe seguros</li>
+                        <li><span class="hub-login__trust-icon hub-login__trust-icon--chart" aria-hidden="true"></span> Métricas e Meta CAPI</li>
+                        <li><span class="hub-login__trust-icon hub-login__trust-icon--zap" aria-hidden="true"></span> Pages e funil integrados</li>
+                    </ul>
+                </div>
+                <div class="hub-login__card">
+                    <h2>Entrar no HUB</h2>
+                    <p class="hub-login__text">Acesso reservado à equipa DR Ecoom.</p>
+                    <form class="hub-login__form" id="hub-login-form">
+                        <label class="hub-login__label" for="hub-password">Palavra-passe</label>
+                        <input class="hub-login__input" id="hub-password" type="password" autocomplete="current-password" required placeholder="••••••••">
+                        <button class="hub-login__button" type="submit">Entrar na plataforma</button>
+                        <p class="hub-login__error" id="hub-login-error" hidden></p>
+                    </form>
+                </div>
             </div>
         </section>
 
-        <section class="hub-shell" id="hub-shell" hidden>
-            <header class="hub-header">
-                <div class="hub-header__brand">
-                    <p class="hub-header__eyebrow">HUB DR Ecoom</p>
-                    <h1 id="hub-page-title">Ofertas</h1>
-                    <p class="hub-header__sub" id="hub-page-sub">Selecciona uma oferta para gerir tudo dentro dela.</p>
+        <div class="hub-shell" id="hub-shell" hidden>
+            <aside class="hub-sidebar" id="hub-sidebar" aria-label="Navegação principal">
+                <div class="hub-sidebar__head">
+                    <div class="hub-sidebar__brand">
+                        <div class="hub-sidebar__logo" id="hub-sidebar-logo" title="Expandir sidebar">DR</div>
+                        <div class="hub-sidebar__brand-text">
+                            <strong>DR ECOOM</strong>
+                            <span id="hub-sidebar-context">Sales Platform</span>
+                        </div>
+                    </div>
                 </div>
-                <div class="hub-header__actions">
-                    <button class="hub-button hub-button--ghost" type="button" id="hub-back" hidden>← Ofertas</button>
-                    <button class="hub-button hub-button--ghost" type="button" id="hub-refresh">Actualizar</button>
-                    <button class="hub-button hub-button--ghost" type="button" id="hub-logout">Sair</button>
+
+                <div class="hub-sidebar__home" id="hub-sidebar-home" hidden></div>
+
+                <div class="hub-offer-switcher" id="hub-offer-switcher" hidden>
+                    <button type="button" class="hub-offer-switcher__trigger" id="hub-offer-switcher-trigger" aria-haspopup="listbox" aria-expanded="false">
+                        <span class="hub-offer-switcher__avatar" id="hub-switcher-avatar">?</span>
+                        <span class="hub-offer-switcher__body">
+                            <span class="hub-offer-switcher__name" id="hub-switcher-name">Oferta</span>
+                            <span class="hub-offer-switcher__status dr-status" id="hub-switcher-status"><span class="dr-status__dot"></span><span>—</span></span>
+                        </span>
+                        <span class="hub-offer-switcher__chev" aria-hidden="true"></span>
+                    </button>
+                    <div class="hub-offer-switcher__menu" id="hub-offer-switcher-menu" hidden role="listbox"></div>
                 </div>
-            </header>
 
-            <div class="hub-status" id="hub-status" hidden></div>
-
-            <section class="hub-view" id="hub-view-list">
-                <div class="hub-section__head">
-                    <h2>Ofertas</h2>
-                    <p class="hub-section__sub" id="hub-offers-count">A carregar…</p>
+                <nav class="hub-sidebar__nav" id="hub-sidebar-nav"></nav>
+                <div class="hub-sidebar__footer">
+                    <button type="button" class="hub-sidebar__collapse dr-btn dr-btn--ghost dr-btn--sm" id="hub-sidebar-toggle" aria-label="Expandir sidebar" title="Expandir sidebar">
+                        <span class="hub-sidebar__collapse-icon" data-icon="chevronRight" aria-hidden="true"></span>
+                        <span class="hub-sidebar__collapse-label">Expandir menu</span>
+                    </button>
+                    <button class="hub-sidebar__link hub-sidebar__link--back" type="button" id="hub-sidebar-offers">
+                        <span class="hub-sidebar__icon" data-icon="chevronLeft"></span>
+                        <span class="hub-sidebar__label">Início</span>
+                    </button>
                 </div>
-                <div class="hub-offers" id="hub-offers" aria-label="Lista de ofertas"></div>
-            </section>
+            </aside>
 
-            <section class="hub-view hub-view--offer" id="hub-view-offer" hidden>
-                <div class="hub-offer-head" id="hub-offer-head"></div>
-                <div class="hub-modules" id="hub-modules" aria-label="Módulos da oferta"></div>
-            </section>
+            <div class="hub-main">
+                <header class="hub-topbar">
+                    <div class="hub-topbar__left">
+                        <nav class="hub-breadcrumb" id="hub-breadcrumb" aria-label="Contexto"></nav>
+                    </div>
+                    <div class="hub-topbar__actions">
+                        <button class="dr-btn dr-btn--ghost dr-btn--sm hub-topbar__cmd" type="button" id="hub-command-trigger" title="Comando global (⌘K)">
+                            <span class="dr-icon" data-icon="sparkles"></span>
+                            <span class="hub-topbar__cmd-label">AI</span>
+                            <kbd class="hub-kbd">⌘K</kbd>
+                        </button>
+                        <button class="dr-btn dr-btn--icon dr-btn--ghost" type="button" id="hub-refresh" data-icon="refresh" title="Actualizar" aria-label="Actualizar"></button>
+                        <button class="dr-btn dr-btn--icon dr-btn--ghost" type="button" id="hub-logout" data-icon="logOut" title="Sair" aria-label="Sair"></button>
+                    </div>
+                </header>
 
-            <footer class="hub-footer">
-                <p id="hub-footer-host">hub-dr-ecoom.vercel.app</p>
-            </footer>
-        </section>
+                <div class="hub-status" id="hub-status" hidden></div>
+
+                <section class="hub-view" id="hub-view-list">
+                    <div class="hub-list-hero" id="hub-platform-hero">
+                        <div>
+                            <p class="hub-list-hero__eyebrow">Plataforma</p>
+                            <h2>Início</h2>
+                            <p class="hub-list-hero__sub">Resumo rápido de receita, vendas e contas Meta ligadas.</p>
+                        </div>
+                        <div class="hub-trust-strip" aria-hidden="true">
+                            <span class="hub-trust-pill">Stripe</span>
+                            <span class="hub-trust-pill">Meta Ads</span>
+                            <span class="hub-trust-pill">Page Engine</span>
+                        </div>
+                    </div>
+
+                    <div class="hub-platform-panel" id="hub-platform-panel-home">
+                        <div class="hub-platform" id="hub-platform-metrics-home"></div>
+                    </div>
+
+                    <div class="hub-platform-panel" id="hub-platform-panel-dashboard" hidden>
+                        <div class="hub-platform" id="hub-platform-metrics-dashboard"></div>
+                        <div class="hub-dashboard-embed">
+                            <div class="hub-section-mark">
+                                <h2>Métricas avançadas</h2>
+                                <span class="hub-section__sub">Stripe + Meta · últimos 30 dias</span>
+                            </div>
+                            <iframe class="hub-dashboard-embed__frame" src="/metricas/?embed=1" title="Dashboard de métricas" loading="lazy"></iframe>
+                        </div>
+                    </div>
+
+                    <div class="hub-platform-panel" id="hub-platform-panel-offers" hidden>
+                        <div class="hub-section__head">
+                            <p class="hub-section__sub" id="hub-offers-count">A carregar…</p>
+                        </div>
+                        <div class="hub-offers" id="hub-offers" aria-label="Lista de ofertas"></div>
+                    </div>
+
+                    <div class="hub-platform-panel" id="hub-platform-panel-settings" hidden>
+                        <div class="hub-platform" id="hub-platform-settings"></div>
+                    </div>
+                </section>
+
+                <section class="hub-view" id="hub-view-home" hidden>
+                    <div class="hub-home" id="hub-home"></div>
+                </section>
+
+                <section class="hub-view hub-view--module" id="hub-view-module" hidden>
+                    <div class="hub-module-panel" id="hub-module-panel"></div>
+                </section>
+
+                <footer class="hub-footer">
+                    <p id="hub-footer-host">hub-dr-ecoom.vercel.app</p>
+                </footer>
+            </div>
+        </div>
+
+        <div class="hub-chat" id="hub-chat" hidden aria-label="Assistente Cursor">
+            <div class="hub-chat__dock" id="hub-chat-panel" hidden>
+                <div class="hub-chat__panel-head">
+                    <div>
+                        <p class="hub-chat__eyebrow">Assistente HUB</p>
+                        <strong>Fala com o Cursor — preenche formulários, cria funis, executa tarefas</strong>
+                    </div>
+                    <button type="button" class="hub-chat__collapse" id="hub-chat-collapse" aria-label="Minimizar">↓</button>
+                </div>
+                <div class="hub-chat__messages" id="hub-chat-messages"></div>
+                <div class="hub-chat__suggestions" id="hub-chat-suggestions"></div>
+                <p class="hub-chat__status" id="hub-chat-status" hidden></p>
+            </div>
+            <form class="hub-chat__bar" id="hub-chat-form">
+                <button type="button" class="hub-chat__toggle" id="hub-chat-toggle" data-icon="sparkles" aria-label="Abrir assistente" aria-expanded="false"></button>
+                <div class="hub-chat__input-wrap">
+                    <label class="hub-chat__input-label" for="hub-chat-input">Cursor</label>
+                    <input class="hub-chat__input" id="hub-chat-input" autocomplete="off"
+                        placeholder="Pede para preencher campos, colar dados, ou descreve o que queres fazer…">
+                </div>
+                <button type="submit" class="hub-chat__send" id="hub-chat-send">Enviar</button>
+            </form>
+        </div>
+
+        <div class="dr-command-overlay" id="dr-command-overlay" hidden>
+            <div class="dr-command" role="dialog" aria-modal="true" aria-label="Comando global">
+                <div class="dr-command__head">
+                    <span class="dr-icon" data-icon="sparkles"></span>
+                    <input class="dr-command__input" type="text" placeholder="O que queres fazer?" autocomplete="off" aria-label="Comando">
+                </div>
+                <div class="dr-command__list"></div>
+                <p class="dr-command__hint">Sugestões · Enter para executar · Esc para fechar</p>
+            </div>
+        </div>
+
+        <div class="hub-wizard-overlay" id="hub-wizard-overlay" hidden>
+            <div class="hub-wizard" role="dialog" aria-modal="true" aria-labelledby="hub-wizard-title">
+                <div class="hub-wizard__head">
+                    <div>
+                        <p class="hub-wizard__eyebrow">Assistente de setup</p>
+                        <h2 id="hub-wizard-title">Nova oferta</h2>
+                    </div>
+                    <button type="button" class="dr-btn dr-btn--ghost dr-btn--sm" id="hub-wizard-close" aria-label="Fechar">✕</button>
+                </div>
+                <div class="hub-wizard__steps" id="hub-wizard-steps"></div>
+                <div class="hub-wizard__body" id="hub-wizard-body"></div>
+                <div class="hub-wizard__foot" id="hub-wizard-foot"></div>
+            </div>
+        </div>
     </div>
 
     <script>window.HUB_PLATFORM_HOST = 'hub-dr-ecoom.vercel.app';</script>
-    <script src="/hub/hub.js?v=8"></script>
+    <script src="/assets/platform-icons.js?v=1"></script>
+    <script src="/assets/platform-ui.js?v=1"></script>
+    <script src="/hub/hub-funnel-ui.js?v=20"></script>
+    <script src="/hub/hub-gemini.js?v=3"></script>
+    <script src="/hub/hub-ai.js?v=4"></script>
+    <script src="/hub/hub-chat.js?v=3"></script>
+    <script src="/hub/quiz-builder.js?v=1"></script>
+    <script src="/hub/hub.js?v=63"></script>
 </body>
 </html>
