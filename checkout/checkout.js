@@ -13,6 +13,7 @@
     var titleEl = document.getElementById('checkout-title');
     var subtitleEl = document.getElementById('checkout-subtitle');
     var priceEl = document.getElementById('checkout-price');
+    var productNameEl = document.getElementById('checkout-product-name');
     var orderSummary = document.getElementById('order-summary');
     var orderBumpsSection = document.getElementById('order-bumps-section');
 
@@ -30,7 +31,28 @@
 
     function formatPrice(cents, currency) {
         var value = (cents / 100).toFixed(cents % 100 === 0 ? 0 : 2).replace('.', ',');
-        return value + (currency === 'eur' ? '€' : ' ' + String(currency || '').toUpperCase());
+
+        if ((currency || 'eur').toLowerCase() === 'eur') {
+            return value + ' €';
+        }
+
+        return value + ' ' + String(currency || '').toUpperCase();
+    }
+
+    function renderBasicSummary() {
+        if (!checkoutConfig || !window.CheckoutOrderBumps) {
+            return;
+        }
+
+        window.CheckoutOrderBumps.mount(checkoutConfig, {
+            form: form,
+            bumpList: document.getElementById('order-bump-list'),
+            summaryLines: document.getElementById('order-summary-lines'),
+            summaryTotal: document.getElementById('order-summary-total'),
+            onChange: function () {
+                updateDisplayedTotal();
+            },
+        });
     }
 
     function getTotalCents() {
@@ -55,6 +77,13 @@
         }
 
         priceEl.textContent = formatPrice(getTotalCents(), checkoutConfig.currency || 'eur');
+
+        var summaryTotal = document.getElementById('order-summary-total');
+
+        if (summaryTotal) {
+            summaryTotal.textContent = formatPrice(getTotalCents(), checkoutConfig.currency || 'eur');
+        }
+
         submitBtn.textContent = 'Pagar ' + formatPrice(getTotalCents(), checkoutConfig.currency || 'eur');
     }
 
@@ -115,22 +144,50 @@
     }
 
     function mountOrderBumps() {
-        if (!window.CheckoutOrderBumps || !(checkoutConfig.orderBumps || []).length) {
+        if (!(checkoutConfig.orderBumps || []).length) {
+            renderBasicSummary();
             return;
         }
 
         orderBumpsSection.hidden = false;
-        orderSummary.hidden = false;
+        renderBasicSummary();
+    }
 
-        window.CheckoutOrderBumps.mount(checkoutConfig, {
-            form: form,
-            bumpList: document.getElementById('order-bump-list'),
-            summaryLines: document.getElementById('order-summary-lines'),
-            summaryTotal: document.getElementById('order-summary-total'),
-            onChange: function () {
-                updateDisplayedTotal();
-            },
-        });
+    function applyTemplate(template) {
+        if (!template) {
+            return;
+        }
+
+        var top = document.getElementById('checkout-custom-top');
+        var bottom = document.getElementById('checkout-custom-bottom');
+        var styleEl = document.getElementById('checkout-custom-style');
+        var settings = template.settings || {};
+
+        if (top && template.html_top) {
+            top.innerHTML = template.html_top;
+        }
+
+        if (bottom && template.html_bottom) {
+            bottom.innerHTML = template.html_bottom;
+        }
+
+        if (styleEl && template.custom_css) {
+            styleEl.textContent = template.custom_css;
+        }
+
+        if (settings.title && titleEl) {
+            titleEl.textContent = settings.title;
+        }
+
+        if (settings.subtitle && subtitleEl) {
+            subtitleEl.textContent = settings.subtitle;
+        }
+
+        document.body.classList.add(settings.theme === 'light' ? 'checkout-theme-light' : 'checkout-theme-dark');
+
+        if (template.has_custom) {
+            document.body.classList.add('checkout-has-custom');
+        }
     }
 
     async function loadConfig() {
@@ -143,11 +200,46 @@
 
         checkoutConfig = data;
         productId = data.productId || productId;
-        titleEl.textContent = data.productName || 'Checkout';
-        subtitleEl.textContent = mode === 'test'
-            ? 'Modo teste — usa cartão 4242 4242 4242 4242'
-            : 'Pagamento seguro';
 
+        if (productNameEl) {
+            productNameEl.textContent = data.productName || 'Checkout';
+        }
+
+        var productImageEl = document.getElementById('checkout-product-image');
+        var productAuthorEl = document.getElementById('checkout-product-author');
+
+        if (productImageEl) {
+            if (data.productImage) {
+                productImageEl.src = data.productImage;
+                productImageEl.alt = data.productName || '';
+                productImageEl.hidden = false;
+            } else {
+                productImageEl.hidden = true;
+                productImageEl.removeAttribute('src');
+            }
+        }
+
+        if (productAuthorEl) {
+            if (data.productAuthor) {
+                productAuthorEl.textContent = 'Autor: ' + data.productAuthor;
+                productAuthorEl.hidden = false;
+            } else {
+                productAuthorEl.hidden = true;
+                productAuthorEl.textContent = '';
+            }
+        }
+
+        if (titleEl) {
+            titleEl.textContent = data.productName || 'Checkout';
+        }
+
+        if (subtitleEl) {
+            subtitleEl.textContent = mode === 'test'
+                ? 'Modo teste — usa cartão 4242 4242 4242 4242'
+                : 'Pagamento seguro';
+        }
+
+        applyTemplate(data.template);
         mountOrderBumps();
         updateDisplayedTotal();
 

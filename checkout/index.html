@@ -9,69 +9,101 @@
     <script src="/assets/tracking.js?v=meta-emq-usd" defer></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/checkout9/checkout.css?v=2">
-    <style>
-        .checkout-universal { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
-        .checkout-universal__title { font-size: 1.5rem; margin: 0 0 8px; }
-        .checkout-universal__subtitle { color: #64748b; margin: 0 0 24px; }
-        .order-bump--simple { margin-bottom: 8px; }
-        .order-bumps-section { margin: 20px 0; }
-        .order-bumps-section__title { font-size: 0.95rem; font-weight: 700; margin: 0 0 10px; }
-    </style>
+    <style id="checkout-custom-style"></style>
 </head>
-<body>
-    <div class="checkout-universal">
-        <h1 class="checkout-universal__title" id="checkout-title">Checkout</h1>
-        <p class="checkout-universal__subtitle" id="checkout-subtitle">A carregar…</p>
+<body class="checkout-body checkout-theme-dark">
+    <div id="checkout-custom-top"></div>
+
+    <div class="checkout-page" id="checkout-core">
+        <h1 class="checkout-universal__title" id="checkout-title" hidden>Checkout</h1>
+        <p class="checkout-universal__subtitle" id="checkout-subtitle" hidden>A carregar…</p>
 
         <section class="checkout-form-section" aria-label="Pagamento">
-            <div class="checkout-form-panel">
-                <div class="product-summary">
-                    <p class="product-summary__label">Total</p>
-                    <p class="product-summary__price" id="checkout-price">—</p>
-                </div>
-
-                <div class="order-summary" id="order-summary" hidden>
-                    <div id="order-summary-lines"></div>
-                    <div class="order-summary__total-row">
-                        <span>Total</span>
-                        <strong id="order-summary-total">—</strong>
+            <div class="checkout-hero__grid">
+                <div class="checkout-form-panel">
+                    <div class="product-summary">
+                        <img class="product-summary__thumb" id="checkout-product-image" alt="" hidden>
+                        <div class="product-summary__info">
+                            <p class="product-summary__title" id="checkout-product-name">—</p>
+                            <p class="product-summary__author" id="checkout-product-author" hidden></p>
+                            <p class="product-summary__price" id="checkout-price">—</p>
+                            <p class="product-summary__vat">IVA incluído</p>
+                        </div>
                     </div>
+
+                    <form id="checkout-form" class="checkout-form" novalidate>
+                        <h2 class="checkout-form__title">Dados pessoais</h2>
+
+                        <div class="form-field">
+                            <label class="form-field__label" for="full_name">Nome completo</label>
+                            <input class="form-field__input" type="text" id="full_name" name="full_name" autocomplete="name" required>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-field__label" for="email">Email</label>
+                            <input class="form-field__input" type="email" id="email" name="email" autocomplete="email" required>
+                        </div>
+                        <div class="form-field">
+                            <label class="form-field__label" for="phone">Telemóvel</label>
+                            <input class="form-field__input" type="tel" id="phone" name="phone" autocomplete="tel">
+                        </div>
+
+                        <div class="checkout-form__divider" aria-hidden="true"></div>
+
+                        <section class="order-bumps" id="order-bumps-section" hidden aria-label="Comprar junto">
+                            <h2 class="checkout-form__title">Comprar junto</h2>
+                            <div class="order-bump-list" id="order-bump-list"></div>
+                        </section>
+
+                        <section class="order-summary" id="order-summary" aria-label="Detalhes da compra">
+                            <h2 class="checkout-form__title">Detalhes da compra</h2>
+                            <div class="order-summary__table">
+                                <div class="order-summary__lines" id="order-summary-lines"></div>
+                                <div class="order-summary__row order-summary__row--total">
+                                    <span class="order-summary__label">Total a pagar</span>
+                                    <span class="order-summary__value" id="order-summary-total">—</span>
+                                </div>
+                                <p class="order-summary__note">IVA incluído nos valores apresentados.</p>
+                            </div>
+                        </section>
+
+                        <div class="checkout-form__divider" aria-hidden="true"></div>
+
+                        <div class="checkout-payment-block" id="checkout-payment-block">
+                            <h2 class="checkout-form__title">Selecionar método de pagamento</h2>
+                            <p class="checkout-form__hint checkout-form__hint--payment">
+                                Preenche os dados pessoais acima para veres os métodos de pagamento.
+                            </p>
+                            <p class="checkout-form__hint checkout-form__hint--payment">
+                                No MB WAY, escolhe o método e confirma o número de telemóvel que aparece em baixo (deve ser o da tua app).
+                            </p>
+                            <div id="payment-element" class="payment-element" aria-live="polite"></div>
+                            <p id="payment-message" class="payment-message" role="alert" hidden></p>
+                            <div class="checkout-form__actions">
+                                <button class="checkout-btn checkout-btn--primary" type="submit" id="submit-payment" disabled>
+                                    Pagar agora
+                                </button>
+                            </div>
+                            <p class="payment-secure">
+                                Pagamento processado de forma segura pela Stripe. Os teus dados bancários nunca passam pelos nossos servidores.
+                            </p>
+                            <div class="checkout-trust" aria-hidden="true">
+                                <span class="checkout-trust__pill">🔒 SSL</span>
+                                <span class="checkout-trust__pill">💳 Stripe</span>
+                                <span class="checkout-trust__pill">✓ Garantia</span>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-
-                <form id="checkout-form" class="checkout-form" novalidate>
-                    <section class="order-bumps-section" id="order-bumps-section" hidden aria-label="Adicionar ao pedido">
-                        <h2 class="order-bumps-section__title">Adicionar ao pedido</h2>
-                        <div class="order-bump-list" id="order-bump-list"></div>
-                    </section>
-
-                    <label class="checkout-field">
-                        <span>Nome completo</span>
-                        <input type="text" name="full_name" autocomplete="name" required>
-                    </label>
-                    <label class="checkout-field">
-                        <span>Email</span>
-                        <input type="email" name="email" autocomplete="email" required>
-                    </label>
-                    <label class="checkout-field">
-                        <span>Telefone</span>
-                        <input type="tel" name="phone" autocomplete="tel">
-                    </label>
-
-                    <div id="payment-element"></div>
-                    <p id="payment-message" class="payment-message" hidden></p>
-
-                    <button type="submit" class="checkout-submit" id="submit-payment" disabled>
-                        Pagar agora
-                    </button>
-                </form>
             </div>
         </section>
     </div>
 
+    <div id="checkout-custom-bottom"></div>
+
     <script src="https://js.stripe.com/v3/"></script>
-    <script src="/checkout/order-bumps.js?v=1"></script>
-    <script src="/checkout/checkout.js?v=2"></script>
+    <script src="/checkout/order-bumps.js?v=3"></script>
+    <script src="/checkout/checkout.js?v=5"></script>
 </body>
 </html>
