@@ -103,8 +103,7 @@
         var editLink = '';
 
         if (isCheckout) {
-            editLink = '<a class="hub-link hub-link--studio" href="/hub/?offer=' +
-                encodeURIComponent(offerSlug) + '&module=funil&checkout=1">Editar checkout ↗</a>';
+            editLink = '<button type="button" class="hub-link hub-link--studio" data-open-checkout-editor="1">Editar checkout ↗</button>';
         } else if (step.active_page && step.active_page.slug) {
             editLink = '<a class="hub-link hub-link--studio" href="/studio/' +
                 encodeURIComponent(offerSlug) + '/' + encodeURIComponent(funnelSlug) + '/' +

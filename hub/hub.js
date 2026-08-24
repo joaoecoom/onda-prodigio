@@ -4346,6 +4346,14 @@
             });
         });
 
+        container.querySelectorAll('[data-open-checkout-editor]').forEach(function (button) {
+            button.addEventListener('click', function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+                openModule('checkout');
+            });
+        });
+
         container.querySelectorAll('.hub-funnel-flow-save').forEach(function (button) {
             button.addEventListener('click', async function () {
                 var messageEl = container.querySelector('[data-funnel-flow-message]');
