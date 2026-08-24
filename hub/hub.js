@@ -2779,11 +2779,23 @@
             '</article>' +
             '<article class="hub-panel">' +
                 '<h3>Fluxos de recuperação</h3>' +
+                '<p class="hub-panel__sub">Fluxos editáveis por oferta — a IA cria, tu vês e editas.</p>' +
                 '<div class="hub-flow-list">' + renderFlowList(data.flows || []) + '</div>' +
                 '<div class="hub-actions">' +
                     '<a class="hub-button" href="' + dashboardHref + '">Abrir falhados no Dashboard</a>' +
                 '</div>' +
+            '</article>' +
+            '<article class="hub-panel hub-gemini-mount">' +
+                '<h3>Configurar recovery com Gemini</h3>' +
+                '<p class="hub-panel__sub">Ex.: "Cria recuperação de checkout abandonado com email + WhatsApp".</p>' +
+                '<div data-gemini-recovery="1"></div>' +
             '</article>';
+
+        var geminiMount = modulePanel.querySelector('[data-gemini-recovery]');
+
+        if (geminiMount) {
+            mountGeminiPanel(geminiMount, { mode: 'recovery', moduleData: data });
+        }
     }
 
     function renderImpulsionaModule(data) {
@@ -2792,15 +2804,27 @@
                 '<h3>Envios pós-venda</h3>' +
                 '<div class="hub-stats">' +
                     '<div class="hub-stat">' +
-                        '<div class="hub-stat__value">' + (data.stats.purchase_emails_sent || 0) + '</div>' +
+                        '<div class="hub-stat__value">' + ((data.stats && data.stats.purchase_emails_sent) || 0) + '</div>' +
                         '<div class="hub-stat__label">Emails de compra enviados</div>' +
                     '</div>' +
                 '</div>' +
             '</article>' +
             '<article class="hub-panel">' +
                 '<h3>Fluxos Impulsiona</h3>' +
+                '<p class="hub-panel__sub">Automações pós-venda por oferta — geradas por IA e editáveis.</p>' +
                 '<div class="hub-flow-list">' + renderFlowList(data.flows || []) + '</div>' +
+            '</article>' +
+            '<article class="hub-panel hub-gemini-mount">' +
+                '<h3>Configurar automações com Gemini</h3>' +
+                '<p class="hub-panel__sub">Ex.: "Cria sequência de upsell após compra".</p>' +
+                '<div data-gemini-automation="1"></div>' +
             '</article>';
+
+        var geminiMount = modulePanel.querySelector('[data-gemini-automation]');
+
+        if (geminiMount) {
+            mountGeminiPanel(geminiMount, { mode: 'automation', moduleData: data });
+        }
     }
 
     function integrationItemMap(data) {

@@ -205,6 +205,23 @@ module.exports = async function handler(req, res) {
             }
         }
 
+        if (event.type === 'payment_intent.canceled') {
+            var canceledPi = event.data.object;
+            var canceledMeta = canceledPi.metadata || {};
+
+            if (canceledMeta.stripe_mode !== 'test' && canceledMeta.checkout !== 'checkout9-test') {
+                try {
+                    var abandonedQueue = require('../lib/comunidade/failed-payment-recovery-queue');
+                    var abandonedResult = await abandonedQueue.enqueueAbandonedCheckoutRecovery({
+                        paymentIntent: canceledPi,
+                    });
+                    console.log('Abandoned checkout queue:', canceledPi.id, JSON.stringify(abandonedResult));
+                } catch (abandonedError) {
+                    console.error('Erro ao enfileirar checkout abandonado:', abandonedError);
+                }
+            }
+        }
+
         return res.status(200).json({
             received: true,
             tracking: trackingResults,
