@@ -35,7 +35,6 @@
             label: 'Construir',
             items: [
                 { type: 'module', id: 'funil', label: 'Funis' },
-                { type: 'module', id: 'checkout', label: 'Checkout' },
                 { type: 'module', id: 'comunidade', label: 'Comunidade' },
             ],
         },
@@ -233,6 +232,23 @@
         }
 
         if (offerParam && moduleParam) {
+            if (moduleParam === 'checkout') {
+                try {
+                    var nextUrl = new URL(window.location.href);
+                    nextUrl.searchParams.set('module', 'funil');
+                    nextUrl.searchParams.set('checkout', '1');
+                    window.history.replaceState({}, '', nextUrl.toString());
+                } catch (error) {
+                    /* ignore */
+                }
+
+                return {
+                    slug: offerParam,
+                    module: 'funil',
+                    reason: 'checkout-to-funil',
+                };
+            }
+
             return {
                 slug: offerParam,
                 module: moduleParam,
@@ -941,11 +957,6 @@
 
                 if (nav === 'home') {
                     goOfferHome();
-                    return;
-                }
-
-                if (nav === 'checkout') {
-                    openModule('checkout');
                     return;
                 }
 
@@ -4172,27 +4183,6 @@
                 } catch (error) {
                     showStatus(error.message, true);
                 }
-            });
-        });
-
-        // Prefer SPA navigation for checkout editor (keeps session/state).
-        // Fallback href still works if JS handler misses the click.
-        container.addEventListener('click', function (event) {
-            var checkoutEdit = event.target.closest && event.target.closest('[data-open-checkout-editor]');
-            if (!checkoutEdit) {
-                return;
-            }
-
-            event.preventDefault();
-            event.stopPropagation();
-
-            if (!state.currentOffer) {
-                showStatus('Selecciona uma oferta primeiro.', true);
-                return;
-            }
-
-            openModule('checkout').catch(function (error) {
-                showStatus((error && error.message) || 'Não foi possível abrir o checkout.', true);
             });
         });
 

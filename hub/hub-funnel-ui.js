@@ -103,9 +103,8 @@
         var editLink = '';
 
         if (isCheckout) {
-            // Hard link — always opens checkout module (SPA deep-link + fallback).
-            editLink = '<a class="hub-link hub-link--studio" data-open-checkout-editor="1" href="/hub/?offer=' +
-                encodeURIComponent(offerSlug) + '&module=checkout">Editar checkout ↗</a>';
+            editLink = '<a class="hub-link hub-link--studio" href="/hub/?offer=' +
+                encodeURIComponent(offerSlug) + '&module=funil&checkout=1">Editar checkout ↗</a>';
         } else if (step.active_page && step.active_page.slug) {
             editLink = '<a class="hub-link hub-link--studio" href="/studio/' +
                 encodeURIComponent(offerSlug) + '/' + encodeURIComponent(funnelSlug) + '/' +
