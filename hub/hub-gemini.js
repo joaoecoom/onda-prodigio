@@ -119,6 +119,10 @@
             }
 
             try {
+                if (!ctx.offer || !ctx.offer.slug) {
+                    throw new Error('Oferta em falta — recarrega a página e tenta de novo.');
+                }
+
                 var payload = await ctx.apiFetch('/api/sales-attribution?action=hub_gemini_chat', {
                     method: 'POST',
                     body: {
