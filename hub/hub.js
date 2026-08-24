@@ -236,23 +236,6 @@
         }
 
         if (offerParam && moduleParam) {
-            if (moduleParam === 'checkout') {
-                try {
-                    var nextUrl = new URL(window.location.href);
-                    nextUrl.searchParams.set('module', 'funil');
-                    nextUrl.searchParams.set('checkout', '1');
-                    window.history.replaceState({}, '', nextUrl.toString());
-                } catch (error) {
-                    /* ignore */
-                }
-
-                return {
-                    slug: offerParam,
-                    module: 'funil',
-                    reason: 'checkout-to-funil',
-                };
-            }
-
             return {
                 slug: offerParam,
                 module: moduleParam,
@@ -3565,20 +3548,6 @@
                         '<div class="hub-funnel-pages" data-funnel-pages="' + escapeHtml(funnel.slug) + '">' +
                         '<p class="hub-panel__sub">A carregar…</p></div>' +
                     '</details>';
-                var checkoutBlock = isQuiz ? '' :
-                    '<details class="hub-collapsible hub-collapsible--nested" data-funnel-checkout-panel="' +
-                        escapeHtml(funnel.slug) + '">' +
-                        '<summary>Checkout</summary>' +
-                        '<div class="hub-funnel-checkout" data-funnel-checkout="' + escapeHtml(funnel.slug) + '">' +
-                            '<p class="hub-panel__sub">Layout, preço e bumps desta oferta — edita sem sair dos Funis.</p>' +
-                            '<div class="hub-actions">' +
-                                '<button type="button" class="hub-button hub-button--ghost" data-open-funnel-checkout="1">' +
-                                    'Abrir editor de checkout</button>' +
-                                '<a class="hub-link" href="/checkout/?offer=' + encodeURIComponent(offer.slug || '') +
-                                    '&mode=test" target="_blank" rel="noopener">Preview teste ↗</a>' +
-                            '</div>' +
-                        '</div>' +
-                    '</details>';
 
                 return '<details class="hub-collapsible hub-funnel-card" data-funnel-slug="' + escapeHtml(funnel.slug) + '">' +
                     '<summary class="hub-funnel-card__summary">' +
@@ -3603,7 +3572,6 @@
                         stepsBlock +
                         quizBlock +
                         pagesBlock +
-                        checkoutBlock +
                     '</div>' +
                 '</details>';
             }).join('')
@@ -3831,24 +3799,6 @@
             });
         });
 
-        modulePanel.querySelectorAll('[data-open-funnel-checkout]').forEach(function (button) {
-            button.addEventListener('click', function () {
-                openModule('checkout');
-            });
-        });
-
-        try {
-            var params = new URLSearchParams(window.location.search);
-            if (params.get('checkout') === '1') {
-                var panel = modulePanel.querySelector('[data-funnel-checkout-panel]');
-                if (panel) {
-                    panel.open = true;
-                    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }
-            }
-        } catch (error) {
-            // ignore
-        }
     }
 
     function cloneFlowStep(step) {
