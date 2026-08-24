@@ -3559,6 +3559,9 @@
                             escapeHtml(funnel.status || 'draft') + (funnel.type ? ' · ' + escapeHtml(funnel.type) : '') +
                         '</span>' +
                         '<span class="hub-funnel-card__actions" data-funnel-actions="' + escapeHtml(funnel.slug) + '">' +
+                            '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm hub-funnel-rename" ' +
+                                'data-funnel="' + escapeHtml(funnel.slug) + '" data-funnel-name="' +
+                                escapeHtml(funnel.name) + '">Renomear</button>' +
                             '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm hub-funnel-activate" ' +
                                 'data-funnel="' + escapeHtml(funnel.slug) + '"' + (isActive ? ' disabled' : '') + '>Activar</button>' +
                             '<button type="button" class="dr-btn dr-btn--ghost dr-btn--sm hub-funnel-duplicate" ' +
@@ -3712,6 +3715,37 @@
                         method: 'POST',
                         body: { offer: offer.slug, funnel: funnelSlug },
                     });
+                    await openModule('funil');
+                } catch (error) {
+                    showStatus(error.message, true);
+                }
+            });
+        });
+
+        modulePanel.querySelectorAll('.hub-funnel-rename').forEach(function (button) {
+            button.addEventListener('click', async function (event) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                var funnelSlug = button.getAttribute('data-funnel');
+                var currentName = button.getAttribute('data-funnel-name') || funnelSlug;
+                var nextName = window.prompt('Novo nome do funil:', currentName);
+
+                if (!nextName || !String(nextName).trim() || String(nextName).trim() === currentName) {
+                    return;
+                }
+
+                try {
+                    showStatus('A renomear funil…');
+                    await apiFetch('/api/sales-attribution?action=hub_funnel_rename', {
+                        method: 'POST',
+                        body: {
+                            offer: offer.slug,
+                            funnel: funnelSlug,
+                            name: String(nextName).trim(),
+                        },
+                    });
+                    showStatus('');
                     await openModule('funil');
                 } catch (error) {
                     showStatus(error.message, true);
