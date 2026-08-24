@@ -87,7 +87,7 @@ async function buildAiTestTree(service) {
     return service.getPageTree(OFFER_A, page.id);
 }
 
-test('render heading escapes html', function () {
+test('render heading strips script tags from rich text', function () {
     var html = blockRegistry.renderBlock({
         id: 'b1',
         type: 'heading',
@@ -97,8 +97,8 @@ test('render heading escapes html', function () {
         visibility: { desktop: true, tablet: true, mobile: true },
     });
 
-    assert.match(html, /&lt;script&gt;/);
-    assert.doesNotMatch(html, /<script>alert/);
+    assert.doesNotMatch(html, /<script>/);
+    assert.doesNotMatch(html, /alert\(1\)/);
 });
 
 test('render text with alignment', function () {
@@ -203,7 +203,8 @@ test('render html strips scripts', function () {
         visibility: {},
     }, { mode: 'preview' });
 
-    assert.match(html, /HTML block/);
+    assert.doesNotMatch(html, /HTML block/);
+    assert.doesNotMatch(html, /scripts removidos/);
     assert.match(html, /<p>OK<\/p>/);
     assert.doesNotMatch(html, /<script>/);
 });
@@ -339,8 +340,29 @@ test('draft page allowed with preview flag', function () {
     });
 });
 
-test('page settings apply max width and background', function () {
-    var html = pageRenderer.renderPageDocument({
+test('page settings use full-bleed layout and background', function () {
+    var previewHtml = pageRenderer.renderPageDocument({
+        page: {
+            id: 'p1',
+            name: 'Settings Test',
+            settings: { maxWidth: '720px', background: '#f3f4f6' },
+            seo: {},
+        },
+        sections: [{
+            id: 's1',
+            type: 'custom',
+            sort_order: 100,
+            styles: { backgroundColor: '#111111' },
+            blocks: [],
+        }],
+    }, { mode: 'preview' });
+
+    assert.match(previewHtml, /background:#f3f4f6/);
+    assert.match(previewHtml, /pe-page__inner\{[^}]*max-width:none/);
+    assert.match(previewHtml, /pe-section__inner\{[^}]*max-width:100%/);
+    assert.match(previewHtml, /background-color:#111111/);
+
+    var prodHtml = pageRenderer.renderPageDocument({
         page: {
             id: 'p1',
             name: 'Settings Test',
@@ -348,10 +370,10 @@ test('page settings apply max width and background', function () {
             seo: {},
         },
         sections: [],
-    }, { mode: 'preview' });
+    }, { mode: 'production' });
 
-    assert.match(html, /max-width:720px/);
-    assert.match(html, /background:#f3f4f6/);
+    assert.match(prodHtml, /pe-section__inner\{[^}]*max-width:100%/);
+    assert.match(prodHtml, /background:#f3f4f6/);
 });
 
 test('getPageTreeBySlugs resolves fixture', async function () {
