@@ -3830,8 +3830,8 @@
                         '<p class="hub-panel__sub">A carregar…</p></div>' +
                     '</details>';
                 var quizBlock = isQuiz
-                    ? '<details class="hub-collapsible hub-collapsible--nested">' +
-                        '<summary>Quiz — toca para expandir</summary>' +
+                    ? '<details class="hub-collapsible hub-collapsible--nested" open>' +
+                        '<summary>Quiz — perguntas e resultados</summary>' +
                         '<div data-quiz-stub="' + escapeHtml(funnel.slug) + '"></div>' +
                     '</details>'
                     : '';
@@ -3957,30 +3957,23 @@
     function mountQuizStub(offer, funnel) {
         var container = modulePanel.querySelector('[data-quiz-stub="' + funnel.slug + '"]');
 
-        if (!container || !window.HubFunnelUI) {
+        if (!container) {
             return;
         }
 
-        container.innerHTML = window.HubFunnelUI.renderQuizStub(funnel, offer.slug);
-
-        var button = container.querySelector('[data-quiz-open-funnel]');
-
-        if (button) {
-            button.addEventListener('click', function () {
-                var card = modulePanel.querySelector('[data-funnel-slug="' + funnel.slug + '"]');
-                var visual = card && card.querySelector('[data-funnel-steps="' + funnel.slug + '"]');
-
-                if (visual) {
-                    var details = visual.closest('details');
-
-                    if (details) {
-                        details.open = true;
-                    }
-
-                    visual.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            });
+        if (!window.HubQuizBuilder) {
+            container.innerHTML =
+                '<p class="hub-panel__sub">Quiz builder indisponível — recarrega a página (Cmd+Shift+R).</p>';
+            return;
         }
+
+        container.innerHTML = '';
+        window.HubQuizBuilder.mount(container, {
+            offer: offer,
+            funnel: funnel,
+            apiFetch: apiFetch,
+            onStatus: showStatus,
+        });
     }
 
     function bindFunilModuleEvents(offer) {

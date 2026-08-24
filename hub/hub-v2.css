@@ -1797,6 +1797,41 @@ button.hub-link--studio:hover {
     padding: 8px 0;
 }
 
+.hub-quiz-builder {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.hub-quiz-builder__section {
+    margin: 8px 0 0;
+    font-size: 14px;
+}
+
+.hub-quiz-question,
+.hub-quiz-result {
+    padding: 12px;
+    border: 1px solid var(--dr-border, rgba(255,255,255,0.08));
+    border-radius: 12px;
+    margin-bottom: 10px;
+}
+
+.hub-quiz-answer {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.hub-quiz-score {
+    max-width: 88px;
+}
+
+.hub-quiz-question__actions {
+    display: flex;
+    gap: 6px;
+}
+
 .hub-collapsible--nested {
     margin-top: 12px;
     background: transparent;

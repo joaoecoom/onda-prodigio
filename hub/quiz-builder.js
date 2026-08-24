@@ -21,6 +21,38 @@
         };
     }
 
+    function defaultResult() {
+        return {
+            title: 'Plano ideal encontrado',
+            description: 'Com base nas tuas respostas, este é o plano recomendado.',
+            min_score: 0,
+            max_score: 9999,
+            cta_label: 'Quero o meu plano',
+            cta_action: 'checkout',
+        };
+    }
+
+    function renderResultEditor(result, index) {
+        return '<article class="hub-quiz-result" data-result-index="' + index + '">' +
+            '<div class="hub-form-grid">' +
+                '<label class="hub-field"><span class="hub-field__label">Título do resultado</span>' +
+                '<input class="hub-login__input" data-result-title value="' + escapeHtml(result.title) + '"></label>' +
+                '<label class="hub-field"><span class="hub-field__label">CTA</span>' +
+                '<input class="hub-login__input" data-result-cta value="' + escapeHtml(result.cta_label || '') + '"></label>' +
+                '<label class="hub-field"><span class="hub-field__label">Score mín.</span>' +
+                '<input class="hub-login__input" data-result-min type="number" value="' +
+                escapeHtml(result.min_score != null ? result.min_score : 0) + '"></label>' +
+                '<label class="hub-field"><span class="hub-field__label">Score máx.</span>' +
+                '<input class="hub-login__input" data-result-max type="number" value="' +
+                escapeHtml(result.max_score != null ? result.max_score : 9999) + '"></label>' +
+            '</div>' +
+            '<label class="hub-field"><span class="hub-field__label">Descrição</span>' +
+            '<input class="hub-login__input" data-result-description value="' +
+            escapeHtml(result.description || '') + '"></label>' +
+            '<button type="button" class="hub-button hub-button--ghost" data-remove-result="' + index + '">Remover resultado</button>' +
+        '</article>';
+    }
+
     function renderQuestionEditor(question, index, total) {
         var answersHtml = (question.answers || []).map(function (answer, answerIndex) {
             return '<div class="hub-quiz-answer">' +
@@ -84,6 +116,10 @@
                 state.questions = [defaultQuestion()];
             }
 
+            if (!state.results.length) {
+                state.results = [defaultResult()];
+            }
+
             render();
         }
 
@@ -104,8 +140,15 @@
                             return renderQuestionEditor(question, index, state.questions.length);
                         }).join('') +
                     '</div>' +
+                    '<h4 class="hub-quiz-builder__section">Resultados por score</h4>' +
+                    '<div id="hub-quiz-results">' +
+                        state.results.map(function (result, index) {
+                            return renderResultEditor(result, index);
+                        }).join('') +
+                    '</div>' +
                     '<div class="hub-actions">' +
                         '<button type="button" class="hub-button hub-button--ghost" id="hub-quiz-add">+ Pergunta</button>' +
+                        '<button type="button" class="hub-button hub-button--ghost" id="hub-quiz-add-result">+ Resultado</button>' +
                         '<button type="button" class="hub-button" id="hub-quiz-save">Guardar</button>' +
                         '<button type="button" class="hub-button hub-button--ghost" id="hub-quiz-publish">Publicar</button>' +
                         '<a class="hub-link" href="' + previewUrl + '" target="_blank" rel="noopener">Preview Quiz</a>' +
@@ -140,6 +183,17 @@
                     answers: answers,
                 };
             });
+
+            state.results = Array.from(container.querySelectorAll('.hub-quiz-result')).map(function (node) {
+                return {
+                    title: node.querySelector('[data-result-title]').value.trim(),
+                    description: node.querySelector('[data-result-description]').value.trim(),
+                    min_score: Number(node.querySelector('[data-result-min]').value) || 0,
+                    max_score: Number(node.querySelector('[data-result-max]').value) || 9999,
+                    cta_label: node.querySelector('[data-result-cta]').value.trim() || 'Continuar',
+                    cta_action: 'checkout',
+                };
+            });
         }
 
         function bindEvents() {
@@ -149,8 +203,28 @@
                 render();
             });
 
+            container.querySelector('#hub-quiz-add-result').addEventListener('click', function () {
+                syncFromDom();
+                state.results.push(defaultResult());
+                render();
+            });
+
             container.querySelector('#hub-quiz-save').addEventListener('click', saveQuiz);
             container.querySelector('#hub-quiz-publish').addEventListener('click', publishQuiz);
+
+            container.querySelectorAll('[data-remove-result]').forEach(function (button) {
+                button.addEventListener('click', function () {
+                    var index = Number(button.getAttribute('data-remove-result'));
+                    syncFromDom();
+                    state.results.splice(index, 1);
+
+                    if (!state.results.length) {
+                        state.results = [defaultResult()];
+                    }
+
+                    render();
+                });
+            });
 
             container.querySelectorAll('[data-move-up]').forEach(function (button) {
                 button.addEventListener('click', function () {
@@ -219,14 +293,7 @@
                             intro: state.intro,
                         },
                         questions: state.questions,
-                        results: state.results.length ? state.results : [{
-                            title: 'Plano ideal encontrado',
-                            description: 'Com base nas tuas respostas, este é o plano recomendado.',
-                            min_score: 0,
-                            max_score: 9999,
-                            cta_label: 'Quero o meu plano',
-                            cta_action: 'checkout',
-                        }],
+                        results: state.results.length ? state.results : [defaultResult()],
                     },
                 });
                 onStatus('');
