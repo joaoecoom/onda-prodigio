@@ -3661,6 +3661,7 @@
     }
 
     function bindFunilModuleEvents(offer) {
+        offer = offer || state.currentOffer || {};
         var funnelForm = modulePanel.querySelector('#hub-funnel-create-form');
         var funnelMessage = modulePanel.querySelector('#hub-funnel-create-message');
 
@@ -3737,10 +3738,15 @@
 
                 try {
                     showStatus('A renomear funil…');
+                    var offerSlugForRename = (offer && offer.slug) || (state.currentOffer && state.currentOffer.slug) || '';
+                    if (!offerSlugForRename) {
+                        showStatus('Oferta não identificada.', true);
+                        return;
+                    }
                     await apiFetch('/api/sales-attribution?action=hub_funnel_rename', {
                         method: 'POST',
                         body: {
-                            offer: offer.slug,
+                            offer: offerSlugForRename,
                             funnel: funnelSlug,
                             name: String(nextName).trim(),
                         },
