@@ -320,10 +320,10 @@ test('tree diff detects create and update mutations', function () {
     assert.ok(mutations.some(function (row) { return row.op === 'create_block'; }));
 });
 
-test('component library excludes html by default', function () {
+test('component library includes html for rich layouts', function () {
     var types = defaults.COMPONENT_LIBRARY.map(function (row) { return row.type; });
     assert.ok(types.includes('heading'));
-    assert.ok(!types.includes('html'));
+    assert.ok(types.includes('html'));
 });
 
 test('reorder utility buildOrder inserts before target', function () {

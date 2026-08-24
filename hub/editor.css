@@ -312,6 +312,23 @@ body {
     color: #c4b5fd;
 }
 
+.peb-ai-panel__steps {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 12px;
+    line-height: 1.4;
+    color: #cbd5e1;
+}
+
+.peb-ai-step {
+    opacity: 0.92;
+}
+
 .peb-login__error {
     color: var(--peb-danger);
     font-size: 14px;

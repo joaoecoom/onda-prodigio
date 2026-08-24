@@ -33,12 +33,14 @@
                     '<button type="button" class="peb-ai-panel__close" data-ai-close="true" aria-label="Fechar">×</button>' +
                 '</div>' +
                 '<div class="peb-ai-panel__modes">' +
-                    '<button type="button" class="peb-ai-mode is-active" data-ai-mode="local">Rápido</button>' +
+                    '<button type="button" class="peb-ai-mode is-active" data-ai-mode="gemini">Gemini</button>' +
+                    '<button type="button" class="peb-ai-mode" data-ai-mode="local">Rápido</button>' +
                     '<button type="button" class="peb-ai-mode" data-ai-mode="agent">Agent</button>' +
                 '</div>' +
                 '<p class="peb-ai-panel__hint" id="peb-ai-hint">' +
-                    'Modo rápido: alterações instantâneas na página actual. Guarda depois com Save.' +
+                    'Modo Gemini: IA executa tools no Page Engine e actualiza o preview.' +
                 '</p>' +
+                '<div class="peb-ai-panel__steps" id="peb-ai-steps" hidden></div>' +
                 '<form class="peb-ai-panel__form" id="peb-ai-form">' +
                     '<label for="peb-ai-prompt">O que queres alterar?</label>' +
                     '<textarea id="peb-ai-prompt" rows="5" placeholder="Ex.: Muda a headline para Oferta especial de verão" required minlength="3"></textarea>' +
@@ -81,6 +83,9 @@
         if (mode === 'agent') {
             hint.textContent = 'Modo Agent: envia para o Cursor Agent na VPS. A página é guardada antes da task e recarregada quando concluir.';
             submit.textContent = 'Enviar para Agent';
+        } else if (mode === 'gemini') {
+            hint.textContent = 'Modo Gemini: executa alterações reais via Page Engine. Preview actualiza automaticamente.';
+            submit.textContent = 'Executar com Gemini';
         } else {
             hint.textContent = 'Modo rápido: alterações instantâneas na página actual. Guarda depois com Save.';
             submit.textContent = 'Aplicar';
@@ -90,7 +95,7 @@
     }
 
     function getMode() {
-        return getPanel().getAttribute('data-ai-mode') || 'local';
+        return getPanel().getAttribute('data-ai-mode') || 'gemini';
     }
 
     function setStatus(message, kind) {
@@ -117,6 +122,49 @@
         return 'offer=' + encodeURIComponent(slugs.offer) +
             '&funnel=' + encodeURIComponent(slugs.funnel) +
             '&page=' + encodeURIComponent(slugs.page);
+    }
+
+    async function runGemini(prompt) {
+        var editorState = context.getState();
+        var stepsEl = document.getElementById('peb-ai-steps');
+
+        if (stepsEl) {
+            stepsEl.hidden = false;
+            stepsEl.innerHTML = '<div class="peb-ai-step">A executar com Gemini…</div>';
+        }
+
+        var payload = await context.apiFetch(
+            '/api/sales-attribution?action=hub_page_builder_ai_gemini&' + buildScopeQuery(editorState.slugs),
+            {
+                method: 'POST',
+                body: {
+                    message: prompt,
+                    funnel_slug: editorState.slugs.funnel,
+                    page_slug: editorState.slugs.page,
+                },
+            }
+        );
+
+        if (stepsEl && payload.steps) {
+            stepsEl.innerHTML = payload.steps.map(function (step) {
+                return '<div class="peb-ai-step">' + (step.ok ? '✓ ' : '✗ ') +
+                    String(step.label || step.tool) + '</div>';
+            }).join('');
+        }
+
+        if (payload.tree) {
+            context.onApplyTree({ tree: payload.tree, summary: payload.reply });
+            setStatus(payload.reply || 'Gemini aplicou alterações.', 'success');
+            return;
+        }
+
+        if (payload.preview_url) {
+            await context.onReload();
+            setStatus(payload.reply || 'Gemini concluiu — página recarregada.', 'success');
+            return;
+        }
+
+        setStatus(payload.reply || 'Gemini respondeu sem alterações estruturais.', 'info');
     }
 
     async function runLocal(prompt) {
@@ -222,11 +270,13 @@
         try {
             if (getMode() === 'agent') {
                 await runAgent(prompt);
+            } else if (getMode() === 'gemini') {
+                await runGemini(prompt);
             } else {
                 await runLocal(prompt);
             }
 
-            if (getMode() === 'local') {
+            if (getMode() === 'local' || getMode() === 'gemini') {
                 promptEl.value = '';
             }
         } catch (error) {
@@ -272,7 +322,7 @@
 
         renderShell();
         renderSuggestions();
-        setMode('local');
+        setMode('gemini');
         bindEvents();
         getPanel().hidden = false;
         isOpen = true;

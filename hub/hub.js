@@ -3648,15 +3648,17 @@
         modulePanel.innerHTML =
             '<article class="hub-panel">' +
                 '<div class="hub-panel__head"><h2>Funis</h2></div>' +
-                '<p class="hub-panel__sub">Constrói funil e pages aqui — steps, criar page, editor e preview.</p>' +
+                '<p class="hub-panel__sub">Constrói funil e pages aqui — steps, criar page, Studio e preview.</p>' +
                 (publicSite
                     ? '<p><a class="hub-link" href="' + escapeHtml(publicSite) + '" target="_blank" rel="noopener">Ver site público ↗</a></p>'
                     : '') +
             '</article>' +
+            '<article class="hub-panel" id="hub-pages-studio-mount"></article>' +
             createFunnelBlock +
             funnelsHtml;
 
         bindFunilModuleEvents(offer);
+        mountPagesStudio(offer, funnels, data);
 
         funnels.forEach(function (funnel) {
             if (funnel.type === 'quiz') {
@@ -3664,6 +3666,38 @@
             } else {
                 loadFunnelPages(offer.slug, funnel.slug);
             }
+        });
+    }
+
+    function mountPagesStudio(offer, funnels, moduleData) {
+        var mount = modulePanel.querySelector('#hub-pages-studio-mount');
+
+        if (!mount) {
+            return;
+        }
+
+        if (!window.HubPagesStudio) {
+            mount.innerHTML =
+                '<p class="hub-panel__sub">Pages Studio indisponível — recarrega a página (Cmd+Shift+R).</p>';
+            return;
+        }
+
+        window.HubPagesStudio.mount(mount, {
+            offer: offer,
+            funnels: (funnels || []).filter(function (funnel) {
+                return funnel.type !== 'quiz';
+            }),
+            apiFetch: apiFetch,
+            geminiConfigured: isGeminiConfigured(moduleData),
+            onStatus: showStatus,
+            onRefresh: function () {
+                delete state.moduleCache[offer.slug + ':funil'];
+                (funnels || []).forEach(function (funnel) {
+                    if (funnel.type !== 'quiz') {
+                        loadFunnelPages(offer.slug, funnel.slug);
+                    }
+                });
+            },
         });
     }
 

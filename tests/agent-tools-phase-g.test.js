@@ -55,7 +55,7 @@ test('phase G tools are registered', function () {
         assert.ok(registry.isAllowedTool(name), 'missing tool: ' + name);
     });
 
-    assert.equal(registry.ALLOWED_TOOL_NAMES.length, 41);
+    assert.equal(registry.ALLOWED_TOOL_NAMES.length, 55);
 });
 
 test('integration status summary never exposes secret values', function () {

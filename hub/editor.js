@@ -40,10 +40,24 @@
     }
 
     function getToken() {
-        return sessionStorage.getItem(TOKEN_KEY) || '';
+        var local = localStorage.getItem(TOKEN_KEY);
+
+        if (local) {
+            return local;
+        }
+
+        var session = sessionStorage.getItem(TOKEN_KEY);
+
+        if (session) {
+            localStorage.setItem(TOKEN_KEY, session);
+            return session;
+        }
+
+        return '';
     }
 
     function setToken(token) {
+        localStorage.setItem(TOKEN_KEY, token);
         sessionStorage.setItem(TOKEN_KEY, token);
     }
 
