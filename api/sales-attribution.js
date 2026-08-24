@@ -672,8 +672,6 @@ module.exports = async function handler(req, res) {
             return require('../lib/hub/handlers/health')(req, res);
         }
 
-<<<<<<< HEAD
-=======
         if (action === 'hub_launch_health') {
             return require('../lib/hub/handlers/launch-health')(req, res);
         }
