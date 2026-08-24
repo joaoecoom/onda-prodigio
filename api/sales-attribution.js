@@ -529,6 +529,10 @@ module.exports = async function handler(req, res) {
             return require('../lib/hub/handlers/ai-tasks')(req, res);
         }
 
+        if (action === 'hub_gemini_chat') {
+            return require('../lib/hub/handlers/gemini-chat')(req, res);
+        }
+
         if (action === 'hub_page_render') {
             return require('../lib/hub/handlers/page-builder')(req, res);
         }
@@ -546,6 +550,10 @@ module.exports = async function handler(req, res) {
         }
 
         if (action === 'hub_page_builder_ai') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_page_builder_ai_gemini') {
             return require('../lib/hub/handlers/page-builder')(req, res);
         }
 
@@ -576,6 +584,24 @@ module.exports = async function handler(req, res) {
         }
 
         if (action === 'hub_page_create') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_funnel_flow_save') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_funnel_activate' ||
+            action === 'hub_funnel_delete' ||
+            action === 'hub_funnel_duplicate' ||
+            action === 'hub_funnel_rename' ||
+            action === 'hub_page_duplicate') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_saved_blocks_save' ||
+            action === 'hub_saved_blocks_apply' ||
+            action === 'hub_saved_blocks_delete') {
             return require('../lib/hub/handlers/page-builder')(req, res);
         }
 
@@ -673,6 +699,22 @@ module.exports = async function handler(req, res) {
             return require('../lib/hub/handlers/ai-tasks')(req, res);
         }
 
+        if (action === 'hub_gemini_chat' || action === 'hub_gemini_status') {
+            return require('../lib/hub/handlers/gemini-chat')(req, res);
+        }
+
+        if (
+            action === 'hub_checkout_builder' ||
+            action === 'hub_save_checkout_template' ||
+            action === 'hub_checkout_template'
+        ) {
+            return require('../lib/hub/handlers/checkout-builder')(req, res);
+        }
+
+        if (action === 'hub_page_builder_ai_gemini') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
         if (action === 'hub_page_preview') {
             return require('../lib/hub/handlers/page-preview')(req, res);
         }
@@ -689,6 +731,14 @@ module.exports = async function handler(req, res) {
             return require('../lib/hub/handlers/page-builder')(req, res);
         }
 
+        if (action === 'hub_funnel_flow') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_check_domain') {
+            return require('../lib/hub/handlers/domain-check')(req, res);
+        }
+
         if (action === 'hub_page_list') {
             return require('../lib/hub/handlers/page-builder')(req, res);
         }
@@ -698,6 +748,10 @@ module.exports = async function handler(req, res) {
         }
 
         if (action === 'hub_page_revisions') {
+            return require('../lib/hub/handlers/page-builder')(req, res);
+        }
+
+        if (action === 'hub_saved_blocks_list') {
             return require('../lib/hub/handlers/page-builder')(req, res);
         }
 
