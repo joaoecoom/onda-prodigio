@@ -103,6 +103,16 @@
       ]
     },
     {
+      "source": "/checkout-builder",
+      "destination": "/hub/index.html",
+      "has": [
+        {
+          "type": "host",
+          "value": "hub-dr-ecoom.vercel.app"
+        }
+      ]
+    },
+    {
       "source": "/",
       "destination": "/funnel/index.html",
       "has": [
@@ -239,6 +249,10 @@
     {
       "source": "/editor/:offer/:funnel/:page",
       "destination": "/hub/editor.html"
+    },
+    {
+      "source": "/studio/:offer/:funnel/:page",
+      "destination": "/hub/studio.html"
     }
   ],
   "headers": [
