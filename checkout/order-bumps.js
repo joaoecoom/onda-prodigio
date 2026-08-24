@@ -76,12 +76,28 @@
 
         bumpList.innerHTML = config.orderBumps.map(function (bump, index) {
             var inputId = 'order-bump-' + (index + 1);
+            var imageHtml = bump.imageUrl
+                ? '<img class="order-bump__image" src="' + String(bump.imageUrl).replace(/"/g, '&quot;') + '" alt="">'
+                : '<div class="order-bump__image order-bump__image--empty" aria-hidden="true"></div>';
+            var description = bump.description
+                ? '<p class="order-bump__description">' + bump.description + '</p>'
+                : '';
 
             return (
-                '<article class="order-bump order-bump--simple">' +
+                '<article class="order-bump">' +
+                    '<div class="order-bump__body">' +
+                        imageHtml +
+                        '<div class="order-bump__copy">' +
+                            '<p class="order-bump__title">Adiciona isto: ' + bump.label + '</p>' +
+                            description +
+                            '<div class="order-bump__pricing">' +
+                                '<strong class="order-bump__price">' + formatEuro(bump.amountCents) + '</strong>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
                     '<label class="order-bump__select" for="' + inputId + '">' +
                         '<input class="order-bump__checkbox" type="checkbox" id="' + inputId + '" name="order_bump" value="' + bump.bumpId + '">' +
-                        '<span class="order-bump__select-text">' + bump.label + ' — ' + formatEuro(bump.amountCents) + '</span>' +
+                        '<span class="order-bump__select-text">Adicionar item</span>' +
                     '</label>' +
                 '</article>'
             );
