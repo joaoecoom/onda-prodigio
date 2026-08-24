@@ -129,7 +129,47 @@
             data: null,
             busy: false,
         },
+        moduleCache: {},
+        funnelFlowCache: {},
+        openModuleSeq: 0,
     };
+
+    var MODULE_CACHE_TTL_MS = 45000;
+    var FUNNEL_FLOW_CACHE_TTL_MS = 30000;
+
+    function cacheGet(map, key, ttlMs) {
+        var entry = map[key];
+
+        if (!entry) {
+            return null;
+        }
+
+        if (Date.now() - entry.at > ttlMs) {
+            delete map[key];
+            return null;
+        }
+
+        return entry.data;
+    }
+
+    function cacheSet(map, key, data) {
+        map[key] = { at: Date.now(), data: data };
+        return data;
+    }
+
+    function invalidateOfferCaches(slug) {
+        var prefix = String(slug || '') + ':';
+        Object.keys(state.moduleCache).forEach(function (key) {
+            if (key.indexOf(prefix) === 0) {
+                delete state.moduleCache[key];
+            }
+        });
+        Object.keys(state.funnelFlowCache).forEach(function (key) {
+            if (key.indexOf(prefix) === 0) {
+                delete state.funnelFlowCache[key];
+            }
+        });
+    }
 
     function chatContext() {
         return {
@@ -3950,6 +3990,8 @@
                         flow: flowState,
                     },
                 });
+                delete state.funnelFlowCache[offerSlug + ':' + funnelSlug];
+                delete state.moduleCache[offerSlug + ':funil'];
             } catch (_) {
                 // non-fatal — user can still save manually
             }
@@ -4347,6 +4389,9 @@
                         },
                     });
 
+                    delete state.funnelFlowCache[offerSlug + ':' + funnelSlug];
+                    delete state.moduleCache[offerSlug + ':funil'];
+
                     if (messageEl) {
                         messageEl.textContent = 'Funil guardado.';
                         messageEl.hidden = false;
@@ -4406,23 +4451,43 @@
         }
 
         try {
-            var flowPayload = await apiFetch(
-                '/api/sales-attribution?action=hub_funnel_flow&offer=' +
-                    encodeURIComponent(offerSlug) + '&funnel=' + encodeURIComponent(funnelSlug)
-            );
+            var cacheKey = offerSlug + ':' + funnelSlug;
+            var cached = cacheGet(state.funnelFlowCache, cacheKey, FUNNEL_FLOW_CACHE_TTL_MS);
+            var flowPromise = cached
+                ? Promise.resolve(cached.flowPayload)
+                : apiFetch(
+                    '/api/sales-attribution?action=hub_funnel_flow&offer=' +
+                        encodeURIComponent(offerSlug) + '&funnel=' + encodeURIComponent(funnelSlug)
+                );
+            var templatesPromise = cached
+                ? Promise.resolve([
+                    { blocks: cached.pageTemplates },
+                    { blocks: cached.checkoutTemplates },
+                ])
+                : Promise.all([
+                    apiFetch(
+                        '/api/sales-attribution?action=hub_saved_blocks_list&offer=' +
+                            encodeURIComponent(offerSlug) + '&kind=page'
+                    ).catch(function () { return { blocks: [] }; }),
+                    apiFetch(
+                        '/api/sales-attribution?action=hub_saved_blocks_list&offer=' +
+                            encodeURIComponent(offerSlug) + '&kind=checkout'
+                    ).catch(function () { return { blocks: [] }; }),
+                ]);
+            var settled = await Promise.all([flowPromise, templatesPromise]);
+            var flowPayload = settled[0];
+            var templatesPayload = settled[1];
             var pages = flowPayload.pages || [];
-            var templatesPayload = await Promise.all([
-                apiFetch(
-                    '/api/sales-attribution?action=hub_saved_blocks_list&offer=' +
-                        encodeURIComponent(offerSlug) + '&kind=page'
-                ).catch(function () { return { blocks: [] }; }),
-                apiFetch(
-                    '/api/sales-attribution?action=hub_saved_blocks_list&offer=' +
-                        encodeURIComponent(offerSlug) + '&kind=checkout'
-                ).catch(function () { return { blocks: [] }; }),
-            ]);
             var pageTemplates = templatesPayload[0].blocks || [];
             var checkoutTemplates = templatesPayload[1].blocks || [];
+
+            if (!cached) {
+                cacheSet(state.funnelFlowCache, cacheKey, {
+                    flowPayload: flowPayload,
+                    pageTemplates: pageTemplates,
+                    checkoutTemplates: checkoutTemplates,
+                });
+            }
 
             if (stepsContainer && window.HubFunnelUI) {
                 var existingBuilder = stepsContainer.querySelector('.hub-funnel-builder');
@@ -4506,8 +4571,57 @@
             navKey = 'funil';
         }
 
+        var resolvedNavKey = navKey || moduleId;
+
+        if (
+            state.view === 'module' &&
+            state.currentModule === moduleId &&
+            (state.moduleNavKey || moduleId) === resolvedNavKey &&
+            modulePanel &&
+            modulePanel.childNodes.length
+        ) {
+            setNavIntent(state.currentOffer.slug, moduleId, resolvedNavKey);
+            updateUrl(state.currentOffer.slug, moduleId);
+            return;
+        }
+
+        var cacheKey = state.currentOffer.slug + ':' + moduleId;
+        var cachedModule = cacheGet(state.moduleCache, cacheKey, MODULE_CACHE_TTL_MS);
+        var seq = ++state.openModuleSeq;
+
         try {
-            showStatus('A carregar módulo…');
+            if (cachedModule) {
+                state.currentModule = moduleId;
+                state.moduleNavKey = resolvedNavKey;
+                state.currentEmbed = null;
+                moduleView.classList.remove('hub-view--embed');
+                setNavIntent(state.currentOffer.slug, moduleId, resolvedNavKey);
+                renderModulePanel(moduleId, cachedModule);
+                setView('module');
+                updateUrl(state.currentOffer.slug, moduleId);
+                showStatus('');
+
+                apiFetch(
+                    '/api/sales-attribution?action=hub_module&slug=' +
+                        encodeURIComponent(state.currentOffer.slug) +
+                        '&module=' + encodeURIComponent(moduleId),
+                    null,
+                    tokenOverride
+                ).then(function (payload) {
+                    if (seq !== state.openModuleSeq || state.currentModule !== moduleId) {
+                        return;
+                    }
+
+                    cacheSet(state.moduleCache, cacheKey, payload.module);
+                    renderModulePanel(moduleId, payload.module);
+                }).catch(function () {
+                    /* keep cached view */
+                });
+
+                return;
+            }
+
+            showStatus('A carregar…');
 
             var payload = await apiFetch(
                 '/api/sales-attribution?action=hub_module&slug=' +
@@ -4517,16 +4631,25 @@
                 tokenOverride
             );
 
+            if (seq !== state.openModuleSeq) {
+                return;
+            }
+
+            cacheSet(state.moduleCache, cacheKey, payload.module);
             state.currentModule = moduleId;
-            state.moduleNavKey = navKey || moduleId;
+            state.moduleNavKey = resolvedNavKey;
             state.currentEmbed = null;
             moduleView.classList.remove('hub-view--embed');
-            setNavIntent(state.currentOffer.slug, moduleId, state.moduleNavKey);
+            setNavIntent(state.currentOffer.slug, moduleId, resolvedNavKey);
             renderModulePanel(moduleId, payload.module);
             setView('module');
             updateUrl(state.currentOffer.slug, moduleId);
             showStatus('');
         } catch (error) {
+            if (seq !== state.openModuleSeq) {
+                return;
+            }
+
             showStatus((error && error.message) || 'Não foi possível abrir o módulo.', true);
             throw error;
         }
@@ -4733,16 +4856,20 @@
     async function loadOffers(tokenOverride, refresh) {
         var offersPayload = await apiFetch('/api/sales-attribution?action=hub_offers', null, tokenOverride);
         state.offers = offersPayload.offers || [];
-        await loadPlatformMetrics(tokenOverride, refresh);
         renderOffersList();
         if (state.view === 'list') {
             renderSidebar();
             renderPlatformContent();
         }
+        loadPlatformMetrics(tokenOverride, refresh);
     }
 
     async function openOffer(slug, tokenOverride, moduleId, navKey, refresh) {
         showStatus('A carregar oferta…');
+
+        if (refresh || (state.currentOffer && state.currentOffer.slug !== slug)) {
+            invalidateOfferCaches(slug);
+        }
 
         var payload = await apiFetch(
             '/api/sales-attribution?action=hub_offer&slug=' + encodeURIComponent(slug) + '&integrations=1',
@@ -4758,9 +4885,13 @@
         setNavIntent(payload.offer.slug, moduleId || null, navKey || null);
         renderOfferHead(payload.offer);
 
-        state.offerMetrics = await loadOfferMetrics(payload.offer.slug, tokenOverride, refresh);
-        await loadLaunchReadiness(payload.offer.slug, refresh);
-        renderOfferHome(payload.offer, state.currentModules, state.offerMetrics);
+        var secondary = Promise.all([
+            loadOfferMetrics(payload.offer.slug, tokenOverride, refresh),
+            loadLaunchReadiness(payload.offer.slug, refresh),
+        ]).then(function (results) {
+            state.offerMetrics = results[0];
+            return results;
+        });
 
         if (moduleId) {
             var moduleEntry = state.currentModules.find(function (entry) {
@@ -4769,21 +4900,32 @@
 
             if (moduleEntry && moduleEntry.embed) {
                 openEmbedModule(moduleEntry, tokenOverride);
+                secondary.catch(function () { /* ignore */ });
                 return;
             }
 
             await openModule(moduleId, tokenOverride, navKey || moduleId);
+            secondary.catch(function () { /* ignore */ });
             return;
         }
 
+        renderOfferHome(payload.offer, state.currentModules, state.offerMetrics);
         setView('home');
         updateUrl(payload.offer.slug);
         showStatus('');
+
+        secondary.then(function () {
+            if (state.currentOffer && state.currentOffer.slug === payload.offer.slug && state.view === 'home') {
+                renderOfferHome(payload.offer, state.currentModules, state.offerMetrics);
+            }
+        }).catch(function () { /* ignore */ });
     }
 
     async function bootstrapShell(tokenOverride, refresh) {
-        await loadOffers(tokenOverride, refresh);
-        await refreshGeminiStatus();
+        await Promise.all([
+            loadOffers(tokenOverride, refresh),
+            refreshGeminiStatus(),
+        ]);
 
         var target = readBootstrapTarget();
 
@@ -4959,6 +5101,13 @@
         try {
             showStatus('A actualizar…');
 
+            if (state.currentOffer) {
+                invalidateOfferCaches(state.currentOffer.slug);
+            } else {
+                state.moduleCache = {};
+                state.funnelFlowCache = {};
+            }
+
             if (state.view === 'module' && state.currentOffer && state.currentModule) {
                 if (state.currentEmbed) {
                     openEmbedModule(state.currentEmbed);
@@ -4968,7 +5117,7 @@
             } else if ((state.view === 'home' || state.view === 'offer') && state.currentOffer) {
                 await openOffer(state.currentOffer.slug, null, state.currentModule, state.moduleNavKey, true);
             } else {
-                await bootstrapShell(true);
+                await bootstrapShell(null, true);
             }
         } catch (error) {
             showStatus(error.message, true);
