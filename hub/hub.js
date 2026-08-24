@@ -4260,6 +4260,7 @@
                 offer_slug: offerSlug,
                 funnel_slug: funnelSlug,
                 checkout_url: ctx.checkout_url,
+                checkouts: ctx.checkouts || [],
                 page_templates: pageTemplates,
                 checkout_templates: checkoutTemplates,
                 nav_mode: navMode,
@@ -4493,6 +4494,21 @@
 
                 step.active_page_id = select.value || null;
                 autoSaveFlow();
+            });
+        });
+
+        container.querySelectorAll('.hub-funnel-flow-checkout').forEach(function (select) {
+            select.addEventListener('change', function () {
+                var stepId = select.getAttribute('data-step-id');
+                var step = flowState.find(function (row) { return row.id === stepId; });
+
+                if (!step) {
+                    return;
+                }
+
+                step.checkout_id = select.value || 'main';
+                autoSaveFlow();
+                rerender();
             });
         });
 
@@ -4845,6 +4861,7 @@
                     offer_slug: offerSlug,
                     funnel_slug: funnelSlug,
                     checkout_url: flowPayload.checkout_url,
+                    checkouts: flowPayload.checkouts || [],
                     page_templates: pageTemplates,
                     checkout_templates: checkoutTemplates,
                     nav_mode: preservedNavMode,

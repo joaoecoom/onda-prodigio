@@ -151,19 +151,79 @@
         return html;
     }
 
+    function checkoutOptionsHtml(checkouts, selectedId) {
+        var rows = Array.isArray(checkouts) && checkouts.length
+            ? checkouts
+            : [{ checkout_id: 'main', label: 'Checkout Principal' }];
+        var selected = selectedId || 'main';
+        var known = false;
+
+        var options = rows.map(function (row) {
+            if (row.checkout_id === selected) {
+                known = true;
+            }
+
+            return '<option value="' + escapeHtml(row.checkout_id) + '"' +
+                (row.checkout_id === selected ? ' selected' : '') + '>' +
+                escapeHtml(row.label || row.checkout_id) +
+                '</option>';
+        }).join('');
+
+        if (!known && selected) {
+            options = '<option value="' + escapeHtml(selected) + '" selected>' +
+                escapeHtml(selected) + '</option>' + options;
+        }
+
+        return options;
+    }
+
+    function resolveCheckoutUrl(ctx, checkoutId) {
+        var offerSlug = ctx.offer_slug;
+        var id = checkoutId || 'main';
+        var rows = ctx.checkouts || [];
+        var match = rows.find(function (row) {
+            return row.checkout_id === id;
+        });
+
+        if (match && (match.test_path || match.path)) {
+            return match.test_path || match.path;
+        }
+
+        var base = ctx.checkout_url || ('/checkout/?offer=' + encodeURIComponent(offerSlug));
+
+        if (id && id !== 'main') {
+            return base + (base.indexOf('?') >= 0 ? '&' : '?') +
+                'checkout_id=' + encodeURIComponent(id);
+        }
+
+        return base;
+    }
+
+    function renderCheckoutIdField(step, ctx) {
+        return '<label class="hub-field"><span class="hub-field__label">Checkout</span>' +
+            '<select class="hub-login__input hub-funnel-flow-checkout" data-step-id="' +
+            escapeHtml(step.id) + '">' +
+            checkoutOptionsHtml(ctx.checkouts || [], step.checkout_id || 'main') +
+            '</select></label>';
+    }
+
     function renderStepCard(step, ctx, rejectStep) {
         var allPages = ctx.offer_pages || ctx.all_pages || ctx.pages || [];
         var offerSlug = ctx.offer_slug;
         var funnelSlug = ctx.funnel_slug;
-        var checkoutUrl = ctx.checkout_url || ('/checkout/?offer=' + encodeURIComponent(offerSlug));
         var isCheckout = step.kind === 'checkout' || step.page_type === 'checkout';
+        var isOfferStep = isCheckout ||
+            step.kind === 'upsell' || step.page_type === 'upsell' ||
+            step.kind === 'downsell' || step.page_type === 'downsell';
         var pageType = step.page_type || step.kind;
         var statusClass = step.active_page_id ? 'is-linked' : (isCheckout ? 'is-system' : 'is-empty');
         var inactiveClass = step.is_step_active === false ? ' is-inactive' : '';
         var body = '';
+        var checkoutUrl = resolveCheckoutUrl(ctx, step.checkout_id || 'main');
 
         if (isCheckout) {
             body = '<span class="hub-step-card__meta">' + escapeHtml(checkoutUrl) + '</span>' +
+                renderCheckoutIdField(step, ctx) +
                 '<label class="hub-field"><span class="hub-field__label">Page checkout</span>' +
                 '<select class="hub-login__input hub-funnel-flow-page" data-step-id="' + escapeHtml(step.id) + '" ' +
                 'data-page-type="checkout">' +
@@ -180,7 +240,8 @@
                     '<button type="button" class="hub-button hub-button--ghost hub-step-create-submit">Criar</button>' +
                 '</div>';
         } else {
-            body = '<label class="hub-field"><span class="hub-field__label">Page</span>' +
+            body = (isOfferStep ? renderCheckoutIdField(step, ctx) : '') +
+                '<label class="hub-field"><span class="hub-field__label">Page</span>' +
                 '<select class="hub-login__input hub-funnel-flow-page" data-step-id="' + escapeHtml(step.id) + '" ' +
                 'data-page-type="' + escapeHtml(pageType) + '">' +
                 pageOptionsHtml(allPages, step.active_page_id, pageType) +
